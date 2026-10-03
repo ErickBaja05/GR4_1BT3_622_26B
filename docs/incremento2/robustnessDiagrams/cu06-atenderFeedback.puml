@@ -1,0 +1,93 @@
+@startuml cu06_robustez
+skinparam style strictuml
+skinparam defaultFontName Arial
+skinparam ArrowColor #333333
+skinparam BoundaryBackgroundColor #FFFFFF
+skinparam BoundaryBorderColor #333333
+skinparam ControlBackgroundColor #FFFFFF
+skinparam ControlBorderColor #333333
+skinparam EntityBackgroundColor #FFFFFF
+skinparam EntityBorderColor #333333
+skinparam ActorBackgroundColor #FFFFFF
+skinparam ActorBorderColor #333333
+skinparam LegendBackgroundColor #FFFFFF
+skinparam LegendBorderColor #333333
+
+title CU06 Atender retroalimentación de hallazgo\nDiagrama de robustez (Análisis Conceptual - ICONIX)
+
+left to right direction
+
+' ── Actor ──
+actor "Docente" as docente
+
+' ── Fronteras (Interfaces Conceptuales) ──
+boundary "PantallaLogin" as UI_Login
+boundary "PantallaPanelDocente" as UI_Panel
+boundary "PantallaListaRetroalimentaciones" as UI_Lista
+boundary "PantallaAtenderRetroalimentacion" as UI_Form
+
+' ── Controles (Lógica de Proceso de Negocio) ──
+control "GestorAutenticacion" as CTRL_Auth
+control "GestorRetroalimentacion" as CTRL_Retro
+control "GestorNotificaciones" as CTRL_Notif
+
+' ── Entidades (Conceptos del Dominio) ──
+entity "Usuario" as ENT_Usuario
+entity "Retroalimentacion" as ENT_Retro
+entity "Hallazgo" as ENT_Hallazgo
+entity "ResultadoRegla" as ENT_ResultadoRegla
+entity "Auditoria" as ENT_Auditoria
+entity "Proyecto" as ENT_Proyecto
+
+' ── Interacciones numeradas ──
+docente --> UI_Login : 1
+UI_Login --> CTRL_Auth : 2
+CTRL_Auth --> ENT_Usuario : 3
+CTRL_Auth --> UI_Panel : 4
+docente --> UI_Panel : 5
+
+UI_Panel --> CTRL_Retro : 6
+CTRL_Retro --> ENT_Retro : 7
+CTRL_Retro --> UI_Lista : 8
+
+docente --> UI_Lista : 9
+UI_Lista --> CTRL_Retro : 10
+CTRL_Retro --> ENT_Retro : 11
+ENT_Retro --> ENT_Hallazgo : 12
+ENT_Hallazgo --> ENT_ResultadoRegla : 13
+ENT_ResultadoRegla --> ENT_Auditoria : 14
+ENT_Auditoria --> ENT_Proyecto : 15
+
+CTRL_Retro --> UI_Form : 16
+docente --> UI_Form : 17
+UI_Form --> CTRL_Retro : 18
+CTRL_Retro --> ENT_Retro : 19
+CTRL_Retro --> CTRL_Notif : 20
+CTRL_Retro --> UI_Lista : 21
+
+legend bottom
+  <b>Descripción del Flujo Conceptual (ICONIX):</b>
+  <b>1.</b> El Docente ingresa sus credenciales en la PantallaLogin.
+  <b>2.</b> La PantallaLogin envía la solicitud de ingreso al GestorAutenticacion.
+  <b>3.</b> El GestorAutenticacion valida las credenciales contra la entidad Usuario.
+  <b>4.</b> El GestorAutenticacion concede acceso y habilita la PantallaPanelDocente.
+  <b>5.</b> El Docente accede al módulo de retroalimentaciones desde su panel.
+  <b>6.</b> La PantallaPanelDocente solicita las retroalimentaciones pendientes al GestorRetroalimentacion.
+  <b>7.</b> El GestorRetroalimentacion consulta las solicitudes con estado pendiente en la entidad Retroalimentacion.
+  <b>8.</b> El GestorRetroalimentacion envía la lista de pendientes para presentarla en la PantallaListaRetroalimentaciones.
+  <b>9.</b> El Docente selecciona una solicitud de retroalimentación específica.
+  <b>10.</b> La PantallaListaRetroalimentaciones solicita al GestorRetroalimentacion cargar el detalle completo.
+  <b>11.</b> El GestorRetroalimentacion recupera la entidad Retroalimentacion seleccionada.
+  <b>12.</b> La Retroalimentacion se asocia al Hallazgo objeto de la consulta técnica.
+  <b>13.</b> El Hallazgo se vincula al ResultadoRegla que originó el incumplimiento de calidad.
+  <b>14.</b> El ResultadoRegla corresponde a una Auditoria ejecutada.
+  <b>15.</b> La Auditoria está asociada al Proyecto de software académico correspondiente.
+  <b>16.</b> El GestorRetroalimentacion presenta los datos del hallazgo y habilita la PantallaAtenderRetroalimentacion.
+  <b>17.</b> El Docente revisa la información, redacta la respuesta técnica y confirma el envío.
+  <b>18.</b> La PantallaAtenderRetroalimentacion entrega la respuesta redactada al GestorRetroalimentacion.
+  <b>19.</b> El GestorRetroalimentacion registra la respuesta técnica y actualiza el estado a "Atendida" en Retroalimentacion.
+  <b>20.</b> El GestorRetroalimentacion solicita al GestorNotificaciones avisar al estudiante sobre la atención brindada.
+  <b>21.</b> El GestorRetroalimentacion retorna a la PantallaListaRetroalimentaciones confirmando el registro exitoso.
+endlegend
+
+@enduml
