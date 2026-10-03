@@ -1,0 +1,173 @@
+@startuml cu06_secuencia
+skinparam style strictuml
+skinparam sequenceMessageAlign center
+autonumber
+skinparam defaultFontName Arial
+skinparam ArrowColor #333333
+skinparam SequenceLifeLineBorderColor #333333
+skinparam ParticipantBackgroundColor #FFFFFF
+skinparam ParticipantBorderColor #333333
+skinparam ActorBackgroundColor #FFFFFF
+skinparam ActorBorderColor #333333
+skinparam BoundaryBackgroundColor #FFFFFF
+skinparam BoundaryBorderColor #333333
+skinparam ControlBackgroundColor #FFFFFF
+skinparam ControlBorderColor #333333
+skinparam EntityBackgroundColor #FFFFFF
+skinparam EntityBorderColor #333333
+skinparam DatabaseBackgroundColor #FFFFFF
+skinparam DatabaseBorderColor #333333
+skinparam SequenceGroupBorderColor #333333
+skinparam SequenceGroupBackgroundColor #FFFFFF
+skinparam NoteBackgroundColor #FFFFFF
+skinparam NoteBorderColor #333333
+
+title CU06 Atender retroalimentación de hallazgo\nDiagrama de secuencia (Arquitectura Física MVC + N-Capas)
+
+actor "Docente" as Docente
+boundary "listaRetroalimentaciones.jsp" as JSP_Lista
+boundary "atenderRetroalimentacion.jsp" as JSP_Form
+control "RetroalimentacionServlet" as Servlet
+entity "AtenderRetroalimentacionDTO" as DTO
+control "RetroalimentacionService" as Service
+control "RetroalimentacionDAO" as DAO
+entity "Retroalimentacion" as Retro
+database "Base de Datos\n(MariaDB / Hibernate)" as BD
+control "NotificacionService" as Notif
+
+== Fase 1: Consulta de Solicitudes Pendientes (GET) ==
+Docente -> JSP_Lista : Accede al módulo de retroalimentaciones
+activate JSP_Lista
+JSP_Lista -> Servlet : doGet(request, response)
+activate Servlet
+
+Servlet -> Service : obtenerPendientes()
+activate Service
+
+Service -> DAO : listarPendientes()
+activate DAO
+
+DAO -> BD : SELECT * FROM retroalimentacion WHERE estado = 'PENDIENTE'
+activate BD
+BD --> DAO : ResultSet / List<Retroalimentacion>
+deactivate BD
+
+DAO --> Service : List<Retroalimentacion>
+deactivate DAO
+
+Service --> Servlet : List<DetalleRetroalimentacionDTO>
+deactivate Service
+
+Servlet -> JSP_Lista : forward(request, response)
+deactivate Servlet
+JSP_Lista --> Docente : Renderiza tabla de solicitudes pendientes
+deactivate JSP_Lista
+
+== Fase 2: Selección y Carga del Detalle (GET) ==
+Docente -> JSP_Lista : Selecciona solicitud (id = 101)
+activate JSP_Lista
+JSP_Lista -> Servlet : doGet(action="ver", id=101)
+activate Servlet
+
+Servlet -> Service : obtenerDetalle(101)
+activate Service
+
+Service -> DAO : buscarPorId(101)
+activate DAO
+DAO -> BD : SELECT * FROM retroalimentacion JOIN hallazgo WHERE id = 101
+activate BD
+BD --> DAO : Entidad Retroalimentacion con Hallazgo
+deactivate BD
+DAO --> Service : retroalimentacion
+deactivate DAO
+
+Service --> Servlet : detalleDTO (datos hallazgo, regla, proyecto, duda)
+deactivate Service
+
+Servlet -> JSP_Form : forward(request, response)
+deactivate Servlet
+activate JSP_Form
+JSP_Form --> Docente : Muestra formulario con detalle y campo de respuesta
+deactivate JSP_Form
+
+== Fase 3: Redacción, Envío y Persistencia (POST) ==
+Docente -> JSP_Form : Redacta respuesta técnica y presiona "Enviar Respuesta"
+activate JSP_Form
+JSP_Form -> Servlet : doPost(request, response)
+activate Servlet
+
+note over Servlet
+  Extrae parámetros HTTP:
+  id = request.getParameter("id")
+  respuesta = request.getParameter("respuesta")
+end note
+
+Servlet -> DTO ** : new AtenderRetroalimentacionDTO(id, respuesta)
+activate DTO
+DTO --> Servlet : dto
+deactivate DTO
+
+Servlet -> Service : atenderRetroalimentacion(dto)
+activate Service
+
+note over Service
+  Valida regla de negocio:
+  estado == PENDIENTE && !respuesta.isBlank()
+end note
+
+Service -> DAO : buscarPorId(dto.getIdRetroalimentacion())
+activate DAO
+DAO -> BD : SELECT * FROM retroalimentacion WHERE id = ?
+activate BD
+BD --> DAO : retroalimentacion
+deactivate BD
+DAO --> Service : retroalimentacion
+deactivate DAO
+
+Service -> Retro : setRespuestaTecnica(dto.getRespuestaTecnica())
+activate Retro
+Retro --> Service : ok
+deactivate Retro
+
+Service -> Retro : setEstado(EstadoRetroalimentacion.ATENDIDA)
+activate Retro
+Retro --> Service : ok
+deactivate Retro
+
+Service -> Retro : setFechaRespuesta(LocalDateTime.now())
+activate Retro
+Retro --> Service : ok
+deactivate Retro
+
+Service -> DAO : actualizar(retroalimentacion)
+activate DAO
+DAO -> BD : UPDATE retroalimentacion SET respuesta = ?, estado = 'ATENDIDA', ...
+activate BD
+BD --> DAO : Filas afectadas = 1
+deactivate BD
+DAO --> Service : true (éxito)
+deactivate DAO
+
+Service -> Notif : notificarEstudiante(estudianteId, "Su retroalimentación fue atendida")
+activate Notif
+Notif --> Service : ok
+deactivate Notif
+
+Service --> Servlet : resultadoExitoso
+deactivate Service
+
+== Fase 4: Respuesta HTTP (Patrón Post-Redirect-Get) ==
+note over Servlet
+  Redirección HTTP 302:
+  response.sendRedirect("/retroalimentaciones?estado=ok")
+end note
+
+Servlet -> Docente : HTTP 302 Redirect (/retroalimentaciones?estado=ok)
+deactivate Servlet
+
+Docente -> JSP_Lista : HTTP GET /retroalimentaciones?estado=ok
+activate JSP_Lista
+JSP_Lista --> Docente : Renderiza lista actualizada con alerta de éxito
+deactivate JSP_Lista
+
+@enduml
