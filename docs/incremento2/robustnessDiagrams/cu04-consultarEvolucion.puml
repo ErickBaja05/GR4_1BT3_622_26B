@@ -1,0 +1,46 @@
+@startuml cu04_robustez
+skinparam style strictuml
+skinparam defaultFontName Arial
+skinparam ArrowColor #333333
+skinparam BoundaryBackgroundColor #FFFFFF
+skinparam BoundaryBorderColor #333333
+skinparam ControlBackgroundColor #FFFFFF
+skinparam ControlBorderColor #333333
+skinparam EntityBackgroundColor #FFFFFF
+skinparam EntityBorderColor #333333
+skinparam ActorBackgroundColor #FFFFFF
+skinparam ActorBorderColor #333333
+
+title CU04 Consultar evolución de calidad\nDiagrama de robustez
+
+left to right direction
+
+actor "Estudiante / Docente" as actor
+
+boundary "Solicitud de Evolución" as bSol
+boundary "Resultado de Evolución" as bRes
+
+control "Consultar Evolución" as cCon
+
+entity "Proyecto" as eProy
+entity "Auditoría" as eAud
+entity "ResultadoRegla" as eRes
+entity "Regla" as eReg
+entity "Hallazgo" as eHal
+
+' El actor solo se conecta con boundaries
+actor --> bSol
+actor <-- bRes
+
+' Boundaries con el control
+bSol --> cCon
+bRes <-- cCon
+
+' El control solo lee entidades (no crea ni modifica ninguna)
+cCon --> eProy
+cCon --> eAud
+cCon --> eRes
+cCon --> eReg
+cCon --> eHal
+
+@enduml

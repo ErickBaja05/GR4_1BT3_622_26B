@@ -1,0 +1,90 @@
+@startuml cu04_secuencia
+skinparam style strictuml
+skinparam defaultFontName Arial
+skinparam ArrowColor #333333
+skinparam SequenceLifeLineBorderColor #333333
+skinparam ParticipantBackgroundColor #FFFFFF
+skinparam ParticipantBorderColor #333333
+skinparam ActorBackgroundColor #FFFFFF
+skinparam ActorBorderColor #333333
+skinparam BoundaryBackgroundColor #FFFFFF
+skinparam BoundaryBorderColor #333333
+skinparam ControlBackgroundColor #FFFFFF
+skinparam ControlBorderColor #333333
+skinparam EntityBackgroundColor #FFFFFF
+skinparam EntityBorderColor #333333
+skinparam SequenceGroupBorderColor #333333
+skinparam SequenceGroupBackgroundColor #FFFFFF
+
+title CU04 Consultar evolución de calidad\nDiagrama de secuencia (flujo básico)
+
+actor "Estudiante / Docente" as actor
+boundary "Solicitud de Evolución" as bSol
+boundary "Resultado de Evolución" as bRes
+control "Consultar Evolución" as cCon
+entity "Proyecto" as eProy
+entity "Auditoría" as eAud
+entity "ResultadoRegla" as eRes
+entity "Regla" as eReg
+entity "Hallazgo" as eHal
+
+== Solicitar la consulta ==
+actor -> bSol : Solicitar evolución de calidad (proyecto)
+activate bSol
+bSol -> cCon : Solicitar historial de auditorías (proyecto)
+activate cCon
+cCon -> eProy : Obtener proyecto (proyecto)
+activate eProy
+eProy --> cCon : Proyecto
+deactivate eProy
+cCon -> eAud : Obtener auditorías registradas (proyecto)
+activate eAud
+eAud --> cCon : Auditorías (fecha, puntaje, porcentaje)
+deactivate eAud
+cCon --> bSol : Auditorías registradas
+deactivate cCon
+bSol -> actor : Mostrar auditorías registradas
+deactivate bSol
+
+== Indicar las auditorías ==
+actor -> bSol : Indicar dos auditorías (auditoría 1, auditoría 2)
+activate bSol
+bSol -> cCon : Solicitar comparación (auditoría 1, auditoría 2)
+deactivate bSol
+activate cCon
+cCon -> cCon : Ordenar auditorías por fecha
+note right of cCon : la más antigua es la base\ny la más reciente la comparada
+
+== Obtener los resultados ==
+cCon -> eRes : Obtener resultados por regla (base)
+activate eRes
+eRes --> cCon : Resultados de la base
+deactivate eRes
+cCon -> eRes : Obtener resultados por regla (comparada)
+activate eRes
+eRes --> cCon : Resultados de la comparada
+deactivate eRes
+cCon -> eReg : Obtener reglas evaluadas
+activate eReg
+eReg --> cCon : Reglas
+deactivate eReg
+cCon -> eHal : Obtener hallazgos (base, comparada)
+activate eHal
+eHal --> cCon : Hallazgos
+deactivate eHal
+
+== Calcular y clasificar ==
+cCon -> cCon : Calcular variación de puntaje y porcentaje
+loop por cada regla evaluada en ambas auditorías
+  cCon -> cCon : Clasificar hallazgo (resultado base, resultado comparada)
+end
+cCon -> cCon : Contar hallazgos por estado
+
+== Informar la evolución ==
+cCon -> bRes : Informar evolución (evolución)
+deactivate cCon
+activate bRes
+bRes -> actor : Mostrar evolución de calidad\n(resultados, variación y hallazgos por estado)
+deactivate bRes
+
+@enduml

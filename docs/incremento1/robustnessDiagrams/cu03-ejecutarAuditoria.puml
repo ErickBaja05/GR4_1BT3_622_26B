@@ -1,0 +1,31 @@
+@startuml cu03_robustez
+skinparam style strictuml
+left to right direction
+
+actor "Estudiante / Docente" as Usuario
+actor GitHub
+
+boundary "Solicitud de Auditoría" as B1
+boundary "Resultado de Auditoría" as B2
+boundary "API GitHub" as B3
+
+control "Evaluar Proyecto" as C1
+
+entity Proyecto
+entity Regla
+entity "Auditoría" as Auditoria
+entity ResultadoRegla
+entity Hallazgo
+
+Usuario --> B1
+B1 --> C1
+C1 --> B3
+B3 --> GitHub
+C1 --> Proyecto
+C1 --> Regla
+C1 --> Auditoria
+C1 --> ResultadoRegla
+C1 --> Hallazgo
+C1 --> B2
+B2 --> Usuario
+@enduml
