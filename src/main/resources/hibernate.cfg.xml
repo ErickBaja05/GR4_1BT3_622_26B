@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE hibernate-configuration PUBLIC
+        "-//Hibernate/Hibernate Configuration DTD 3.0//EN"
+        "http://www.hibernate.org/dtd/hibernate-configuration-3.0.dtd">
+<hibernate-configuration>
+    <session-factory>
+        <!-- Credenciales de conexión para MariaDB -->
+        <property name="connection.driver_class">org.mariadb.jdbc.Driver</property>
+        <property name="connection.url">jdbc:mariadb://localhost:3306/owl_auditv1?useSSL=false&amp;serverTimezone=UTC</property>
+        <property name="connection.username">user</property>
+        <property name="connection.password">12345</property>
+
+        <!-- Dialecto de SQL para MariaDB / MySQL -->
+        <property name="dialect">org.hibernate.dialect.MariaDBDialect</property>
+
+        <!-- Mostrar las consultas SQL en consola -->
+        <property name="show_sql">true</property>
+        <property name="format_sql">true</property>
+
+        <!-- MAGIA DEL ORM: Crea/actualiza las tablas automáticamente
+
+        La propiedad <property name="hbm2ddl.auto">update</property> automatiza la creación de tablas. Cuando arranca el sistema, Hibernate revisa tus clases Java y, si la tabla no existe en la base de datos o le faltan columnas, construye un CREATE TABLE o un ALTER TABLE internamente y lo ejecuta sin que se haga SQL a mano -->
+        <property name="hbm2ddl.auto">update</property>
+
+        <!-- Registro de la entidad Cliente -->
+        <mapping class="com.grx.appWeb.model.Cliente"/>
+    </session-factory>
+</hibernate-configuration>
