@@ -1,0 +1,31 @@
+@startuml casos_de_uso_incremento2_extend
+' Diagrama de casos de uso — Incremento 2 (variante con extend)
+left to right direction
+skinparam style strictuml
+skinparam packageStyle rectangle
+skinparam shadowing false
+skinparam usecase {
+  BackgroundColor White
+  BorderColor Black
+}
+
+actor "Estudiante" as EST
+actor "Docente" as DOC
+actor "Mentor" as MEN
+
+rectangle "Incremento 2: Seguimiento Evolutivo y Retroalimentación Colaborativa" {
+  usecase "CU04 Consultar evolución\nde calidad" as CU04
+  usecase "CU05 Solicitar retroalimentación\nde hallazgo" as CU05
+  usecase "CU06 Atender\nretroalimentación" as CU06
+}
+
+EST --> CU04
+EST --> CU05
+
+CU04 <-- DOC
+CU06 <-- DOC
+CU06 <-- MEN
+
+CU05 .> CU04 : <<extend>>
+
+@enduml

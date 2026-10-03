@@ -1,0 +1,53 @@
+@startuml cu04_v2_intermedia
+skinparam style strictuml
+skinparam defaultFontName Arial
+skinparam ActivityBackgroundColor #FFFFFF
+skinparam ActivityBorderColor #333333
+skinparam ActivityDiamondBackgroundColor #FFFFFF
+skinparam ActivityDiamondBorderColor #333333
+skinparam SwimlaneBorderColor #333333
+skinparam ArrowColor #333333
+
+|Estudiante / Docente|
+start
+:Solicitar consultar la evolución
+de calidad de un proyecto;
+
+|Sistema|
+:Informar las auditorías
+registradas del proyecto;
+
+|Estudiante / Docente|
+:Indicar dos auditorías
+del historial del proyecto;
+
+|Sistema|
+:Tomar la auditoría más antigua como base
+y la más reciente como comparada;
+:Obtener el resultado de cada regla
+en ambas auditorías;
+:Calcular la variación del puntaje
+obtenido y del porcentaje;
+
+while (¿Quedan reglas por comparar?) is (sí)
+  :Comparar el resultado de la regla
+  en ambas auditorías;
+  if (¿Cumplió en la auditoría base?) then (sí)
+    if (¿Cumple en la auditoría comparada?) then (no)
+      :Clasificar el hallazgo como "Nuevo";
+    else (sí)
+    endif
+  else (no)
+    if (¿Cumple en la auditoría comparada?) then (sí)
+      :Clasificar el hallazgo como "Corregido";
+    else (no)
+      :Clasificar el hallazgo como "Persistente";
+    endif
+  endif
+endwhile (no)
+
+:Calcular el total de hallazgos por estado;
+:Informar la evolución de calidad;
+stop
+
+@enduml

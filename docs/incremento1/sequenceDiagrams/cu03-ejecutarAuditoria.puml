@@ -1,0 +1,86 @@
+@startuml cu03_secuencia
+skinparam style strictuml
+skinparam sequenceMessageAlign center
+autonumber
+skinparam defaultFontName Arial
+skinparam ArrowColor #333333
+skinparam SequenceLifeLineBorderColor #333333
+skinparam ParticipantBackgroundColor #FFFFFF
+skinparam ParticipantBorderColor #333333
+skinparam ActorBackgroundColor #FFFFFF
+skinparam ActorBorderColor #333333
+skinparam BoundaryBackgroundColor #FFFFFF
+skinparam BoundaryBorderColor #333333
+skinparam ControlBackgroundColor #FFFFFF
+skinparam ControlBorderColor #333333
+skinparam EntityBackgroundColor #FFFFFF
+skinparam EntityBorderColor #333333
+skinparam SequenceGroupBorderColor #333333
+skinparam SequenceGroupBackgroundColor #FFFFFF
+
+title CU03 Ejecutar auditoría de calidad\nDiagrama de secuencia (flujo básico)
+
+actor "Estudiante / Docente" as Usuario
+boundary "Solicitud de Auditoría" as B1
+boundary "Resultado de Auditoría" as B2
+control "Evaluar Proyecto" as C1
+entity Proyecto
+entity Regla
+boundary "API GitHub" as B3
+actor GitHub
+entity "Auditoría" as Auditoria
+entity ResultadoRegla
+entity Hallazgo
+
+== Solicitar la auditoría ==
+Usuario -> B1 : Solicitar auditar proyecto (proyecto)
+activate B1
+B1 -> C1 : Solicitar auditoría (proyecto)
+activate C1
+C1 -> Proyecto : Obtener proyecto y URL (proyecto)
+activate Proyecto
+Proyecto --> C1 : Datos del proyecto (URL)
+deactivate Proyecto
+C1 -> Regla : Obtener reglas activas
+activate Regla
+Regla --> C1 : Reglas activas
+deactivate Regla
+C1 -> C1 : Calcular puntaje máximo
+C1 --> B1 : Reglas activas y puntaje máximo
+B1 -> Usuario : Mostrar reglas activas y puntaje máximo
+Usuario -> B1 : Confirmar auditoría
+B1 -> C1 : Confirmar auditoría
+deactivate B1
+
+== Obtener la estructura del repositorio ==
+C1 -> B3 : Solicitar estructura del repositorio (URL)
+activate B3
+B3 -> GitHub : Solicitar estructura del repositorio (URL)
+activate GitHub
+GitHub --> B3 : Estructura (nombres y rutas)
+deactivate GitHub
+B3 --> C1 : Estructura del repositorio
+deactivate B3
+
+== Evaluar y calcular ==
+loop por cada regla activa
+    C1 -> C1 : Evaluar regla (regla, estructura)
+end
+C1 -> C1 : Calcular puntaje obtenido y porcentaje
+
+== Registrar el resultado ==
+C1 -> Auditoria : Registrar auditoría (puntaje obtenido, puntaje máximo, porcentaje)
+loop por cada regla evaluada
+    C1 -> ResultadoRegla : Registrar resultado de la regla (cumple, puntos obtenidos)
+end
+loop por cada regla incumplida
+    C1 -> Hallazgo : Registrar hallazgo (regla, severidad)
+end
+
+== Informar el resultado ==
+C1 -> B2 : Informar resultado de la auditoría (resultado)
+deactivate C1
+activate B2
+B2 -> Usuario : Mostrar puntaje obtenido, porcentaje y hallazgos
+deactivate B2
+@enduml

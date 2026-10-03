@@ -1,0 +1,34 @@
+@startuml
+skinparam style strictuml
+skinparam ActivityBackgroundColor #EFEFEF
+skinparam ActivityBorderColor #333333
+skinparam ArrowColor #00529B
+skinparam PartitionBackgroundColor #FAFAFA
+
+|Estudiante / Docente|
+start
+:Solicitar la auditoría de\nun proyecto registrado;
+|Sistema|
+:Informar las reglas activas\ny el puntaje máximo;
+|Estudiante / Docente|
+:Confirmar la auditoría;
+|Sistema|
+:Solicitar la estructura\ndel repositorio;
+|GitHub|
+:Entregar la estructura\ndel repositorio;
+|Sistema|
+while (¿Quedan reglas activas\npor evaluar?) is ([Sí])
+  :Tomar la siguiente regla activa;
+  :Evaluar la regla sobre la\nestructura del repositorio;
+  if (¿El repositorio\ncumple la regla?) then ([Sí])
+    :Marcar la regla como cumplida\ny asignar sus puntos;
+  else ([No])
+    :Marcar la regla como incumplida\ny asignar cero puntos;
+    :Generar el hallazgo de\nla regla incumplida;
+  endif
+endwhile ([No])
+:Calcular el puntaje obtenido,\nel máximo y el porcentaje;
+:Registrar la auditoría, el resultado\nde cada regla y los hallazgos;
+:Informar el resultado\nde la auditoría;
+stop
+@enduml
