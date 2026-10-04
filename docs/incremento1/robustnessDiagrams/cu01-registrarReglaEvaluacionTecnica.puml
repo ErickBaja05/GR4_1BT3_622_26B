@@ -1,0 +1,75 @@
+@startuml
+skinparam defaultFontName "Segoe UI"
+skinparam defaultFontSize 11
+skinparam roundCorner 10
+skinparam shadowing false
+
+' ========================================================
+' ESTILOS VISUALES
+' ========================================================
+skinparam actor {
+    BackgroundColor #EFF6FF
+    BorderColor #2563EB
+    FontColor #0F172A
+}
+
+skinparam boundary {
+    BackgroundColor #F0F7FF
+    BorderColor #1D4ED8
+    FontColor #0F172A
+}
+
+skinparam control {
+    BackgroundColor #EFF6FF
+    BorderColor #1D4ED8
+    FontColor #0F172A
+}
+
+skinparam entity {
+    BackgroundColor #F8FAFC
+    BorderColor #0F172A
+    FontColor #0F172A
+}
+
+skinparam arrow {
+    Color #2563EB
+    Thickness 1.2
+}
+
+' ========================================================
+' ELEMENTOS DEL MODELO DE ROBUSTEZ
+' ========================================================
+actor "Docente" as actorDocente
+
+boundary "Formulario\nRegistro Regla" as bForm
+boundary "Mensaje de\nConfirmación" as bExito
+boundary "Mensaje de\nError" as bError
+
+control "Validar Formato\ny Sintaxis" as cValidar
+control "Verificar Unicidad\nde Nombre" as cVerificar
+control "Registrar\nRegla" as cRegistrar
+
+entity "Regla" as eRegla
+
+' ========================================================
+' CONEXIONES Y FLUJO DE DATOS
+' ========================================================
+actorDocente --> bForm : Suministrar datos regla
+
+bForm --> cValidar : Enviar datos
+
+cValidar --> bError : [Datos inválidos o incompletos]
+cValidar --> cVerificar : [Datos sintácticamente correctos]
+
+cVerificar --> eRegla : Consultar por nombreRepresentativo
+eRegla --> cVerificar : Retornar coincidencia
+cVerificar --> bError : [Nombre ya registrado]
+cVerificar --> cRegistrar : [Nombre no registrado]
+
+cRegistrar --> eRegla : Instanciar y almacenar\n(activa = true)
+cRegistrar --> bExito : Notificar registro exitoso
+
+bExito --> actorDocente : Emitir confirmación
+bError --> actorDocente : Emitir mensaje de error
+
+@enduml

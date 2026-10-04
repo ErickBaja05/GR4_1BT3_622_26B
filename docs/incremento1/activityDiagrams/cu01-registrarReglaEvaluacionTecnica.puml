@@ -28,7 +28,7 @@ skinparam SwimlaneTitleFontStyle bold
 
 |Docente|
 start
-:Suministrar datos de la regla técnica: tipoMotor, nombreRepresentativo, descripciónDetallada, parametroExacto, nivelSeveridad, ponderacion;
+:Suministrar datos de la regla técnica:\ntipoMotor, nombreRepresentativo, descripcionDetallada,\nparametroExacto, nivelSeveridad, ponderacion;
 
 |Sistema|
 :Validar completitud de datos;
@@ -38,7 +38,7 @@ if (¿Algún dato es nulo o vacío?) then (sí)
 endif
 
 :Validar tipoMotor;
-if (¿tipoMotor es: PRESENCIA_ARCHIVO, RESTRICCION_ARCHIVOS o ESTRUCTURA_CARPETAS ?) then (no)
+if (¿tipoMotor es: PRESENCIA_ARCHIVO, RESTRICCION_ARCHIVOS o ESTRUCTURA_CARPETAS?) then (no)
     :Emitir mensaje de error\n"El tipo de motor es incorrecto";
     stop
 endif
@@ -49,13 +49,7 @@ if (¿Longitud entre 1 y 100 caracteres?) then (no)
     stop
 endif
 
-:Verificar no existencia de nombreRepresentativo;
-if (¿Existe regla previa con el mismo nombre?) then (sí)
-    :Emitir mensaje de error\n"El nombre de la regla ya se encuentra registrado";
-    stop
-endif
-
-:Validar longitud de descripciónDetallada;
+:Validar longitud de descripcionDetallada;
 if (¿Longitud entre 1 y 200 caracteres?) then (no)
     :Emitir mensaje de error\n"La longitud de la descripción detallada debe ser entre 1 y 200 caracteres";
     stop
@@ -102,6 +96,13 @@ endif
 :Validar ponderacion;
 if (¿ponderacion es entero mayor a cero?) then (no)
     :Emitir mensaje de error\n"La ponderación debe ser un número entero mayor a cero";
+    stop
+endif
+
+' --- VERIFICACIÓN DE PERSISTENCIA (ÚLTIMO PASO ANTES DE GUARDAR) ---
+:Verificar no existencia de nombreRepresentativo;
+if (¿Existe regla previa con el mismo nombre? (case-insensitive)) then (sí)
+    :Emitir mensaje de error\n"El nombre de la regla ya se encuentra registrado";
     stop
 endif
 
