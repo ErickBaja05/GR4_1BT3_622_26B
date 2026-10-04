@@ -1,0 +1,52 @@
+@startuml
+skinparam sequenceMessageAlign center
+skinparam monochrome true
+
+title CU02: Registrar proyecto académico - Diagrama de Secuencia
+
+actor "Estudiante" as Estudiante
+boundary "Interfaz de registro\nde proyecto" as Interfaz
+control "Registro de\nproyecto" as Controlador
+entity "Repositorio de\nGitHub" as Repositorio
+entity "Proyecto" as Proyecto
+
+Estudiante -> Interfaz : Identificarse como estudiante y\nsolicitar registro de nuevo proyecto
+activate Interfaz
+
+Estudiante -> Interfaz : Escribir nombre del proyecto y\nenlace del repositorio de github
+Interfaz -> Controlador : Procesar datos del proyecto\n(Nombre, Enlace)
+activate Controlador
+
+Controlador -> Controlador : Comprobar que el\nenlace es válido
+
+alt Enlace inválido
+    Controlador --> Interfaz : Informar error\ncon el enlace
+    Interfaz --> Estudiante : Mostrar mensaje de\nerror con el enlace
+else Enlace válido
+    Controlador -> Repositorio : Guardar enlace del proyecto y\ncomprobar que sea público
+    activate Repositorio
+    
+    alt Repositorio no es público
+        Repositorio --> Controlador : Indicar que el repositorio\nes privado o inaccesible
+        Controlador --> Interfaz : Indicar error\nde acceso
+        Interfaz --> Estudiante : Mostrar mensaje de\nerror de acceso
+    else Repositorio público
+        Repositorio --> Controlador : Confirmar acceso público\nal repositorio
+        
+        Controlador -> Repositorio : Extraer información del repositorio\n(carpetas, archivos, etc.)
+        Repositorio --> Controlador : Retornar estructura e\ninformación extraída
+        deactivate Repositorio
+        
+        Controlador -> Proyecto : Guardar proyecto e información\ndel proyecto académico
+        activate Proyecto
+        Proyecto --> Controlador : Confirmación de\nguardado
+        deactivate Proyecto
+        
+        Controlador --> Interfaz : Confirmar registro\nexitoso
+        Interfaz --> Estudiante : Confirmar que se registró\nexitosamente el proyecto
+    end
+end
+
+deactivate Controlador
+deactivate Interfaz
+@enduml
