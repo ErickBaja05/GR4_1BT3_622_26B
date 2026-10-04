@@ -1,0 +1,72 @@
+@startuml
+left to right direction
+
+' ========================================================
+' ESTILOS VISUALES (Paleta Azul Moderna y Bordes Curvos)
+' ========================================================
+skinparam roundCorner 15
+skinparam shadowing false
+skinparam defaultFontName "Segoe UI"
+skinparam defaultFontSize 12
+
+skinparam rectangle {
+    BackgroundColor #F8FAFC
+    BorderColor #94A3B8
+    BorderThickness 1.5
+    FontColor #0F172A
+    FontStyle bold
+    FontSize 14
+}
+
+skinparam actor {
+    BackgroundColor #EFF6FF
+    BorderColor #2563EB
+    BorderThickness 1.5
+    FontColor #1E293B
+    FontSize 13
+}
+
+skinparam usecase {
+    BackgroundColor #F0F7FF
+    BorderColor #1D4ED8
+    BorderThickness 1.5
+    FontColor #0F172A
+    FontSize 12
+    RoundCorner 25
+}
+
+skinparam arrow {
+    Color #334155
+    Thickness 1.2
+}
+
+' ========================================================
+' ACTORES
+' ========================================================
+actor :Estudiante: as EST
+actor :Docente: as DOC
+actor :Mentor: as MEN
+
+' ========================================================
+' LÍMITE DEL SISTEMA: INCREMENTO 2
+' ========================================================
+rectangle "Incremento 2: Seguimiento Evolutivo y Retroalimentación Colaborativa" {
+  usecase "CU04 Consultar evolución\nde calidad" as CU04
+  usecase "CU05 Solicitar retroalimentación\nde hallazgo" as CU05
+  usecase "CU06 Atender\nretroalimentación" as CU06
+}
+
+' ========================================================
+' ASOCIACIONES
+' ========================================================
+EST -- CU04
+EST -- CU05
+
+DOC -- CU04
+DOC -- CU06
+MEN -- CU06
+
+' Relación de extensión
+CU05 .> CU04 : <<extend>>
+
+@enduml
