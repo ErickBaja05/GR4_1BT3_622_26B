@@ -1,0 +1,33 @@
+@startuml
+left to right direction
+skinparam handwritten false
+skinparam monochrome true
+skinparam shadowing false
+
+title CU02: Registrar proyecto académico - Diagrama de Robustez
+
+' --- COLUMNA 1: ACTOR ---
+actor "Estudiante" as Estudiante
+
+' --- COLUMNA 2: INTERFAZ (BOUNDARY) ---
+boundary "Interfaz de registro de proyecto" as InterfazRegistro
+
+' --- COLUMNA 3: CONTROLADOR ---
+control "Registro de proyecto" as RegistroProyecto
+
+' --- COLUMNA 4: ENTIDADES ---
+entity "Repositorio de GitHub" as Repositorio
+entity "Proyecto" as Proyecto
+
+' --- ALINEACIÓN DE COLUMNAS (INVISIBLE) ---
+Estudiante -[hidden]right-> InterfazRegistro
+InterfazRegistro -[hidden]right-> RegistroProyecto
+RegistroProyecto -[hidden]right-> Repositorio
+Repositorio -[hidden]down-> Proyecto
+
+' --- RELACIONES DE NEGOCIO ---
+Estudiante -- InterfazRegistro
+InterfazRegistro -- RegistroProyecto
+RegistroProyecto -- Repositorio
+RegistroProyecto -- Proyecto
+@enduml
