@@ -1,0 +1,51 @@
+@startuml
+skinparam activity {
+  BackgroundColor #FFF9C4
+  BorderColor Black
+  FontColor Black
+  ArrowColor Black
+  DiamondBackgroundColor #E1F5FE
+  DiamondBorderColor Black
+  DiamondFontColor Black
+}
+
+title CU04: Consultar evolución de calidad
+
+|Usuario (Estudiante / Docente)|
+start
+:Solicitar evolucion de calidad;
+
+|Docente (Evaluador Manual)|
+:Consultar historial de auditorias;
+:Mostrar auditorias registradas;
+
+|Usuario (Estudiante / Docente)|
+:Indicar dos auditorias a comparar;
+
+|Docente (Evaluador Manual)|
+:Ordenar auditorias por fecha;
+:Consultar resultados de reglas;
+:Calcular variacion de puntajes;
+
+while (¿Quedan reglas por comparar?) is ([Sí])
+  if (¿Cumplió en la auditoría base?) then ([Sí])
+    if (¿Cumple en auditoría comparada?) then ([No])
+      :Clasificar estado del hallazgo como Nuevo;
+    else ([Sí])
+    endif
+  else ([No])
+    if (¿Cumple en auditoría comparada?) then ([Sí])
+      :Clasificar estado del hallazgo como Corregido;
+    else ([No])
+      :Clasificar estado del hallazgo como Persistente;
+    endif
+  endif
+endwhile ([No])
+
+:Contar hallazgos por estado;
+:Mostrar evolucion de calidad;
+
+|Usuario (Estudiante / Docente)|
+:Recibir evolucion de calidad;
+stop
+@enduml

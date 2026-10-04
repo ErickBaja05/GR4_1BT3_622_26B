@@ -1,0 +1,31 @@
+@startuml
+skinparam activity {
+  BackgroundColor #FFF9C4
+  BorderColor Black
+  FontColor Black
+  ArrowColor Black
+  DiamondBackgroundColor #E1F5FE
+  DiamondBorderColor Black
+  DiamondFontColor Black
+}
+
+title CU05: Solicitar retroalimentación de hallazgo
+
+|Estudiante|
+start
+:Consultar reporte de auditoria;
+:Especificar hallazgo observado;
+:Redactar justificacion tecnica;
+:Solicitar retroalimentacion de hallazgo;
+
+|Docente|
+:Verificar estado de revision del hallazgo;
+if (¿El hallazgo ya tiene solicitud?) then (Sí)
+  :Informar que el hallazgo esta en revision;
+  stop
+else (No)
+  :Crear solicitud de retroalimentacion;
+  :Notificar nueva solicitud;
+  stop
+endif
+@enduml

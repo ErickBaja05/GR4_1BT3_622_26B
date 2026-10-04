@@ -94,6 +94,7 @@ package "com.gr4.owlaudit.service" {
 
     class ProyectoServiceImpl implements ProyectoService {
         - proyectoDAO : ProyectoDAO
+        - GITHUB_REPO_PATTERNT : Pattern
         + solicitarRegistroDeNuevoProyecto(dto : NuevoProyectoDTO) : void
         - validarEnlace(urlGithub : String) : void
     }

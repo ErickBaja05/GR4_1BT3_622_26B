@@ -7,7 +7,7 @@
 
 #### Precondiciones
 * El usuario con rol Docente se encuentra debidamente autenticado en el sistema.
-* En el sistema no existe previamente ninguna regla registrada con el nombre "Existencia de archivo README.md"[cite: 5, 7].
+* En el sistema no existe previamente ninguna regla registrada con el nombre "Existencia de archivo README.md".
 
 #### Datos de Entrada
 * `tipoMotor`: `"PRESENCIA_ARCHIVO"`
@@ -19,7 +19,7 @@
 
 #### Procedimiento / Pasos de Ejecución
 1. El Docente suministra el conjunto de datos de entrada especificado para la nueva regla técnica.
-2. El Docente solicita el registro formal de la regla técnica en el sistema.
+2. El Docente solicita el registro formal de la regla técnica.
 
 #### Resultado Esperado
 * El sistema valida y verifica exitosamente la totalidad de los datos suministrados.

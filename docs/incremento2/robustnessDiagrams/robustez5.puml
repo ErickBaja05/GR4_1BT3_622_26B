@@ -1,0 +1,61 @@
+@startuml
+left to right direction
+skinparam defaultFontName "Segoe UI"
+skinparam defaultFontSize 11
+skinparam roundCorner 10
+skinparam shadowing false
+
+skinparam boundary {
+    BackgroundColor #F8FAFC
+    BorderColor #2563EB
+    BorderThickness 1.2
+}
+skinparam control {
+    BackgroundColor #FEF3C7
+    BorderColor #D97706
+    BorderThickness 1.2
+}
+skinparam entity {
+    BackgroundColor #DCFCE7
+    BorderColor #16A34A
+    BorderThickness 1.2
+}
+skinparam actor {
+    BackgroundColor #EFF6FF
+    BorderColor #2563EB
+    BorderThickness 1.2
+}
+skinparam arrow {
+    Color #334155
+    Thickness 1.2
+}
+
+actor "Estudiante" as estudiante
+
+package "CU05: Solicitar Retroalimentación" {
+    boundary "Vista Reporte" as bReporte
+    boundary "Formulario\nSolicitud" as bForm
+    boundary "Mensaje\nError" as bError
+    boundary "Mensaje\nÉxito" as bExito
+
+    control "Gestor\nRetroalimentación" as cRetro
+    entity "Hallazgo" as eHallazgo
+    entity "Solicitud" as eSolicitud
+}
+
+' Trazabilidad con el flujo de actividades del Estudiante
+estudiante -- bReporte : Consultar reporte de auditoria
+estudiante -- bForm : Especificar hallazgo observado
+estudiante -- bForm : Redactar justificacion tecnica
+estudiante -- bForm : Solicitar retroalimentacion de hallazgo
+
+bForm --> cRetro : Procesar solicitud
+
+' Trazabilidad con las validaciones del negocio
+cRetro --> eHallazgo : Verificar estado de revision del hallazgo
+
+cRetro --> bError : [Ya tiene solicitud] Informar que el hallazgo esta en revision
+cRetro --> eSolicitud : [No tiene solicitud] Crear solicitud de retroalimentacion
+cRetro --> bExito : Notificar nueva solicitud
+
+@enduml

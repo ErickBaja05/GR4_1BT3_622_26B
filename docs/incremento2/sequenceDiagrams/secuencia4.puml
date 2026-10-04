@@ -1,0 +1,89 @@
+@startuml
+skinparam style strictuml
+skinparam defaultFontName "Segoe UI"
+skinparam defaultFontSize 11
+skinparam roundCorner 8
+skinparam shadowing false
+
+skinparam maxMessageSize 130
+skinparam ParticipantPadding 10
+skinparam BoxPadding 10
+
+skinparam participant {
+    BackgroundColor #F0F7FF
+    BorderColor #1D4ED8
+    BorderThickness 1.2
+    FontColor #0F172A
+    FontStyle bold
+}
+
+skinparam actor {
+    BackgroundColor #EFF6FF
+    BorderColor #2563EB
+    BorderThickness 1.2
+    FontColor #0F172A
+}
+
+skinparam sequence {
+    LifeLineBackgroundColor #DBEAFE
+    LifeLineBorderColor #2563EB
+    ArrowColor #1D4ED8
+    ArrowThickness 1.2
+}
+
+autonumber "<b>[00]</b>"
+
+actor "usuario : Usuario" as usuario
+participant "servlet : EvolucionServlet" as servlet
+participant "servicio : EvolucionServiceImpl" as service
+participant "daoAuditoria : AuditoriaDAOImpl" as aDao
+
+== 1. Carga del Historial ==
+usuario -> servlet : doGet(request, response)
+activate servlet
+
+' Trazabilidad con actividades
+servlet -> service : solicitarEvolucionDeCalidad(evolucionDTO)
+activate service
+
+service -> aDao : consultarHistorialDeAuditorias(evolucionDTO.getProyectoId())
+activate aDao
+aDao --> service : List<Auditoria>
+deactivate aDao
+
+service --> servlet : ResumenHistorialDTO
+deactivate service
+
+servlet --> usuario : mostrarAuditoriasRegistradas()
+deactivate servlet
+
+== 2. Comparación de Auditorías ==
+usuario -> servlet : doPost(request, response)
+activate servlet
+
+' Trazabilidad con actividades
+servlet -> service : indicarDosAuditoriasAComparar(evolucionDTO)
+activate service
+
+service -> service : ordenarAuditoriasPorFecha(evolucionDTO)
+service -> aDao : consultarResultadosDeReglas(baseId, comparadaId)
+activate aDao
+aDao --> service : List<ResultadoRegla>
+deactivate aDao
+
+service -> service : calcularVariacionDePuntajes()
+
+loop por cada regla comparada
+    ' La lógica interna resuelve si es Nuevo, Corregido o Persistente
+    service -> service : clasificarEstadoDelHallazgo()
+end
+
+service -> service : contarHallazgosPorEstado()
+
+service --> servlet : EvolucionFinalDTO
+deactivate service
+
+servlet --> usuario : mostrarEvolucionDeCalidad()
+deactivate servlet
+
+@enduml
