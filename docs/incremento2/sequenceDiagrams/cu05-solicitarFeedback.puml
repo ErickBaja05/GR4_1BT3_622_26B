@@ -1,57 +1,92 @@
 @startuml
-skinparam sequenceMessageAlign center
-skinparam monochrome true
+skinparam style strictuml
+skinparam defaultFontName "Segoe UI"
+skinparam defaultFontSize 11
+skinparam roundCorner 8
+skinparam shadowing false
 
-title CU05: Solicitar retroalimentación de hallazgo - Diagrama de Secuencia
+' --- AJUSTES PARA COMPACTAR HORIZONTALMENTE ---
+' Define un ancho máximo en píxeles antes de hacer salto de línea en los mensajes
+skinparam maxMessageSize 180
+' Agrupa participantes o ajusta espacio si es necesario
+skinparam SequenceParticipantPadding 10
+skinparam SequenceBoxPadding 5
 
-actor "Estudiante" as Estudiante
-boundary "Interfaz de\nrevisión" as Interfaz
-control "Controlador de\nauditoría" as CtrlAuditoria
-control "Registro de solicitud\nde retroalimentación" as CtrlRetro
-entity "Reporte de\nauditoría" as Reporte
-entity "Hallazgo" as Hallazgo
-entity "Solicitud de\nretroalimentación" as Solicitud
+skinparam participant {
+    BackgroundColor #F0F7FF
+    BorderColor #1D4ED8
+    BorderThickness 1.2
+    FontColor #0F172A
+    FontStyle bold
+}
 
-Estudiante -> Interfaz : Consultar el reporte de\nauditoría del proyecto
-activate Interfaz
+skinparam actor {
+    BackgroundColor #EFF6FF
+    BorderColor #2563EB
+    BorderThickness 1.2
+    FontColor #0F172A
+}
 
-Interfaz -> CtrlAuditoria : Obtener información del\nreporte de auditoría
-activate CtrlAuditoria
+skinparam sequence {
+    LifeLineBackgroundColor #DBEAFE
+    LifeLineBorderColor #2563EB
+    ArrowColor #1D4ED8
+    ArrowThickness 1.2
+}
 
-CtrlAuditoria -> Reporte : Leer reporte de auditoría\ny sus observaciones
-activate Reporte
-Reporte --> CtrlAuditoria : Datos del reporte\ny hallazgos
-deactivate Reporte
+autonumber "<b>[00]</b>"
 
-CtrlAuditoria --> Interfaz : Mostrar reporte\nde auditoría
-deactivate CtrlAuditoria
+' Nombres con saltos de línea en los participantes largos
+actor "estudiante :\nEstudiante" as estudiante
+participant "vista :\nreporteAuditoria.jsp" as jsp
+participant "servlet :\nRetroalimentacionServlet" as servlet
+participant "dto :\nSolicitudRetroDTO" as dto
+participant "servicio :\nRetroalimentacionServiceImpl" as service
+participant "dao :\nRetroalimentacionDAOImpl" as dao
+participant "solicitud :\nSolicitudRetroalimentacion" as solicitud
 
-Estudiante -> Interfaz : Especificar hallazgo u observación y\nsolicitar retroalimentación de hallazgo
-Interfaz -> CtrlRetro : Validar estado y procesar solicitud\npara el hallazgo especificado
-activate CtrlRetro
+estudiante -> jsp : redactarJustificacion\n(hallazgoId, justificacionTexto)
+activate jsp
 
-CtrlRetro -> Hallazgo : ¿El hallazgo ya tiene una\nsolicitud de revisión?
-activate Hallazgo
-Hallazgo --> CtrlRetro : Estado de revisiones\ndel hallazgo
-deactivate Hallazgo
+jsp -> servlet : doPost(request, response)
+activate servlet
 
-alt El hallazgo ya tiene solicitud de revisión (Sí)
-    CtrlRetro --> Interfaz : Informar que ese hallazgo\nse está revisando
-    Interfaz --> Estudiante : Mostrar mensaje: "El hallazgo\nse está revisando"
-else No tiene solicitud previa (No)
-    Estudiante -> Interfaz : Redactar justificación técnica,\nduda o argumento de revisión
-    Interfaz -> CtrlRetro : Enviar argumento redactado
-    
-    CtrlRetro -> Solicitud : Crear solicitud de retroalimentación\ndel hallazgo especificado
-    activate Solicitud
-    Solicitud --> CtrlRetro : Solicitud creada exitosamente
-    deactivate Solicitud
-    
-    CtrlRetro -> CtrlRetro : Notificar solicitud\nal docente
-    CtrlRetro --> Interfaz : Confirmación de envío\nde la solicitud
-    Interfaz --> Estudiante : Confirmar registro de la solicitud y\nnotificar solicitud al docente
+servlet -> servlet : extraerParametros\n(request)
+
+create dto
+servlet -> dto : new(hallazgoId,\njustificacionTexto)
+
+servlet -> service : solicitarRevision\n(dto, estudianteId)
+activate service
+
+' Validación de existencia de revisión previa
+service -> dao : buscarPorHallazgoId\n(dto.getHallazgoId())
+activate dao
+dao --> service : solicitudExistente\n(null)
+deactivate dao
+
+alt ¿Solicitud previa no existe (null)?
+    create solicitud
+    service -> solicitud : new(hallazgoId, dto.getJustificacionEstudiante(),\nEstadoRetroEnum.PENDIENTE)
+
+    service -> dao : guardar(solicitud)
+    activate dao
+    dao --> service : return (void)
+    deactivate dao
+
+    service --> servlet : return (void)
+    deactivate service
+
+    servlet -> servlet : setAttribute("mensajeConfirmacion",\n"Solicitud enviada exitosamente")
+    servlet -> jsp : forward(request, response)
+    deactivate servlet
+
+    jsp --> estudiante : renderizarMensajeExito\n("Solicitud enviada exitosamente")
+else ¿Existe una solicitud en revisión?
+    service --> servlet : throw ExcepcionNegocio\n("El hallazgo ya tiene una solicitud...")
+    servlet -> jsp : forwardConError\n("El hallazgo ya está en revisión")
+    jsp --> estudiante : renderizarMensajeError\n("En revisión")
 end
+deactivate jsp
 
-deactivate CtrlRetro
-deactivate Interfaz
 @enduml
