@@ -23,17 +23,13 @@ skinparam NoteBorderColor #333333
 skinparam NoteBackgroundColor #FFFFF0
 
 actor "Estudiante / Docente" as U
-boundary "evolucion.jsp" as JSP1 <<JSP>>
-boundary "resultadoEvolucion.jsp" as JSP2 <<JSP>>
-control "EvolucionServlet" as SRV <<Servlet>>
+boundary "EvolucionServlet" as SRV <<Servlet>>
 control "EvolucionService" as SVC <<Service>>
 entity "ProyectoDAO" as PDAO <<DAO>>
 entity "AuditoriaDAO" as ADAO <<DAO>>
 
 == Solicitar la consulta (flujo 1-2) ==
-U -> JSP1 : Solicitar evolución del proyecto
-activate JSP1
-JSP1 -> SRV : doGet(request, response)
+U -> SRV : doGet(request, response)
 activate SRV
 note right of SRV : proyectoId se lee del request
 SRV -> SVC : listarHistorial(proyectoId) : List<AuditoriaResumenDTO>
@@ -47,19 +43,13 @@ activate ADAO
 ADAO --> SVC : auditorias
 deactivate ADAO
 SVC -> SVC : convertirAResumen(auditorias) : List<AuditoriaResumenDTO>
-SVC --> SRV : historialDTO
+SVC --> SRV : historialDTO : List<AuditoriaResumenDTO>
 deactivate SVC
-SRV -> JSP1 : forward(request, response)
+SRV --> U : forward a evolucion.jsp (fecha, puntaje y porcentaje)
 deactivate SRV
-note right of JSP1 : request.setAttribute("historial", historialDTO)
-JSP1 -> U : Mostrar auditorías (fecha, puntaje, porcentaje)
-deactivate JSP1
 
 == Indicar las auditorías (flujo 3-4) ==
-U -> JSP1 : Indicar dos auditorías
-activate JSP1
-JSP1 -> SRV : doPost(request, response)
-deactivate JSP1
+U -> SRV : doPost(request, response)
 activate SRV
 note right of SRV : auditoriaIdA y auditoriaIdB\nse leen del request
 SRV -> SVC : compararAuditorias(auditoriaIdA, auditoriaIdB) : EvolucionDTO
@@ -75,27 +65,22 @@ activate ADAO
 ADAO --> SVC : auditoriaB
 deactivate ADAO
 note right of ADAO : trae cada Auditoria con sus\nResultadoRegla, Regla y Hallazgo\n(relaciones del ORM)
-SVC -> SVC : ordenarPorFecha(auditoriaA, auditoriaB)
+SVC -> SVC : ordenarPorFecha(auditoriaA, auditoriaB) : Auditoria[]
 note right of SVC : la más antigua es la base,\nla más reciente la comparada
 
 == Calcular y clasificar (flujo 6-7) ==
-SVC -> SVC : calcularVariacion(base, comparada)
-create "EvolucionDTO" as DTO <<DTO>>
-SVC -> DTO : new EvolucionDTO(base, comparada, variacionPuntaje, variacionPorcentaje)
+SVC -> SVC : calcularVariacion(base, comparada) : double[]
 loop por cada regla evaluada
   SVC -> SVC : clasificarHallazgo(resultadoBase, resultadoComparada) : EstadoEvolucion
-  SVC -> DTO : agregarComparacion(regla, estado)
 end
-SVC -> DTO : contarPorEstado()
+note right of SVC : cada estado se guarda en el mapa\ncomparaciones (si no es null)
+SVC -> SVC : contarPorEstado(comparaciones) : Map<EstadoEvolucion, Integer>
 
 == Informar la evolución (flujo 8) ==
-SVC --> SRV : evolucionDTO
+SVC --> SRV : evolucionDTO : EvolucionDTO
 deactivate SVC
-SRV -> JSP2 : forward(request, response)
+note right of SRV : el DTO lleva la variación,\nlas comparaciones y los totales
+SRV --> U : forward a resultadoEvolucion.jsp (variación y hallazgos por estado)
 deactivate SRV
-activate JSP2
-note right of JSP2 : request.setAttribute("evolucion", evolucionDTO)
-JSP2 -> U : Mostrar variación y hallazgos por estado
-deactivate JSP2
 
 @enduml
