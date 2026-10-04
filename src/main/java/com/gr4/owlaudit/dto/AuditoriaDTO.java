@@ -17,4 +17,11 @@ public class AuditoriaDTO {
     public void setUrl(String url) {
         this.url = url;
     }
+
+    @Override
+    public String toString() {
+        return "AuditoriaDTO{" +
+                "url='" + url + '\'' +
+                '}';
+    }
 }

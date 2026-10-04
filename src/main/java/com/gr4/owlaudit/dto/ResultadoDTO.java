@@ -37,4 +37,13 @@ public class ResultadoDTO {
     public void setPorcentaje(double porcentaje) {
         this.porcentaje = porcentaje;
     }
+
+    @Override
+    public String toString() {
+        return "ResultadoDTO{" +
+                "puntajeObtenido=" + puntajeObtenido +
+                ", puntajeMaximo=" + puntajeMaximo +
+                ", porcentaje=" + porcentaje +
+                '}';
+    }
 }

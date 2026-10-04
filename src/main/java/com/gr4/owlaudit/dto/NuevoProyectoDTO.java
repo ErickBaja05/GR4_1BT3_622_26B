@@ -27,4 +27,12 @@ public class NuevoProyectoDTO {
     public void setUrlGithub(String urlGithub) {
         this.urlGithub = urlGithub;
     }
+
+    @Override
+    public String toString() {
+        return "NuevoProyectoDTO{" +
+                "nombre='" + nombre + '\'' +
+                ", urlGithub='" + urlGithub + '\'' +
+                '}';
+    }
 }
