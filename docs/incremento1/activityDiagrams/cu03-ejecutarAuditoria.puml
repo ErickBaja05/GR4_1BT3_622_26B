@@ -1,34 +1,69 @@
-@startuml
+@startuml cu03_negocio_v3_completa
 skinparam style strictuml
-skinparam ActivityBackgroundColor #EFEFEF
+skinparam defaultFontName Arial
+skinparam ActivityBackgroundColor #FFFFFF
 skinparam ActivityBorderColor #333333
-skinparam ArrowColor #00529B
-skinparam PartitionBackgroundColor #FAFAFA
+skinparam ActivityDiamondBackgroundColor #FFFFFF
+skinparam ActivityDiamondBorderColor #333333
+skinparam SwimlaneBorderColor #333333
+skinparam ArrowColor #333333
 
-|Estudiante / Docente|
+|Estudiante|
 start
-:Solicitar la auditoría de\nun proyecto registrado;
-|Sistema|
-:Informar las reglas activas\ny el puntaje máximo;
-|Estudiante / Docente|
+:Solicitar la auditoría
+de su proyecto;
+
+|Docente|
+if (¿Hay reglas de evaluación vigentes?) then ([No])
+  :Informar que no hay reglas
+  de evaluación definidas;
+  stop
+else ([Sí])
+endif
+:Informar las reglas de evaluación
+vigentes y el puntaje máximo;
+
+|Estudiante|
+if (¿Continúa con la auditoría?) then ([No])
+  stop
+else ([Sí])
+endif
 :Confirmar la auditoría;
-|Sistema|
-:Solicitar la estructura\ndel repositorio;
-|GitHub|
-:Entregar la estructura\ndel repositorio;
-|Sistema|
-while (¿Quedan reglas activas\npor evaluar?) is ([Sí])
-  :Tomar la siguiente regla activa;
-  :Evaluar la regla sobre la\nestructura del repositorio;
-  if (¿El repositorio\ncumple la regla?) then ([Sí])
-    :Marcar la regla como cumplida\ny asignar sus puntos;
+
+|Docente|
+if (¿El repositorio es accesible?) then ([No])
+  :Informar que no fue posible
+  auditar el proyecto;
+  stop
+else ([Sí])
+endif
+:Revisar la estructura del
+repositorio del proyecto en GitHub;
+while (¿Quedan reglas por revisar?) is ([Sí])
+  if (¿El repositorio cumple la regla?) then ([Sí])
+    :Asignar la ponderación de la regla;
   else ([No])
-    :Marcar la regla como incumplida\ny asignar cero puntos;
-    :Generar el hallazgo de\nla regla incumplida;
+    :Asignar cero puntos a la regla;
+    :Registrar un hallazgo con su
+    severidad, evidencia y recomendación;
   endif
+  :Anotar el resultado de la regla;
 endwhile ([No])
-:Calcular el puntaje obtenido,\nel máximo y el porcentaje;
-:Registrar la auditoría, el resultado\nde cada regla y los hallazgos;
-:Informar el resultado\nde la auditoría;
+:Calcular el puntaje obtenido,
+el máximo y el porcentaje;
+:Registrar la auditoría en el
+historial del proyecto;
+if (¿Se registraron hallazgos?) then ([Sí])
+  :Informar el resultado
+  con sus hallazgos;
+else ([No])
+  :Informar el resultado
+  sin hallazgos;
+endif
+
+|Estudiante|
+:Recibir el resultado
+de la auditoría;
 stop
+
 @enduml

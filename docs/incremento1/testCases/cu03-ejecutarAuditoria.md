@@ -1,22 +1,29 @@
-## CP-CU03-01 – Caso de prueba de Ejecutar auditoría de calidad
-
+## Caso de Prueba: Ejecutar Auditoría de Calidad.
+* **Identificador:** `CP-CU03-01`
+* **Caso de Uso Asociado:** `ejecutarAuditoriaCalidad`
+* **Nombre de la Prueba:** Ejecución exitosa de auditoría de calidad con cumplimiento parcial de las reglas activas
+* **Objetivo:** Verificar que el sistema obtenga la estructura del repositorio desde la API de GitHub, evalúe cada regla activa, calcule el puntaje obtenido sobre el puntaje máximo con su porcentaje y registre la auditoría con el resultado de cada regla y un hallazgo por cada incumplimiento
+  
 **Entrada**
 
-- El Estudiante (o Docente) solicita auditar "Proyecto Demo", registrado con su URL de GitHub.
-- El sistema informa las 4 reglas activas y el puntaje máximo de 35.
-- El Estudiante (o Docente) confirma la auditoría.
-- El sistema obtiene desde GitHub la estructura del repositorio: `.gitignore`, `README.md`, `.env` y `docs/`.
-
+- El estudiante solicita auditar su proyecto "Proyecto Demo" (github.com/estudiante-demo/proyecto-demo).
+- El sistema informa las 4 reglas activas: Archivo gitignore (20, ALTA), Archivo README (5, BAJA), Carpeta src (5, MEDIA) y Sin archivos env (5, ALTA), con un puntaje máximo de 35.
+- El estudiante confirma la auditoría.
+- El sistema solicita a GitHub la estructura del repositorio.
+- GitHub entrega la estructura: .gitignore, README.md, .env y docs/.
+  
 **Salida**
 
-- Se evalúa cada regla activa sobre la estructura: R1 y R2 cumplen; R3 y R4 no cumplen.
-- Se calcula el resultado: 25 de 35, 71,4 %.
-- Se registra la auditoría, el resultado de las 4 reglas y 2 hallazgos: R3 (severidad MEDIA) y R4 (severidad ALTA).
-- Se muestra el puntaje obtenido, el porcentaje y los hallazgos.
-
+- Se evalúa cada regla: Archivo gitignore y Archivo README cumplen; Carpeta src y Sin archivos env no cumplen.
+- Se calcula el puntaje obtenido: 25 de 35 (71,4 %).
+- Se registra la auditoría con el resultado de las 4 reglas.
+- Se registran 2 hallazgos: Carpeta src (MEDIA) y Sin archivos env (ALTA).
+- Se muestra al estudiante el puntaje, el porcentaje, el resultado de cada regla y los hallazgos.
+  
 **Condiciones**
 
-- El usuario debe estar autenticado; el estudiante solo audita su propio proyecto y el docente puede auditar cualquiera.
-- El proyecto debe estar registrado con la URL de su repositorio.
+- El estudiante debe estar autenticado y el proyecto debe estar registrado a su nombre.
 - Debe existir al menos una regla activa.
-- El repositorio debe ser accesible desde GitHub; su estructura es: `.gitignore`, `README.md`, `.env`, `docs/`.
+- El repositorio debe ser público y accesible desde la API de GitHub.
+- Solo se genera un hallazgo por cada regla que no se cumple.
+- La auditoría registrada no se puede modificar.

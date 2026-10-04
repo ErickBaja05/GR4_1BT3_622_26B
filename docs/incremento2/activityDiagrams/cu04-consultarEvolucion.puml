@@ -1,4 +1,5 @@
-@startuml cu04_v2_intermedia
+@startuml cu04_negocio_v2_intermedia
+title CU04 Consultar evolución de calidad — Actividades (modelo de negocio, versión intermedia)
 skinparam style strictuml
 skinparam defaultFontName Arial
 skinparam ActivityBackgroundColor #FFFFFF
@@ -8,46 +9,46 @@ skinparam ActivityDiamondBorderColor #333333
 skinparam SwimlaneBorderColor #333333
 skinparam ArrowColor #333333
 
-|Estudiante / Docente|
+|Estudiante|
 start
-:Solicitar consultar la evolución
-de calidad de un proyecto;
+:Solicitar la evolución de
+calidad de su proyecto;
 
-|Sistema|
-:Informar las auditorías
-registradas del proyecto;
+|Docente|
+:Informar las auditorías registradas
+(fecha, puntaje y porcentaje);
 
-|Estudiante / Docente|
+|Estudiante|
 :Indicar dos auditorías
-del historial del proyecto;
+del historial;
 
-|Sistema|
-:Tomar la auditoría más antigua como base
+|Docente|
+:Tomar la más antigua como base
 y la más reciente como comparada;
-:Obtener el resultado de cada regla
-en ambas auditorías;
-:Calcular la variación del puntaje
-obtenido y del porcentaje;
-
-while (¿Quedan reglas por comparar?) is (sí)
-  :Comparar el resultado de la regla
-  en ambas auditorías;
-  if (¿Cumplió en la auditoría base?) then (sí)
-    if (¿Cumple en la auditoría comparada?) then (no)
+:Consultar el resultado de cada
+regla en ambas auditorías;
+:Calcular la variación del
+puntaje y del porcentaje;
+while (¿Quedan reglas por comparar?) is ([Sí])
+  if (¿Cumplió en la auditoría base?) then ([Sí])
+    if (¿Cumple en la auditoría comparada?) then ([No])
       :Clasificar el hallazgo como "Nuevo";
-    else (sí)
+    else ([Sí])
     endif
-  else (no)
-    if (¿Cumple en la auditoría comparada?) then (sí)
+  else ([No])
+    if (¿Cumple en la auditoría comparada?) then ([Sí])
       :Clasificar el hallazgo como "Corregido";
-    else (no)
+    else ([No])
       :Clasificar el hallazgo como "Persistente";
     endif
   endif
-endwhile (no)
-
-:Calcular el total de hallazgos por estado;
+endwhile ([No])
+:Contar los hallazgos por estado;
 :Informar la evolución de calidad;
+
+|Estudiante|
+:Recibir la evolución
+de calidad;
 stop
 
 @enduml

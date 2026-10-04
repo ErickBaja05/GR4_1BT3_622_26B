@@ -1,86 +1,130 @@
-@startuml cu03_secuencia
-skinparam style strictuml
-skinparam sequenceMessageAlign center
+@startuml cu03_secuencia_diseno
+title CU03 Ejecutar auditoría de calidad — Diagrama de secuencia (diseño)
+
 autonumber
+skinparam sequenceMessageAlign center
+skinparam backgroundColor white
+skinparam shadowing false
 skinparam defaultFontName Arial
 skinparam ArrowColor #333333
-skinparam SequenceLifeLineBorderColor #333333
-skinparam ParticipantBackgroundColor #FFFFFF
 skinparam ParticipantBorderColor #333333
-skinparam ActorBackgroundColor #FFFFFF
+skinparam ParticipantBackgroundColor white
 skinparam ActorBorderColor #333333
-skinparam BoundaryBackgroundColor #FFFFFF
+skinparam ActorBackgroundColor white
 skinparam BoundaryBorderColor #333333
-skinparam ControlBackgroundColor #FFFFFF
+skinparam BoundaryBackgroundColor white
 skinparam ControlBorderColor #333333
-skinparam EntityBackgroundColor #FFFFFF
+skinparam ControlBackgroundColor white
 skinparam EntityBorderColor #333333
+skinparam EntityBackgroundColor white
+skinparam LifeLineBorderColor #333333
 skinparam SequenceGroupBorderColor #333333
-skinparam SequenceGroupBackgroundColor #FFFFFF
+skinparam NoteBorderColor #333333
+skinparam NoteBackgroundColor #FFFFF0
 
-title CU03 Ejecutar auditoría de calidad\nDiagrama de secuencia (flujo básico)
+actor "Estudiante / Docente" as U
+boundary "auditoria.jsp" as JSP1 <<JSP>>
+boundary "resultadoAuditoria.jsp" as JSP2 <<JSP>>
+control "AuditoriaServlet" as SRV <<Servlet>>
+control "AuditoriaService" as SVC <<Service>>
+boundary "GitHubClient" as GHC <<Cliente API>>
+entity "ProyectoDAO" as PDAO <<DAO>>
+entity "ReglaDAO" as RDAO <<DAO>>
+entity "AuditoriaDAO" as ADAO <<DAO>>
+actor "GitHub" as GH
 
-actor "Estudiante / Docente" as Usuario
-boundary "Solicitud de Auditoría" as B1
-boundary "Resultado de Auditoría" as B2
-control "Evaluar Proyecto" as C1
-entity Proyecto
-entity Regla
-boundary "API GitHub" as B3
-actor GitHub
-entity "Auditoría" as Auditoria
-entity ResultadoRegla
-entity Hallazgo
+== Solicitar la auditoría (flujo 1-2) ==
+U -> JSP1 : Solicitar auditoría del proyecto
+activate JSP1
+JSP1 -> SRV : doGet(request, response)
+activate SRV
+note right of SRV : proyectoId se lee del request
+SRV -> SVC : prepararAuditoria(proyectoId) : ResumenAuditoriaDTO
+activate SVC
+SVC -> PDAO : buscarPorId(proyectoId) : Proyecto
+activate PDAO
+PDAO --> SVC : proyecto
+deactivate PDAO
+SVC -> RDAO : listarActivas() : List<Regla>
+activate RDAO
+RDAO --> SVC : reglas
+deactivate RDAO
+SVC -> SVC : calcularPuntajeMaximo(reglas) : int
+create "ResumenAuditoriaDTO" as DTO1 <<DTO>>
+SVC -> DTO1 : new ResumenAuditoriaDTO(proyecto, reglas, puntajeMaximo)
+SVC --> SRV : resumenDTO
+deactivate SVC
+SRV -> JSP1 : forward(request, response)
+deactivate SRV
+note right of JSP1 : request.setAttribute("resumen", resumenDTO)
+JSP1 -> U : Mostrar reglas activas y puntaje máximo
+deactivate JSP1
 
-== Solicitar la auditoría ==
-Usuario -> B1 : Solicitar auditar proyecto (proyecto)
-activate B1
-B1 -> C1 : Solicitar auditoría (proyecto)
-activate C1
-C1 -> Proyecto : Obtener proyecto y URL (proyecto)
-activate Proyecto
-Proyecto --> C1 : Datos del proyecto (URL)
-deactivate Proyecto
-C1 -> Regla : Obtener reglas activas
-activate Regla
-Regla --> C1 : Reglas activas
-deactivate Regla
-C1 -> C1 : Calcular puntaje máximo
-C1 --> B1 : Reglas activas y puntaje máximo
-B1 -> Usuario : Mostrar reglas activas y puntaje máximo
-Usuario -> B1 : Confirmar auditoría
-B1 -> C1 : Confirmar auditoría
-deactivate B1
+== Confirmar la auditoría (flujo 3) ==
+U -> JSP1 : Confirmar auditoría
+activate JSP1
+JSP1 -> SRV : doPost(request, response)
+deactivate JSP1
+activate SRV
+note right of SRV : proyectoId del request,\nusuarioId de la sesión
+SRV -> SVC : ejecutarAuditoria(proyectoId, usuarioId) : ResultadoAuditoriaDTO
+activate SVC
+SVC -> PDAO : buscarPorId(proyectoId) : Proyecto
+activate PDAO
+PDAO --> SVC : proyecto
+deactivate PDAO
 
-== Obtener la estructura del repositorio ==
-C1 -> B3 : Solicitar estructura del repositorio (URL)
-activate B3
-B3 -> GitHub : Solicitar estructura del repositorio (URL)
-activate GitHub
-GitHub --> B3 : Estructura (nombres y rutas)
-deactivate GitHub
-B3 --> C1 : Estructura del repositorio
-deactivate B3
+== Obtener la estructura del repositorio (flujo 4 y 4a) ==
+SVC -> GHC : obtenerEstructura(urlRepositorio) : List<String>
+activate GHC
+GHC -> GH : GET /repos/{owner}/{repo}
+activate GH
+GH --> GHC : datos del repositorio (default_branch)
+deactivate GH
+GHC -> GH : GET /repos/{owner}/{repo}/git/trees/{rama}?recursive=1
+activate GH
+GH --> GHC : árbol de archivos y carpetas
+deactivate GH
+GHC --> SVC : rutas
+deactivate GHC
 
-== Evaluar y calcular ==
+== Evaluar las reglas y calcular (flujo 5-6) ==
+SVC -> RDAO : listarActivas() : List<Regla>
+activate RDAO
+RDAO --> SVC : reglas
+deactivate RDAO
+create "Auditoria" as AUD <<Entity>>
+SVC -> AUD : new Auditoria(proyecto, usuarioId, fechaHora)
 loop por cada regla activa
-    C1 -> C1 : Evaluar regla (regla, estructura)
+  SVC -> SVC : evaluarRegla(regla, rutas) : boolean
+  create "ResultadoRegla" as RES <<Entity>>
+  SVC -> RES : new ResultadoRegla(regla, cumple, puntosObtenidos)
+  opt la regla no se cumple
+    create "Hallazgo" as HAL <<Entity>>
+    SVC -> HAL : new Hallazgo(resultado, nivelSeveridad, evidencia, recomendacion)
+  end
+  SVC -> AUD : agregarResultado(resultado)
 end
-C1 -> C1 : Calcular puntaje obtenido y porcentaje
+SVC -> SVC : calcularPuntaje(auditoria)
+note right of SVC : puntajeObtenido, puntajeMaximo\ny porcentaje
 
-== Registrar el resultado ==
-C1 -> Auditoria : Registrar auditoría (puntaje obtenido, puntaje máximo, porcentaje)
-loop por cada regla evaluada
-    C1 -> ResultadoRegla : Registrar resultado de la regla (cumple, puntos obtenidos)
-end
-loop por cada regla incumplida
-    C1 -> Hallazgo : Registrar hallazgo (regla, severidad)
-end
+== Registrar la auditoría (flujo 7) ==
+SVC -> ADAO : guardar(auditoria)
+activate ADAO
+note right of ADAO : persist en cascada:\nAuditoria, ResultadoRegla y Hallazgo
+ADAO --> SVC : auditoria
+deactivate ADAO
 
-== Informar el resultado ==
-C1 -> B2 : Informar resultado de la auditoría (resultado)
-deactivate C1
-activate B2
-B2 -> Usuario : Mostrar puntaje obtenido, porcentaje y hallazgos
-deactivate B2
+== Informar el resultado (flujo 8) ==
+create "ResultadoAuditoriaDTO" as DTO2 <<DTO>>
+SVC -> DTO2 : new ResultadoAuditoriaDTO(auditoria)
+SVC --> SRV : resultadoDTO
+deactivate SVC
+SRV -> JSP2 : forward(request, response)
+deactivate SRV
+activate JSP2
+note right of JSP2 : request.setAttribute("resultado", resultadoDTO)
+JSP2 -> U : Mostrar puntaje, porcentaje y hallazgos
+deactivate JSP2
+
 @enduml
