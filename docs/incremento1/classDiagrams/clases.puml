@@ -14,7 +14,7 @@ skinparam class {
     HeaderBackgroundColor #EEF2FF
 }
 
-title Diagrama de Clases Unificado — Incremento 1: Gestión de Reglas, Proyectos y Auditoría Base\n(Arquitectura MVC + N-Capas con Patrón Strategy)
+title Diagrama de Clases Incremento 1
 
 ' ========================================================
 ' CAPA WEB / SERVLETS
