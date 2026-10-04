@@ -1,56 +1,69 @@
-@startuml
-skinparam activity {
-  BackgroundColor #FFF9C4
-  BorderColor Black
-  FontColor Black
-  ArrowColor Black
-  DiamondBackgroundColor #E1F5FE
-  DiamondBorderColor Black
-  DiamondFontColor Black
-}
-
-title CU03: Ejecutar auditoría de calidad
+@startuml cu03_negocio_v3_completa
+skinparam style strictuml
+skinparam defaultFontName Arial
+skinparam ActivityBackgroundColor #FFFFFF
+skinparam ActivityBorderColor #333333
+skinparam ActivityDiamondBackgroundColor #FFFFFF
+skinparam ActivityDiamondBorderColor #333333
+skinparam SwimlaneBorderColor #333333
+skinparam ArrowColor #333333
 
 |Estudiante|
 start
-:Solicitar previa de auditoria;
+:Solicitar la auditoría
+de su proyecto;
 
 |Docente|
-:Consultar reglas de evaluacion vigentes;
-if (¿Hay reglas vigentes?) then ([No])
-  :Informar que no hay reglas;
+if (¿Hay reglas de evaluación vigentes?) then ([No])
+  :Informar que no hay reglas
+  de evaluación definidas;
   stop
 else ([Sí])
 endif
-:Informar reglas y puntaje maximo;
+:Informar las reglas de evaluación
+vigentes y el puntaje máximo;
 
 |Estudiante|
 if (¿Continúa con la auditoría?) then ([No])
   stop
 else ([Sí])
 endif
-:Confirmar ejecucion de auditoria;
+:Confirmar la auditoría;
 
 |Docente|
 if (¿El repositorio es accesible?) then ([No])
-  :Informar que no fue posible auditar;
+  :Informar que no fue posible
+  auditar el proyecto;
   stop
 else ([Sí])
 endif
-:Obtener estructura del repositorio;
+:Revisar la estructura del
+repositorio del proyecto en GitHub;
 while (¿Quedan reglas por revisar?) is ([Sí])
-  :Evaluar cumplimiento de regla;
-  if (¿Cumple la regla?) then ([Sí])
-    :Asignar ponderacion completa;
+  if (¿El repositorio cumple la regla?) then ([Sí])
+    :Asignar la ponderación de la regla;
   else ([No])
-    :Registrar hallazgo de incumplimiento;
+    :Asignar cero puntos a la regla;
+    :Registrar un hallazgo con su
+    severidad, evidencia y recomendación;
   endif
+  :Anotar el resultado de la regla;
 endwhile ([No])
-:Calcular puntajes de la auditoria;
-:Registrar auditoria en el historial;
-:Informar resultado de la auditoria;
+:Calcular el puntaje obtenido,
+el máximo y el porcentaje;
+:Registrar la auditoría en el
+historial del proyecto;
+if (¿Se registraron hallazgos?) then ([Sí])
+  :Informar el resultado
+  con sus hallazgos;
+else ([No])
+  :Informar el resultado
+  sin hallazgos;
+endif
 
 |Estudiante|
-:Recibir resultado de la auditoria;
+:Recibir el resultado
+de la auditoría;
 stop
+
 @enduml
