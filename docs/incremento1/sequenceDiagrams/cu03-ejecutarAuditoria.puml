@@ -23,9 +23,7 @@ skinparam NoteBorderColor #333333
 skinparam NoteBackgroundColor #FFFFF0
 
 actor "Estudiante / Docente" as U
-boundary "auditoria.jsp" as JSP1 <<JSP>>
-boundary "resultadoAuditoria.jsp" as JSP2 <<JSP>>
-control "AuditoriaServlet" as SRV <<Servlet>>
+boundary "AuditoriaServlet" as SRV <<Servlet>>
 control "AuditoriaService" as SVC <<Service>>
 boundary "GitHubClient" as GHC <<Cliente API>>
 entity "ProyectoDAO" as PDAO <<DAO>>
@@ -34,9 +32,7 @@ entity "AuditoriaDAO" as ADAO <<DAO>>
 actor "GitHub" as GH
 
 == Solicitar la auditoría (flujo 1-2) ==
-U -> JSP1 : Solicitar auditoría del proyecto
-activate JSP1
-JSP1 -> SRV : doGet(request, response)
+U -> SRV : doGet(request, response)
 activate SRV
 note right of SRV : proyectoId se lee del request
 SRV -> SVC : prepararAuditoria(proyectoId) : ResumenAuditoriaDTO
@@ -50,21 +46,14 @@ activate RDAO
 RDAO --> SVC : reglas
 deactivate RDAO
 SVC -> SVC : calcularPuntajeMaximo(reglas) : int
-create "ResumenAuditoriaDTO" as DTO1 <<DTO>>
-SVC -> DTO1 : new ResumenAuditoriaDTO(proyecto, reglas, puntajeMaximo)
-SVC --> SRV : resumenDTO
+SVC --> SRV : resumenDTO : ResumenAuditoriaDTO
 deactivate SVC
-SRV -> JSP1 : forward(request, response)
+note right of SRV : el DTO lleva el proyecto,\nlas reglas y el puntaje máximo
+SRV --> U : forward a auditoria.jsp (reglas activas y puntaje máximo)
 deactivate SRV
-note right of JSP1 : request.setAttribute("resumen", resumenDTO)
-JSP1 -> U : Mostrar reglas activas y puntaje máximo
-deactivate JSP1
 
 == Confirmar la auditoría (flujo 3) ==
-U -> JSP1 : Confirmar auditoría
-activate JSP1
-JSP1 -> SRV : doPost(request, response)
-deactivate JSP1
+U -> SRV : doPost(request, response)
 activate SRV
 note right of SRV : proyectoId del request,\nusuarioId de la sesión
 SRV -> SVC : ejecutarAuditoria(proyectoId, usuarioId) : ResultadoAuditoriaDTO
@@ -116,15 +105,10 @@ ADAO --> SVC : auditoria
 deactivate ADAO
 
 == Informar el resultado (flujo 8) ==
-create "ResultadoAuditoriaDTO" as DTO2 <<DTO>>
-SVC -> DTO2 : new ResultadoAuditoriaDTO(auditoria)
-SVC --> SRV : resultadoDTO
+SVC --> SRV : resultadoDTO : ResultadoAuditoriaDTO
 deactivate SVC
-SRV -> JSP2 : forward(request, response)
+note right of SRV : el DTO se arma con la auditoría:\npuntaje, porcentaje y hallazgos
+SRV --> U : forward a resultadoAuditoria.jsp (puntaje, porcentaje y hallazgos)
 deactivate SRV
-activate JSP2
-note right of JSP2 : request.setAttribute("resultado", resultadoDTO)
-JSP2 -> U : Mostrar puntaje, porcentaje y hallazgos
-deactivate JSP2
 
 @enduml
