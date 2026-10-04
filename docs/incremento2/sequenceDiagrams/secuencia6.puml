@@ -1,0 +1,85 @@
+@startuml
+skinparam style strictuml
+skinparam defaultFontName "Segoe UI"
+skinparam defaultFontSize 11
+skinparam roundCorner 8
+skinparam shadowing false
+
+skinparam maxMessageSize 130
+skinparam ParticipantPadding 10
+skinparam BoxPadding 10
+
+skinparam participant {
+    BackgroundColor #F0F7FF
+    BorderColor #1D4ED8
+    BorderThickness 1.2
+    FontColor #0F172A
+    FontStyle bold
+}
+
+skinparam actor {
+    BackgroundColor #EFF6FF
+    BorderColor #2563EB
+    BorderThickness 1.2
+    FontColor #0F172A
+}
+
+skinparam sequence {
+    LifeLineBackgroundColor #DBEAFE
+    LifeLineBorderColor #2563EB
+    ArrowColor #1D4ED8
+    ArrowThickness 1.2
+}
+
+autonumber "<b>[00]</b>"
+
+actor "docente : Docente" as docente
+participant "servlet : RetroalimentacionServlet" as servlet
+participant "servicio : RetroalimentacionServiceImpl" as service
+participant "dao : SolicitudDAOImpl" as dao
+participant "solicitud : SolicitudRetroalimentacion" as solicitud
+
+' 1. El docente envía la respuesta (el DTO viaja implícito tras ser encapsulado por el Servlet)
+docente -> servlet : doPost(request, response)
+activate servlet
+
+' 2. Trazabilidad exacta: "Registrar orientacion tecnica en la solicitud"
+servlet -> service : registrarOrientacionTecnicaEnLaSolicitud(solicitudDTO)
+activate service
+
+' Validación interna del servicio
+service -> service : validarOrientacionRedactada(solicitudDTO.getOrientacion())
+
+alt ¿Orientación válida?
+    service -> dao : buscarPorId(solicitudDTO.getSolicitudId())
+    activate dao
+    dao --> service : solicitud
+    deactivate dao
+
+    ' 3. Se asignan los datos a la entidad
+    service -> solicitud : setOrientacionTecnica(solicitudDTO.getOrientacion())
+
+    ' 4. Trazabilidad exacta: "Marcar solicitud como atendida"
+    service -> solicitud : marcarSolicitudComoAtendida()
+
+    ' 5. Persistencia del estado modificado
+    service -> dao : actualizarSolicitud(solicitud)
+    activate dao
+    dao --> service : void
+    deactivate dao
+
+    service --> servlet : void
+    deactivate service
+
+    ' 6. Trazabilidad exacta: "Notificar orientacion tecnica al estudiante"
+    servlet --> docente : notificarOrientacionTecnicaAlEstudiante()
+
+else ¿Orientación inválida?
+    service --> servlet : throw ExcepcionNegocio("Orientación en blanco o inválida")
+
+    ' 7. Trazabilidad exacta: "Informar error en la redaccion"
+    servlet --> docente : informarErrorEnLaRedaccion()
+end
+deactivate servlet
+
+@enduml

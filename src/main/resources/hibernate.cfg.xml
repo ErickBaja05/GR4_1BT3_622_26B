@@ -22,7 +22,12 @@
         La propiedad <property name="hbm2ddl.auto">update</property> automatiza la creación de tablas. Cuando arranca el sistema, Hibernate revisa tus clases Java y, si la tabla no existe en la base de datos o le faltan columnas, construye un CREATE TABLE o un ALTER TABLE internamente y lo ejecuta sin que se haga SQL a mano -->
         <property name="hbm2ddl.auto">update</property>
 
-        <!-- Registro de la entidad Cliente -->
-        <mapping class="com.grx.appWeb.model.Cliente"/>
+        <!-- Registro de las entidades del Incremento 1 -->
+        <mapping class="com.gr4.owlaudit.model.Regla"/>
+        <mapping class="com.gr4.owlaudit.model.Proyecto"/>
+        <mapping class="com.gr4.owlaudit.model.Usuario"/>
+        <mapping class="com.gr4.owlaudit.model.Auditoria"/>
+        <mapping class="com.gr4.owlaudit.model.ResultadoRegla"/>
+        <mapping class="com.gr4.owlaudit.model.Hallazgo"/>
     </session-factory>
 </hibernate-configuration>

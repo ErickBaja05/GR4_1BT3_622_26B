@@ -1,0 +1,314 @@
+@startuml classDiagrams_unified
+skinparam style strictuml
+skinparam defaultFontName "Segoe UI"
+skinparam defaultFontSize 11
+skinparam roundCorner 8
+skinparam shadowing false
+skinparam classAttributeIconSize 0
+
+skinparam class {
+    BackgroundColor #F8FAFC
+    BorderColor #1D4ED8
+    BorderThickness 1.2
+    HeaderBackgroundColor #EEF2FF
+}
+
+skinparam package {
+    BackgroundColor #FAFAFC
+    BorderColor #94A3B8
+    BorderThickness 1.0
+    FontStyle bold
+    FontSize 12
+}
+
+title Diagrama de Clases Unificado (Incremento 1 e Incremento 2)\nOwlAudit: Sistema de Calidad de Software
+
+' ========================================================
+' 1. CAPA WEB / SERVLETS
+' ========================================================
+package "com.gr4.owlaudit.web" {
+    class ProyectoServlet {
+        # doPost(request : HttpServletRequest, response : HttpServletResponse) : void
+    }
+
+    class ReglaServlet {
+        # doPost(request : HttpServletRequest, response : HttpServletResponse) : void
+    }
+
+    class AuditoriaServlet {
+        # doGet(request : HttpServletRequest, response : HttpServletResponse) : void
+        # doPost(request : HttpServletRequest, response : HttpServletResponse) : void
+    }
+
+    class EvolucionServlet {
+        # doGet(request : HttpServletRequest, response : HttpServletResponse) : void
+        # doPost(request : HttpServletRequest, response : HttpServletResponse) : void
+    }
+
+    class RetroalimentacionServlet {
+        # doPost(request : HttpServletRequest, response : HttpServletResponse) : void
+    }
+}
+
+' ========================================================
+' 2. CAPA DE SERVICIOS
+' ========================================================
+package "com.gr4.owlaudit.service" {
+    interface ProyectoService {
+        + solicitarRegistroDeNuevoProyecto(dto : NuevoProyectoDTO) : void
+    }
+
+    interface ReglaService {
+        + registrarReglaEvaluacionTecnica(dto : NuevaReglaDTO) : void
+    }
+
+    interface AuditoriaService {
+        + solicitarPreviaDeAuditoria(dto : AuditoriaDTO) : ResumenDTO
+        + confirmarEjecucionDeAuditoria(dto : AuditoriaDTO) : ResultadoDTO
+    }
+
+    interface EvolucionService {
+        + solicitarEvolucionDeCalidad(dto : EvolucionDTO) : ResumenHistorialDTO
+        + indicarDosAuditoriasAComparar(dto : EvolucionDTO) : EvolucionFinalDTO
+    }
+
+    interface RetroalimentacionService {
+        + solicitarRetroalimentacionDeHallazgo(dto : SolicitudDTO) : void
+        + registrarOrientacionTecnicaEnLaSolicitud(dto : SolicitudDTO) : void
+    }
+
+    class ProyectoServiceImpl implements ProyectoService {
+        + solicitarRegistroDeNuevoProyecto(dto : NuevoProyectoDTO) : void
+        - validarEnlace(urlGithub : String) : void
+    }
+
+    class ReglaServiceImpl implements ReglaService {
+        + registrarReglaEvaluacionTecnica(dto : NuevaReglaDTO) : void
+        - validarSintaxisYFormato(dto : NuevaReglaDTO) : void
+    }
+
+    class AuditoriaServiceImpl implements AuditoriaService {
+        + solicitarPreviaDeAuditoria(dto : AuditoriaDTO) : ResumenDTO
+        + confirmarEjecucionDeAuditoria(dto : AuditoriaDTO) : ResultadoDTO
+        - evaluarCumplimientoDeRegla(regla : Regla, rutas : List<String>) : void
+        - calcularPuntajesDeLaAuditoria() : void
+    }
+
+    class EvolucionServiceImpl implements EvolucionService {
+        + solicitarEvolucionDeCalidad(dto : EvolucionDTO) : ResumenHistorialDTO
+        + indicarDosAuditoriasAComparar(dto : EvolucionDTO) : EvolucionFinalDTO
+        - ordenarAuditoriasPorFecha(dto : EvolucionDTO) : void
+        - calcularVariacionDePuntajes() : void
+        - clasificarEstadoDelHallazgo() : void
+        - contarHallazgosPorEstado() : void
+    }
+
+    class RetroalimentacionServiceImpl implements RetroalimentacionService {
+        + solicitarRetroalimentacionDeHallazgo(dto : SolicitudDTO) : void
+        + registrarOrientacionTecnicaEnLaSolicitud(dto : SolicitudDTO) : void
+        - verificarEstadoDeRevisionDelHallazgo(hallazgoId : Long) : void
+        - validarOrientacionRedactada(orientacion : String) : void
+    }
+}
+
+' ========================================================
+' 3. CAPA DE ACCESO A DATOS (DAOs)
+' ========================================================
+package "com.gr4.owlaudit.dao" {
+    interface ProyectoDAO <<DAO>> {
+        + guardarProyectoAcademico(proyecto : Proyecto) : void
+    }
+
+    interface ReglaDAO <<DAO>> {
+        + existePorNombre(nombre : String) : boolean
+        + guardar(regla : Regla) : void
+        + consultarReglasDeEvaluacionVigentes() : List<Regla>
+    }
+
+    interface AuditoriaDAO <<DAO>> {
+        + registrarAuditoriaEnElHistorial(auditoria : Auditoria) : void
+        + consultarHistorialDeAuditorias(proyectoId : Long) : List<Auditoria>
+        + consultarResultadosDeReglas(baseId : Long, comparadaId : Long) : List<ResultadoRegla>
+    }
+
+    interface SolicitudDAO <<DAO>> {
+        + buscarPorHallazgoId(hallazgoId : Long) : SolicitudRetroalimentacion
+        + crearSolicitudDeRetroalimentacion(solicitud : SolicitudRetroalimentacion) : void
+        + buscarPorId(solicitudId : Long) : SolicitudRetroalimentacion
+        + actualizarSolicitud(solicitud : SolicitudRetroalimentacion) : void
+    }
+
+    class ProyectoDAOImpl implements ProyectoDAO {
+        + guardarProyectoAcademico(proyecto : Proyecto) : void
+    }
+
+    class ReglaDAOImpl implements ReglaDAO {
+        + existePorNombre(nombre : String) : boolean
+        + guardar(regla : Regla) : void
+        + consultarReglasDeEvaluacionVigentes() : List<Regla>
+    }
+
+    class AuditoriaDAOImpl implements AuditoriaDAO {
+        + registrarAuditoriaEnElHistorial(auditoria : Auditoria) : void
+        + consultarHistorialDeAuditorias(proyectoId : Long) : List<Auditoria>
+        + consultarResultadosDeReglas(baseId : Long, comparadaId : Long) : List<ResultadoRegla>
+    }
+
+    class SolicitudDAOImpl implements SolicitudDAO {
+        + buscarPorHallazgoId(hallazgoId : Long) : SolicitudRetroalimentacion
+        + crearSolicitudDeRetroalimentacion(solicitud : SolicitudRetroalimentacion) : void
+        + buscarPorId(solicitudId : Long) : SolicitudRetroalimentacion
+        + actualizarSolicitud(solicitud : SolicitudRetroalimentacion) : void
+    }
+}
+
+' ========================================================
+' 4. SUBSISTEMAS AUXILIARES
+' ========================================================
+package "com.gr4.owlaudit.reglas.strategy" {
+    class EvaluadorReglaFactory <<Factory>> {
+        + obtenerEvaluador(tipo : TipoMotorEnum) : EvaluadorReglaStrategy
+    }
+    interface EvaluadorReglaStrategy <<Strategy>> {
+        + evaluar(parametroExacto : String, rutas : List<String>) : boolean
+    }
+    class EvaluadorPresenciaArchivo implements EvaluadorReglaStrategy {
+        + evaluar(parametroExacto : String, rutas : List<String>) : boolean
+    }
+    class EvaluadorRestriccionArchivos implements EvaluadorReglaStrategy {
+        + evaluar(parametroExacto : String, rutas : List<String>) : boolean
+    }
+    class EvaluadorEstructuraCarpetas implements EvaluadorReglaStrategy {
+        + evaluar(parametroExacto : String, rutas : List<String>) : boolean
+    }
+}
+
+package "com.gr4.owlaudit.client" {
+    class GitHubClient <<Client API>> {
+        + obtenerEstructuraDelRepositorio(url : String) : List<String>
+    }
+}
+
+' ========================================================
+' 5. CAPA DE TRANSFERENCIA (DTOs)
+' ========================================================
+package "com.gr4.owlaudit.dto" {
+    class NuevoProyectoDTO <<DTO>>
+    class NuevaReglaDTO <<DTO>>
+    class AuditoriaDTO <<DTO>>
+    class ResumenDTO <<DTO>>
+    class ResultadoDTO <<DTO>>
+
+    class EvolucionDTO <<DTO>> {
+        - proyectoId : Long
+        - baseId : Long
+        - comparadaId : Long
+    }
+    class ResumenHistorialDTO <<DTO>>
+    class EvolucionFinalDTO <<DTO>>
+    class SolicitudDTO <<DTO>> {
+        - hallazgoId : Long
+        - solicitudId : Long
+        - justificacion : String
+        - orientacion : String
+    }
+}
+
+' ========================================================
+' 6. CAPA DE DOMINIO / MODELO
+' ========================================================
+package "com.gr4.owlaudit.model" {
+    class Proyecto <<Entity>> {
+        - id : Long
+        - nombre : String
+        - urlGithub : String
+        - fechaRegistro : LocalDateTime
+        + Proyecto(dto : NuevoProyectoDTO)
+    }
+
+    class Regla <<Entity>> {
+        - id : Long
+        - tipoMotor : TipoMotorEnum
+        - nombreRepresentativo : String
+        - parametroExacto : String
+        - nivelSeveridad : NivelSeveridadEnum
+        - ponderacion : int
+        - activa : boolean
+        + Regla(dto : NuevaReglaDTO)
+    }
+
+    class Auditoria <<Entity>> {
+        - id : Long
+        - fechaHora : LocalDateTime
+        - puntajeObtenido : int
+        - puntajeMaximo : int
+        - porcentaje : double
+        + asignarPonderacionCompleta(regla : Regla) : void
+        + registrarHallazgoDeIncumplimiento(regla : Regla) : void
+    }
+
+    class ResultadoRegla <<Entity>> {
+        - id : Long
+        - cumple : boolean
+        - puntosObtenidos : int
+    }
+
+    class Hallazgo <<Entity>> {
+        - id : Long
+        - nivelSeveridad : NivelSeveridadEnum
+        - evidencia : String
+        - recomendacion : String
+    }
+
+    class SolicitudRetroalimentacion <<Entity>> {
+        - id : Long
+        - justificacion : String
+        - orientacionTecnica : String
+        - estado : EstadoRetroEnum
+        + SolicitudRetroalimentacion(dto : SolicitudDTO)
+        + setOrientacionTecnica(orientacion : String) : void
+        + marcarSolicitudComoAtendida() : void
+    }
+
+    enum NivelSeveridadEnum {
+        ALTA, MEDIA, BAJA
+    }
+    enum TipoMotorEnum {
+        PRESENCIA_ARCHIVO, RESTRICCION_ARCHIVOS, ESTRUCTURA_CARPETAS
+    }
+    enum EstadoRetroEnum {
+        PENDIENTE, ATENDIDA
+    }
+}
+
+' ========================================================
+' RELACIONES ARQUITECTÓNICAS
+' ========================================================
+' Web a Servicios
+ProyectoServlet -[#1E40AF,bold]-> ProyectoService
+ReglaServlet -[#1E40AF,bold]-> ReglaService
+AuditoriaServlet -[#1E40AF,bold]-> AuditoriaService
+EvolucionServlet -[#1E40AF,bold]-> EvolucionService
+RetroalimentacionServlet -[#1E40AF,bold]-> RetroalimentacionService
+
+' Servicios a DAOs
+ProyectoServiceImpl -[#047857,bold]-> ProyectoDAO
+ReglaServiceImpl -[#047857,bold]-> ReglaDAO
+AuditoriaServiceImpl -[#047857,bold]-> AuditoriaDAO
+AuditoriaServiceImpl -[#047857,bold]-> ReglaDAO
+EvolucionServiceImpl -[#047857,bold]-> AuditoriaDAO
+RetroalimentacionServiceImpl -[#047857,bold]-> SolicitudDAO
+
+' Servicios a Subsistemas
+AuditoriaServiceImpl -[#7C3AED,bold]-> GitHubClient
+AuditoriaServiceImpl -[#7C3AED,bold]-> EvaluadorReglaFactory
+EvaluadorReglaFactory -[#7C3AED,bold]-> EvaluadorReglaStrategy
+
+' Relaciones de Entidades
+Auditoria -[#334155]-> Proyecto : evalua
+Auditoria "1" *-[#DC2626,bold]- "many" ResultadoRegla : contiene
+ResultadoRegla -[#334155]-> Regla : verifica
+ResultadoRegla "1" o-[#D97706,bold]- "0..1" Hallazgo : genera
+Hallazgo "1" o-[#EA580C,bold]- "0..1" SolicitudRetroalimentacion : genera
+
+@enduml

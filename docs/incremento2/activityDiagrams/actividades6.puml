@@ -1,0 +1,33 @@
+@startuml
+skinparam activity {
+  BackgroundColor #FFF9C4
+  BorderColor Black
+  FontColor Black
+  ArrowColor Black
+  DiamondBackgroundColor #E1F5FE
+  DiamondBorderColor Black
+  DiamondFontColor Black
+}
+
+title CU06: Atender retroalimentación de hallazgo
+
+|Docente|
+start
+:Consultar solicitudes pendientes;
+:Seleccionar solicitud a responder;
+:Examinar informacion del hallazgo;
+:Redactar orientacion tecnica;
+
+if (¿La orientacion redactada es valida?) then (Sí)
+    :Registrar orientacion tecnica en la solicitud;
+    :Marcar solicitud como atendida;
+    :Notificar orientacion tecnica al estudiante;
+else (No)
+    :Informar error en la redaccion;
+    stop
+endif
+
+|Estudiante|
+:Recibir orientacion tecnica;
+stop
+@enduml
