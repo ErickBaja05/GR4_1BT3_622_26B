@@ -1,0 +1,36 @@
+@startuml
+skinparam activity {
+  BackgroundColor #FFF9C4
+  BorderColor Black
+  FontColor Black
+  ArrowColor Black
+  DiamondBackgroundColor #E1F5FE
+  DiamondBorderColor Black
+  DiamondFontColor Black
+}
+
+title CU02: Registrar proyecto académico
+
+start
+:Identificarse como estudiante;
+:Solicitar el registro\nde nuevo proyecto;
+:Escribir el nombre\ndel proyecto;
+:Escribir el enlace del\nrepositorio de github;
+
+if (¿El enlace es válido?) then (Sí)
+  :Guardar el enlace\ndel proyecto;
+  if (¿El repositorio es público?) then (Sí)
+    :Extraer la información del\nrepositorio (carpetas, archivos, etc.);
+    :Guardar proyecto;
+    :Guardar información del\nproyecto académico;
+    :Confirmar que se registró\nexitosamente el proyecto;
+    stop
+  else (No)
+    :Indicar error\nde acceso;
+    stop
+  endif
+else (No)
+  :Informar error\ncon el enlace;
+  stop
+endif
+@enduml

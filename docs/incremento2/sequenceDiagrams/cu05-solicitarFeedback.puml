@@ -1,0 +1,57 @@
+@startuml
+skinparam sequenceMessageAlign center
+skinparam monochrome true
+
+title CU05: Solicitar retroalimentación de hallazgo - Diagrama de Secuencia
+
+actor "Estudiante" as Estudiante
+boundary "Interfaz de\nrevisión" as Interfaz
+control "Controlador de\nauditoría" as CtrlAuditoria
+control "Registro de solicitud\nde retroalimentación" as CtrlRetro
+entity "Reporte de\nauditoría" as Reporte
+entity "Hallazgo" as Hallazgo
+entity "Solicitud de\nretroalimentación" as Solicitud
+
+Estudiante -> Interfaz : Consultar el reporte de\nauditoría del proyecto
+activate Interfaz
+
+Interfaz -> CtrlAuditoria : Obtener información del\nreporte de auditoría
+activate CtrlAuditoria
+
+CtrlAuditoria -> Reporte : Leer reporte de auditoría\ny sus observaciones
+activate Reporte
+Reporte --> CtrlAuditoria : Datos del reporte\ny hallazgos
+deactivate Reporte
+
+CtrlAuditoria --> Interfaz : Mostrar reporte\nde auditoría
+deactivate CtrlAuditoria
+
+Estudiante -> Interfaz : Especificar hallazgo u observación y\nsolicitar retroalimentación de hallazgo
+Interfaz -> CtrlRetro : Validar estado y procesar solicitud\npara el hallazgo especificado
+activate CtrlRetro
+
+CtrlRetro -> Hallazgo : ¿El hallazgo ya tiene una\nsolicitud de revisión?
+activate Hallazgo
+Hallazgo --> CtrlRetro : Estado de revisiones\ndel hallazgo
+deactivate Hallazgo
+
+alt El hallazgo ya tiene solicitud de revisión (Sí)
+    CtrlRetro --> Interfaz : Informar que ese hallazgo\nse está revisando
+    Interfaz --> Estudiante : Mostrar mensaje: "El hallazgo\nse está revisando"
+else No tiene solicitud previa (No)
+    Estudiante -> Interfaz : Redactar justificación técnica,\nduda o argumento de revisión
+    Interfaz -> CtrlRetro : Enviar argumento redactado
+    
+    CtrlRetro -> Solicitud : Crear solicitud de retroalimentación\ndel hallazgo especificado
+    activate Solicitud
+    Solicitud --> CtrlRetro : Solicitud creada exitosamente
+    deactivate Solicitud
+    
+    CtrlRetro -> CtrlRetro : Notificar solicitud\nal docente
+    CtrlRetro --> Interfaz : Confirmación de envío\nde la solicitud
+    Interfaz --> Estudiante : Confirmar registro de la solicitud y\nnotificar solicitud al docente
+end
+
+deactivate CtrlRetro
+deactivate Interfaz
+@enduml
