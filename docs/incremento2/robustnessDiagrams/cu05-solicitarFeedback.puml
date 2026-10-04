@@ -1,0 +1,50 @@
+@startuml
+left to right direction
+skinparam handwritten false
+skinparam monochrome true
+skinparam shadowing false
+
+title CU05: Solicitar retroalimentación de hallazgo - Diagrama de Robustez
+
+' --- COLUMNA 1: ACTOR ---
+actor "Estudiante" as Estudiante
+
+' --- COLUMNA 2: INTERFAZ (BOUNDARY) ---
+boundary "Interfaz de revisión" as InterfazRevision
+
+' --- COLUMNA 3: CONTROLADORES ---
+control "Controlador de auditoría" as ControladorAuditoria
+control "Registro de solicitud de retroalimentación" as RegistroSolicitud
+
+' --- COLUMNA 4: ENTIDADES ---
+entity "Reporte de auditoría" as Reporte
+entity "Hallazgo" as Hallazgo
+entity "Solicitud de retroalimentación" as Solicitud
+
+' --- ALINEACIÓN ESTRUCTURAL DE COLUMNAS ---
+Estudiante -[hidden]right-> InterfazRevision
+InterfazRevision -[hidden]right-> ControladorAuditoria
+ControladorAuditoria -[hidden]right-> Reporte
+
+' Alineación vertical estricta de Controladores
+ControladorAuditoria -[hidden]down-> RegistroSolicitud
+
+' Alineación vertical estricta de Entidades
+Reporte -[hidden]down-> Hallazgo
+Hallazgo -[hidden]down-> Solicitud
+
+' --- RELACIONES DE NEGOCIO ---
+Estudiante -- InterfazRevision
+
+' Consulta del reporte
+InterfazRevision -- ControladorAuditoria
+ControladorAuditoria -- Reporte
+
+' Transición al flujo de retroalimentación
+ControladorAuditoria -- RegistroSolicitud
+
+' Creación y vinculación de la solicitud
+InterfazRevision -- RegistroSolicitud
+RegistroSolicitud -- Hallazgo
+RegistroSolicitud -- Solicitud
+@enduml
