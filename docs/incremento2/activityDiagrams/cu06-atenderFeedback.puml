@@ -11,69 +11,42 @@ skinparam ArrowColor #333333
 title CU06 Atender retroalimentación de hallazgo\nDiagrama de actividades
 
 |Docente|
-start
-:Iniciar sesión en el sistema;
-
-|Sistema|
-:Validar credenciales del Docente;
-
-if (¿Credenciales válidas?) then (Sí)
-else (No)
-    :Mostrar mensaje de error\nde autenticación;
-    stop
-endif
-
-:Mostrar panel principal del Docente;
+|Estudiante|
 
 |Docente|
-:Acceder al módulo de\nretroalimentaciones pendientes;
-
-|Sistema|
-:Consultar solicitudes de\nretroalimentación con estado "Pendiente";
+start
+:Revisar las solicitudes de retroalimentación\npendientes sobre hallazgos de auditoría;
 
 if (¿Existen solicitudes pendientes?) then (Sí)
-    :Listar solicitudes pendientes\ncon información del hallazgo,\nestudiante, proyecto y auditoría;
+    repeat
+        :Seleccionar una solicitud\nde retroalimentación;
+
+        :Examinar la información del hallazgo\n(regla observada, severidad de la no conformidad\ny consulta técnica planteada por el estudiante);
+
+        :Elaborar la orientación técnica y\nrecomendaciones de mejora pertinentes;
+
+        if (¿Decide remitir la respuesta técnica?) then (Sí)
+            :Registrar la orientación técnica\nen la retroalimentación;
+
+            :Dar la solicitud por Atendida;
+
+            :Hacer llegar la orientación técnica\nal estudiante responsable;
+
+            |Estudiante|
+            :Recibir la orientación técnica\ny pautas de solución brindadas;
+
+            :Revisar las recomendaciones para\nsubsanar el hallazgo en el proyecto;
+
+            |Docente|
+        else (No)
+            :Descartar el borrador\nde la respuesta;
+        endif
+
+    repeat while (¿Revisar otra solicitud pendiente?) is (Sí)
+    ->No;
+    stop
 else (No)
-    :Mostrar mensaje\n"No hay solicitudes pendientes";
     stop
 endif
-
-|Docente|
-repeat
-    :Seleccionar una solicitud\nde retroalimentación;
-
-    |Sistema|
-    :Mostrar detalle de la solicitud:\n• Hallazgo asociado (regla, severidad, evidencia)\n• Comentario/duda del estudiante\n• Información del proyecto y auditoría;
-
-    |Docente|
-    :Revisar la información del hallazgo\ny la duda planteada por el estudiante;
-
-    :Redactar respuesta técnica\ncon orientación y recomendaciones;
-
-    if (¿Desea enviar la respuesta?) then (Sí)
-        :Confirmar envío de la\nrespuesta técnica;
-
-        |Sistema|
-        if (¿Respuesta técnica válida?) then (Sí)
-            :Registrar la respuesta del Docente\nen la Retroalimentación;
-
-            :Actualizar estado de la\nRetroalimentación a "Atendida";
-
-            :Notificar al Estudiante que\nsu solicitud fue atendida;
-
-            :Mostrar mensaje de confirmación:\n"Retroalimentación enviada exitosamente";
-        else (No)
-            :Mostrar mensaje de error:\n"La respuesta no puede estar vacía";
-        endif
-    else (No)
-        |Docente|
-        :Cancelar redacción;
-    endif
-
-    |Docente|
-repeat while (¿Atender otra solicitud?) is (Sí)
-->No;
-
-stop
 
 @enduml

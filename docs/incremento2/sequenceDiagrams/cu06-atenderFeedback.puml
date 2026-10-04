@@ -1,173 +1,104 @@
 @startuml cu06_secuencia
 skinparam style strictuml
-skinparam sequenceMessageAlign center
-autonumber
-skinparam defaultFontName Arial
-skinparam ArrowColor #333333
-skinparam SequenceLifeLineBorderColor #333333
-skinparam ParticipantBackgroundColor #FFFFFF
-skinparam ParticipantBorderColor #333333
-skinparam ActorBackgroundColor #FFFFFF
-skinparam ActorBorderColor #333333
-skinparam BoundaryBackgroundColor #FFFFFF
-skinparam BoundaryBorderColor #333333
-skinparam ControlBackgroundColor #FFFFFF
-skinparam ControlBorderColor #333333
-skinparam EntityBackgroundColor #FFFFFF
-skinparam EntityBorderColor #333333
-skinparam DatabaseBackgroundColor #FFFFFF
-skinparam DatabaseBorderColor #333333
-skinparam SequenceGroupBorderColor #333333
-skinparam SequenceGroupBackgroundColor #FFFFFF
-skinparam NoteBackgroundColor #FFFFFF
-skinparam NoteBorderColor #333333
+skinparam defaultFontName "Segoe UI"
+skinparam defaultFontSize 11
+skinparam roundCorner 8
+skinparam shadowing false
 
-title CU06 Atender retroalimentación de hallazgo\nDiagrama de secuencia (Arquitectura Física MVC + N-Capas)
+' Ajuste de espaciado y ancho de mensajes
+skinparam maxMessageSize 180
+skinparam ParticipantPadding 10
+skinparam BoxPadding 10
 
-actor "Docente" as Docente
-boundary "listaRetroalimentaciones.jsp" as JSP_Lista
-boundary "atenderRetroalimentacion.jsp" as JSP_Form
-control "RetroalimentacionServlet" as Servlet
-entity "AtenderRetroalimentacionDTO" as DTO
-control "RetroalimentacionService" as Service
-control "RetroalimentacionDAO" as DAO
-entity "Retroalimentacion" as Retro
-database "Base de Datos\n(MariaDB / Hibernate)" as BD
-control "NotificacionService" as Notif
+skinparam participant {
+    BackgroundColor #F0F7FF
+    BorderColor #1D4ED8
+    BorderThickness 1.2
+    FontColor #0F172A
+    FontStyle bold
+}
 
-== Fase 1: Consulta de Solicitudes Pendientes (GET) ==
-Docente -> JSP_Lista : Accede al módulo de retroalimentaciones
-activate JSP_Lista
-JSP_Lista -> Servlet : doGet(request, response)
-activate Servlet
+skinparam actor {
+    BackgroundColor #EFF6FF
+    BorderColor #2563EB
+    BorderThickness 1.2
+    FontColor #0F172A
+}
 
-Servlet -> Service : obtenerPendientes()
-activate Service
+skinparam sequence {
+    LifeLineBackgroundColor #DBEAFE
+    LifeLineBorderColor #2563EB
+    ArrowColor #1D4ED8
+    ArrowThickness 1.2
+}
 
-Service -> DAO : listarPendientes()
-activate DAO
+autonumber "<b>[00]</b>"
 
-DAO -> BD : SELECT * FROM retroalimentacion WHERE estado = 'PENDIENTE'
-activate BD
-BD --> DAO : ResultSet / List<Retroalimentacion>
-deactivate BD
+actor "docente : Docente" as docente
+participant "servlet : RetroalimentacionServlet" as servlet
+participant "servicio : RetroalimentacionServiceImpl" as service
+participant "dao : RetroalimentacionDAOImpl" as dao
+participant "retro : Retroalimentacion" as retro
+participant "notificacion : NotificacionServiceImpl" as notif
 
-DAO --> Service : List<Retroalimentacion>
-deactivate DAO
+' 1. El docente envía la petición al Servlet
+docente -> servlet : doPost(request, response)
+activate servlet
 
-Service --> Servlet : List<DetalleRetroalimentacionDTO>
-deactivate Service
+' 2. El Servlet procesa la petición y delega al Servicio pasando el DTO
+servlet -> servlet : extraerParametros(request)
+servlet -> service : atenderRetroalimentacion(dto)
+activate service
 
-Servlet -> JSP_Lista : forward(request, response)
-deactivate Servlet
-JSP_Lista --> Docente : Renderiza tabla de solicitudes pendientes
-deactivate JSP_Lista
+' 3. El Servicio valida los datos de la respuesta técnica
+service -> service : validarRespuesta(dto.getRespuestaTecnica())
 
-== Fase 2: Selección y Carga del Detalle (GET) ==
-Docente -> JSP_Lista : Selecciona solicitud (id = 101)
-activate JSP_Lista
-JSP_Lista -> Servlet : doGet(action="ver", id=101)
-activate Servlet
+alt ¿Respuesta técnica válida?
+    ' 4. El Servicio recupera la entidad para modificarla
+    service -> dao : buscarPorId(dto.getIdRetroalimentacion())
+    activate dao
+    dao --> service : retroalimentacion
+    deactivate dao
 
-Servlet -> Service : obtenerDetalle(101)
-activate Service
+    ' 5. Actualización de atributos en la entidad de dominio
+    service -> retro : setRespuestaTecnica(dto.getRespuestaTecnica())
+    activate retro
+    retro --> service : void
+    deactivate retro
 
-Service -> DAO : buscarPorId(101)
-activate DAO
-DAO -> BD : SELECT * FROM retroalimentacion JOIN hallazgo WHERE id = 101
-activate BD
-BD --> DAO : Entidad Retroalimentacion con Hallazgo
-deactivate BD
-DAO --> Service : retroalimentacion
-deactivate DAO
+    service -> retro : setEstado(EstadoRetroEnum.ATENDIDA)
+    activate retro
+    retro --> service : void
+    deactivate retro
 
-Service --> Servlet : detalleDTO (datos hallazgo, regla, proyecto, duda)
-deactivate Service
+    service -> retro : setFechaRespuesta(LocalDateTime.now())
+    activate retro
+    retro --> service : void
+    deactivate retro
 
-Servlet -> JSP_Form : forward(request, response)
-deactivate Servlet
-activate JSP_Form
-JSP_Form --> Docente : Muestra formulario con detalle y campo de respuesta
-deactivate JSP_Form
+    ' 6. El Servicio persiste los cambios enviando el DTO hacia el DAO
+    service -> dao : actualizar(dto)
+    activate dao
+    dao --> service : exito (true)
+    deactivate dao
 
-== Fase 3: Redacción, Envío y Persistencia (POST) ==
-Docente -> JSP_Form : Redacta respuesta técnica y presiona "Enviar Respuesta"
-activate JSP_Form
-JSP_Form -> Servlet : doPost(request, response)
-activate Servlet
+    ' 7. Notificación al estudiante responsable
+    service -> notif : notificarEstudiante(dto.getEstudianteId(), "Retroalimentación atendida")
+    activate notif
+    notif --> service : void
+    deactivate notif
 
-note over Servlet
-  Extrae parámetros HTTP:
-  id = request.getParameter("id")
-  respuesta = request.getParameter("respuesta")
-end note
+    ' 8. Retorno y respuesta de éxito hacia el Servlet
+    service --> servlet : true
+    deactivate service
 
-Servlet -> DTO ** : new AtenderRetroalimentacionDTO(id, respuesta)
-activate DTO
-DTO --> Servlet : dto
-deactivate DTO
+    servlet -> servlet : setAttribute("mensajeConfirmacion", "Retroalimentación atendida exitosamente")
+    servlet --> docente : forward("exito.jsp")
+    deactivate servlet
 
-Servlet -> Service : atenderRetroalimentacion(dto)
-activate Service
-
-note over Service
-  Valida regla de negocio:
-  estado == PENDIENTE && !respuesta.isBlank()
-end note
-
-Service -> DAO : buscarPorId(dto.getIdRetroalimentacion())
-activate DAO
-DAO -> BD : SELECT * FROM retroalimentacion WHERE id = ?
-activate BD
-BD --> DAO : retroalimentacion
-deactivate BD
-DAO --> Service : retroalimentacion
-deactivate DAO
-
-Service -> Retro : setRespuestaTecnica(dto.getRespuestaTecnica())
-activate Retro
-Retro --> Service : ok
-deactivate Retro
-
-Service -> Retro : setEstado(EstadoRetroalimentacion.ATENDIDA)
-activate Retro
-Retro --> Service : ok
-deactivate Retro
-
-Service -> Retro : setFechaRespuesta(LocalDateTime.now())
-activate Retro
-Retro --> Service : ok
-deactivate Retro
-
-Service -> DAO : actualizar(retroalimentacion)
-activate DAO
-DAO -> BD : UPDATE retroalimentacion SET respuesta = ?, estado = 'ATENDIDA', ...
-activate BD
-BD --> DAO : Filas afectadas = 1
-deactivate BD
-DAO --> Service : true (éxito)
-deactivate DAO
-
-Service -> Notif : notificarEstudiante(estudianteId, "Su retroalimentación fue atendida")
-activate Notif
-Notif --> Service : ok
-deactivate Notif
-
-Service --> Servlet : resultadoExitoso
-deactivate Service
-
-== Fase 4: Respuesta HTTP (Patrón Post-Redirect-Get) ==
-note over Servlet
-  Redirección HTTP 302:
-  response.sendRedirect("/retroalimentaciones?estado=ok")
-end note
-
-Servlet -> Docente : HTTP 302 Redirect (/retroalimentaciones?estado=ok)
-deactivate Servlet
-
-Docente -> JSP_Lista : HTTP GET /retroalimentaciones?estado=ok
-activate JSP_Lista
-JSP_Lista --> Docente : Renderiza lista actualizada con alerta de éxito
-deactivate JSP_Lista
+else ¿Respuesta técnica en blanco o inválida?
+    service --> servlet : throw ExcepcionNegocio("La respuesta técnica no puede estar vacía")
+    servlet --> docente : forwardConError("Error en la respuesta")
+end
 
 @enduml
