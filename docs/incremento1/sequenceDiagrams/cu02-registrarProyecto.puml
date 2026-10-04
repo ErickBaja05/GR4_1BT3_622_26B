@@ -5,7 +5,6 @@ skinparam defaultFontSize 11
 skinparam roundCorner 8
 skinparam shadowing false
 
-' Ajuste de espacio horizontal entre participantes
 skinparam maxMessageSize 130
 skinparam ParticipantPadding 10
 skinparam BoxPadding 10
@@ -35,40 +34,31 @@ skinparam sequence {
 autonumber "<b>[00]</b>"
 
 actor "estudiante" as estudiante
-participant "vista :\nregistrarProyecto.jsp" as jsp
 participant "servlet :\nProyectoServlet" as servlet
-participant "dto :\nNuevoProyectoDTO" as dto
 participant "servicio :\nProyectoServiceImpl" as service
 participant "dao :\nProyectoDAOImpl" as dao
 participant "proyecto :\nProyecto" as proyecto
 
-' 1. El estudiante envía sus datos
-estudiante -> jsp : escribirDatos( nombre, urlGithub)
-activate jsp
-
-' 2. La vista redirige al Servlet
-jsp -> servlet : doPost( request, response)
+' 1. La petición entra directo al Servlet desde el navegador
+estudiante -> servlet : doPost(\n  request,\n  response)
 activate servlet
 
-servlet -> servlet : extraerParametros( request)
+' 2. El Servlet extrae los parámetros y crea internamente el DTO
+servlet -> servlet : dto = extraerParametros(\n  request)
 
-' 3. Creación del DTO
-create dto
-servlet -> dto : new( nombre,\n  urlGithub)
-
-' 4. Invocación al servicio de negocio
-servlet -> service : registrarProyecto(\n  dto,  estudianteId)
+' 3. Se envía el DTO como parámetro al servicio
+servlet -> service : registrarProyecto(\n  dto,\n  estudianteId)
 activate service
 
-' 5. Validación interna del enlace
-service -> service : validarEnlace(  dto.getUrlGithub())
+' 4. Validación lógica del enlace
+service -> service : validarEnlace(\n  dto.getUrlGithub())
 
 alt ¿Enlace válido?
-    ' 6. Creación y persistencia de la entidad
+    ' 5. Instanciación y persistencia de la Entidad
     create proyecto
-    service -> proyecto : new(  dto.getNombre(),\n  dto.getUrlGithub())
+    service -> proyecto : new(\n  dto.getNombre(),\n  dto.getUrlGithub())
 
-    service -> dao : guardar(  proyecto)
+    service -> dao : guardar(\n  proyecto)
     activate dao
     dao --> service : return (void)
     deactivate dao
@@ -76,18 +66,12 @@ alt ¿Enlace válido?
     service --> servlet : return (void)
     deactivate service
 
-    ' 7. Confirmación a la vista
-    servlet -> servlet : setAttribute(\n  "mensajeConfirmacion",\n  "Proyecto registrado")
-    
-    servlet -> jsp : forward( request,\n  response)
-    deactivate servlet
-
-    jsp --> estudiante : renderizarExito(\n  "Registro del proyecto")
+    ' 6. El Servlet realiza la respuesta/forward
+    servlet --> estudiante : forward(\n  "mensajeExito")
 else ¿Enlace inválido?
-    service --> servlet : throw ExcepcionNegocio( "Enlace no válido")
-    servlet -> jsp : forwardConError(\n  "Error con el enlace")
-    jsp --> estudiante : renderizarError(\n  "Error con el enlace")
+    service --> servlet : throw ExcepcionNegocio(\n  "Enlace no válido")
+    servlet --> estudiante : forward(\n  "mensajeError")
 end
-deactivate jsp
+deactivate servlet
 
 @enduml
