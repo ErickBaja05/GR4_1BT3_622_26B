@@ -20,7 +20,10 @@ actor "Estudiante / Docente" as actor
 boundary "Solicitud de Evolución" as bSol
 boundary "Resultado de Evolución" as bRes
 
-control "Consultar Evolución" as cCon
+control "Obtener Historial" as cHis
+control "Comparar Auditorías" as cCom
+control "Calcular Variación" as cVar
+control "Clasificar Hallazgo" as cCla
 
 entity "Proyecto" as eProy
 entity "Auditoría" as eAud
@@ -32,15 +35,25 @@ entity "Hallazgo" as eHal
 actor --> bSol
 actor <-- bRes
 
-' Boundaries con el control
-bSol --> cCon
-bRes <-- cCon
+' Pasos 1-2: solicitar e informar el historial
+bSol --> cHis
+cHis --> eProy
+cHis --> eAud
 
-' El control solo lee entidades (no crea ni modifica ninguna)
-cCon --> eProy
-cCon --> eAud
-cCon --> eRes
-cCon --> eReg
-cCon --> eHal
+' Pasos 3-5: indicar dos auditorías, ordenar y obtener resultados
+bSol --> cCom
+cCom --> eAud
+cCom --> eRes
+cCom --> eReg
+
+' Pasos 6-7: calcular y clasificar (solo lectura, nada se guarda)
+cCom --> cVar
+cCom --> cCla
+cVar --> eAud
+cCla --> eRes
+cCla --> eHal
+
+' Paso 8: informar la evolución
+bRes <-- cCom
 
 @enduml

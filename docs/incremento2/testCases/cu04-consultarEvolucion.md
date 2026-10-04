@@ -1,25 +1,28 @@
-## CP-CU04-01 – Caso de prueba de Consultar evolución de calidad
+## Caso de Prueba: Consulta exitosa de la evolución de calidad entre dos auditorías registradas con igual puntaje y cambios en sus hallazgos
 
+* **Identificador:** `CP-CU04-01`
+* **Caso de Uso Asociado:** `consultarEvolucionCalidad`
+* **Nombre de la Prueba:** Consulta exitosa de la evolución de calidad entre dos auditorías registradas con igual puntaje y cambios en sus hallazgos
+* **Objetivo:** Verificar que el sistema compare dos auditorías registradas tomando la más antigua como base sin importar el orden en que el actor las indique, calcule la variación de puntaje y porcentaje y clasifique cada hallazgo como Nuevo, Persistente o Corregido sin modificar ni registrar datos
+  
 **Entrada**
 
-- El Estudiante (o Docente) solicita consultar la evolución de calidad de "Proyecto Demo".
-- El sistema informa las auditorías registradas del proyecto: 05/10/2026 (25/35, 71,4 %) y 12/10/2026 (25/35, 71,4 %).
-- El Estudiante (o Docente) indica las auditorías del 12/10/2026 y del 05/10/2026.
-- El sistema toma como base la auditoría del 05/10/2026 (la más antigua) y como comparada la del 12/10/2026.
+- El estudiante solicita consultar la evolución de su proyecto "Proyecto Demo".
+- El sistema informa las auditorías registradas: A1 del 05/10/2026 (25 de 35, 71,4 %) y A2 del 12/10/2026 (25 de 35, 71,4 %).
+- El estudiante indica las dos auditorías a comparar, primero A2 y luego A1.
+- El sistema toma A1 como base por ser la más antigua y A2 como comparada.
 - El sistema obtiene el resultado de cada regla en ambas auditorías.
-
+  
 **Salida**
 
-- Se calcula la variación: 0 puntos y 0 %.
-- Se clasifican los hallazgos: R2 Nuevo (BAJA), R3 Corregido (MEDIA) y R4 Persistente (ALTA); R1 cumple en ambas y no genera hallazgo.
-- Se muestran los resultados de ambas auditorías, la variación y los totales: 1 Nuevo, 1 Persistente y 1 Corregido.
-- No se registra ni se modifica ninguna información.
-
+- Se calcula la variación: 0 puntos y 0 % entre A1 y A2.
+- Se clasifica cada hallazgo: Archivo README es Nuevo (BAJA), Carpeta src es Corregido (MEDIA) y Sin archivos env es Persistente (ALTA); Archivo gitignore no tiene hallazgo.
+- Se muestra al estudiante la variación, la clasificación de cada hallazgo y los totales por estado: 1 Nuevo, 1 Persistente y 1 Corregido.
+- No se modifica ni se registra ningún dato.
+  
 **Condiciones**
 
-- El usuario debe estar autenticado; el estudiante solo consulta su propio proyecto y el docente puede consultar cualquiera.
-- El proyecto debe tener al menos dos auditorías registradas:
-    - Auditoría del 05/10/2026: R1 y R2 cumplen, R3 y R4 no cumplen → 25/35, 71,4 % (es la auditoría de CP-CU03-01).
-    - Auditoría del 12/10/2026: R1 y R3 cumplen, R2 y R4 no cumplen → 25/35, 71,4 %.
-- Las dos auditorías indicadas deben ser distintas.
-- La consulta no ejecuta una auditoría nueva.
+- El estudiante debe estar autenticado y el proyecto debe estar registrado a su nombre.
+- El proyecto debe tener al menos dos auditorías registradas.
+- Solo se comparan auditorías ya registradas; no se ejecuta una auditoría nueva ni se consulta GitHub.
+- Los estados Nuevo, Persistente y Corregido se calculan en la consulta y no se guardan.

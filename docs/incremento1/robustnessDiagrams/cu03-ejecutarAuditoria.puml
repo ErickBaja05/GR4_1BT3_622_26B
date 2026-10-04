@@ -1,31 +1,71 @@
 @startuml cu03_robustez
 skinparam style strictuml
+skinparam defaultFontName Arial
+skinparam ArrowColor #333333
+skinparam BoundaryBackgroundColor #FFFFFF
+skinparam BoundaryBorderColor #333333
+skinparam ControlBackgroundColor #FFFFFF
+skinparam ControlBorderColor #333333
+skinparam EntityBackgroundColor #FFFFFF
+skinparam EntityBorderColor #333333
+skinparam ActorBackgroundColor #FFFFFF
+skinparam ActorBorderColor #333333
+
+title CU03 Ejecutar auditoría de calidad\nDiagrama de robustez
+
 left to right direction
 
-actor "Estudiante / Docente" as Usuario
-actor GitHub
+actor "Estudiante / Docente" as actor
+actor "GitHub" as github
 
-boundary "Solicitud de Auditoría" as B1
-boundary "Resultado de Auditoría" as B2
-boundary "API GitHub" as B3
+boundary "Solicitud de Auditoría" as bSol
+boundary "Resultado de Auditoría" as bRes
+boundary "API GitHub" as bApi
 
-control "Evaluar Proyecto" as C1
+control "Preparar Auditoría" as cPre
+control "Ejecutar Auditoría" as cEje
+control "Evaluar Regla" as cEva
+control "Calcular Puntaje" as cCal
 
-entity Proyecto
-entity Regla
-entity "Auditoría" as Auditoria
-entity ResultadoRegla
-entity Hallazgo
+entity "Proyecto" as eProy
+entity "Regla" as eReg
+entity "ResultadoRegla" as eRes
+entity "Auditoría" as eAud
+entity "Hallazgo" as eHal
 
-Usuario --> B1
-B1 --> C1
-C1 --> B3
-B3 --> GitHub
-C1 --> Proyecto
-C1 --> Regla
-C1 --> Auditoria
-C1 --> ResultadoRegla
-C1 --> Hallazgo
-C1 --> B2
-B2 --> Usuario
+' El actor solo se conecta con boundaries
+actor --> bSol
+actor <-- bRes
+
+' Pasos 1-2: solicitar e informar reglas y puntaje máximo
+bSol --> cPre
+cPre --> eProy
+cPre --> eReg
+cPre --> cCal
+
+' Paso 3: confirmar la auditoría
+bSol --> cEje
+
+' Pasos 4 y 4a: obtener la estructura del repositorio
+cEje --> bApi
+bApi --> github
+
+' Pasos 5-7: evaluar, calcular y registrar
+cEje --> cEva
+cEje --> cCal
+cEje --> eProy
+cEje --> eReg
+cEje --> eRes
+cEje --> eAud
+cEje --> eHal
+
+' Datos que usa cada control de cálculo
+cEva --> eReg
+cCal --> eReg
+cCal --> eRes
+cCal --> eAud
+
+' Paso 8: informar el resultado
+bRes <-- cEje
+
 @enduml
