@@ -11,26 +11,24 @@ skinparam activity {
 
 title CU02: Registrar proyecto académico
 
+|Estudiante|
 start
-:Identificarse como estudiante;
-:Solicitar el registro\nde nuevo proyecto;
-:Escribir el nombre\ndel proyecto;
-:Escribir el enlace del\nrepositorio de github;
+:Identificarse como\nestudiante;
 
-if (¿El enlace es válido?) then (Sí)
-  :Guardar el enlace\ndel proyecto;
-  if (¿El repositorio es público?) then (Sí)
-    :Extraer la información del\nrepositorio (carpetas, archivos, etc.);
-    :Guardar proyecto;
-    :Guardar información del\nproyecto académico;
-    :Confirmar que se registró\nexitosamente el proyecto;
-    stop
-  else (No)
-    :Indicar error\nde acceso;
-    stop
-  endif
+:Solicitar el registro\nde nuevo proyecto;
+
+:Escribir el nombre\ndel proyecto;
+
+:Escribir el enlace\ndel repositorio;
+
+|Docente|
+if (¿El enlace \n es válido?) then (Sí)
+  :Guardar proyecto\nacadémico;
+  
+  :Confirmar registro\n del proyecto;
+  stop
 else (No)
-  :Informar error\ncon el enlace;
+  :Informar error con\n el enlace;
   stop
 endif
 @enduml

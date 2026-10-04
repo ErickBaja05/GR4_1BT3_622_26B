@@ -1,33 +1,38 @@
 @startuml
-left to right direction
-skinparam handwritten false
-skinparam monochrome true
+skinparam style strictuml
+skinparam defaultFontName "Segoe UI"
+skinparam defaultFontSize 11
+skinparam roundCorner 8
 skinparam shadowing false
+skinparam ranksep 40
+skinparam nodesep 50
 
-title CU02: Registrar proyecto académico - Diagrama de Robustez
+skinparam boundary {
+    BackgroundColor #F8FAFC
+    BorderColor #2563EB
+    BorderThickness 1.2
+}
+skinparam control {
+    BackgroundColor #FEF3C7
+    BorderColor #D97706
+    BorderThickness 1.2
+}
+skinparam entity {
+    BackgroundColor #DCFCE7
+    BorderColor #16A34A
+    BorderThickness 1.2
+}
 
-' --- COLUMNA 1: ACTOR ---
-actor "Estudiante" as Estudiante
+actor "Estudiante" as estudiante
 
-' --- COLUMNA 2: INTERFAZ (BOUNDARY) ---
-boundary "Interfaz de registro de proyecto" as InterfazRegistro
+package "CU02: Registrar Proyecto Académico" {
+    boundary "Interfaz Formulario Proyecto" as InterfazProyecto
+    control "Gestor Proyectos" as C_Proyecto
+    entity "Proyecto Academico" as E_Proyecto
+}
 
-' --- COLUMNA 3: CONTROLADOR ---
-control "Registro de proyecto" as RegistroProyecto
-
-' --- COLUMNA 4: ENTIDADES ---
-entity "Repositorio de GitHub" as Repositorio
-entity "Proyecto" as Proyecto
-
-' --- ALINEACIÓN DE COLUMNAS (INVISIBLE) ---
-Estudiante -[hidden]right-> InterfazRegistro
-InterfazRegistro -[hidden]right-> RegistroProyecto
-RegistroProyecto -[hidden]right-> Repositorio
-Repositorio -[hidden]down-> Proyecto
-
-' --- RELACIONES DE NEGOCIO ---
-Estudiante -- InterfazRegistro
-InterfazRegistro -- RegistroProyecto
-RegistroProyecto -- Repositorio
-RegistroProyecto -- Proyecto
+estudiante --> InterfazProyecto : escribirDatos(nombre, urlGithub)
+InterfazProyecto --> C_Proyecto : solicitarRegistro
+C_Proyecto --> C_Proyecto : validarEnlace
+C_Proyecto --> E_Proyecto : crear y guardar proyecto 
 @enduml
