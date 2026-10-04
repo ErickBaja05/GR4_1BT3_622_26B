@@ -112,8 +112,8 @@ package "com.gr4.owlaudit.service" {
         - evaluadorFactory : EvaluadorReglaFactory
         + solicitarPreviaDeAuditoria(dto : AuditoriaDTO) : ResumenDTO
         + confirmarEjecucionDeAuditoria(dto : AuditoriaDTO) : ResultadoDTO
-        - evaluarCumplimientoDeRegla(regla : Regla, rutas : List<String>) : void
-        - calcularPuntajesDeLaAuditoria() : void
+        - evaluarCumplimientoDeRegla(regla : Regla, rutas : List<String>) : boolean
+        - calcularPuntajesDeLaAuditoria(auditoria : Auditoria) : void
     }
 }
 
