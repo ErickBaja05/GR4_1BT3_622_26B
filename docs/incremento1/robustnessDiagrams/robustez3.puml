@@ -1,0 +1,63 @@
+@startuml
+left to right direction
+skinparam defaultFontName "Segoe UI"
+skinparam defaultFontSize 11
+skinparam roundCorner 10
+skinparam shadowing false
+
+skinparam boundary {
+    BackgroundColor #F8FAFC
+    BorderColor #2563EB
+    BorderThickness 1.2
+}
+skinparam control {
+    BackgroundColor #FEF3C7
+    BorderColor #D97706
+    BorderThickness 1.2
+}
+skinparam entity {
+    BackgroundColor #DCFCE7
+    BorderColor #16A34A
+    BorderThickness 1.2
+}
+skinparam actor {
+    BackgroundColor #EFF6FF
+    BorderColor #2563EB
+    BorderThickness 1.2
+}
+skinparam arrow {
+    Color #334155
+    Thickness 1.2
+}
+
+actor "Estudiante" as estudiante
+actor "API GitHub" as github
+
+package "CU03: Ejecutar Auditoría de Calidad" {
+    boundary "Interfaz\nSolicitud" as bSol
+    boundary "Vista Previa\nReglas" as bReglas
+    boundary "Interfaz\nResultado" as bRes
+
+    control "Gestor\nAuditoría" as cAuditoria
+
+    entity "Regla" as eRegla
+    entity "Auditoría" as eAud
+    entity "Hallazgo" as eHal
+}
+
+estudiante -- bSol : Solicitar previa
+bSol --> cAuditoria : Consultar reglas vigentes
+cAuditoria --> eRegla : Leer reglas
+cAuditoria --> bReglas : Mostrar reglas y puntaje
+
+estudiante -- bSol : Confirmar auditoría
+bSol --> cAuditoria : Iniciar ejecución
+cAuditoria --> github : Obtener estructura (GET)
+
+cAuditoria --> cAuditoria : Evaluar reglas
+cAuditoria --> eHal : Registrar incumplimientos
+cAuditoria --> cAuditoria : Calcular puntajes finales
+
+cAuditoria --> eAud : Guardar historial
+cAuditoria --> bRes : Mostrar resultados
+@enduml

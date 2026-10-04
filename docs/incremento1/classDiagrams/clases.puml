@@ -19,23 +19,21 @@ title Diagrama de Clases Unificado — Incremento 1: Gestión de Reglas, Proyect
 ' ========================================================
 ' CAPA WEB / SERVLETS
 ' ========================================================
-package "com.gr4.owlaudit.web" {
-    class ProyectoServlet{
+package "com.gr4.owlaudit.servlet" {
+    class ProyectoServlet {
         - proyectoService : ProyectoService
-        # doGet() : HttpServletRequest request, HttpServletResponse response
-        # doPost() : HttpServletRequest request, HttpServletResponse response
+        # doPost(request : HttpServletRequest, response : HttpServletResponse) : void
     }
 
-    class ReglaServlet{
+    class ReglaServlet {
         - reglaService : ReglaService
-        # doGet() : HttpServletRequest request, HttpServletResponse response
-        # doPost() : HttpServletRequest request, HttpServletResponse response
+        # doPost(request : HttpServletRequest, response : HttpServletResponse) : void
     }
 
-    class AuditoriaServlet{
+    class AuditoriaServlet {
         - auditoriaService : AuditoriaService
-        # doGet() : HttpServletRequest request, HttpServletResponse response
-        # doPost() : HttpServletRequest request, HttpServletResponse response
+        # doGet(request : HttpServletRequest, response : HttpServletResponse) : void
+        # doPost(request : HttpServletRequest, response : HttpServletResponse) : void
     }
 }
 
@@ -46,11 +44,8 @@ package "com.gr4.owlaudit.dto" {
     class NuevoProyectoDTO <<DTO>> {
         - nombre : String
         - urlGithub : String
-        - estudianteId : Long
-        + NuevoProyectoDTO()
         + getNombre() : String
         + getUrlGithub() : String
-        + getEstudianteId() : Long
     }
 
     class NuevaReglaDTO <<DTO>> {
@@ -60,29 +55,23 @@ package "com.gr4.owlaudit.dto" {
         - parametroExacto : String
         - nivelSeveridad : String
         - ponderacion : int
-        + NuevaReglaDTO()
-        + getTipoMotor() : String
         + getNombreRepresentativo() : String
-        + getDescripcionDetallada() : String
-        + getParametroExacto() : String
-        + getNivelSeveridad() : String
-        + getPonderacion() : int
     }
 
-    class ResumenAuditoriaDTO <<DTO>> {
+    class AuditoriaDTO <<DTO>> {
+        - url : String
+        + getUrl() : String
+    }
+
+    class ResumenDTO <<DTO>> {
         - puntajeMaximo : int
-        + ResumenAuditoriaDTO()
         + getPuntajeMaximo() : int
     }
 
-    class ResultadoAuditoriaDTO <<DTO>> {
+    class ResultadoDTO <<DTO>> {
         - puntajeObtenido : int
         - puntajeMaximo : int
         - porcentaje : double
-        + ResultadoAuditoriaDTO()
-        + getPuntajeObtenido() : int
-        + getPuntajeMaximo() : int
-        + getPorcentaje() : double
     }
 }
 
@@ -90,45 +79,40 @@ package "com.gr4.owlaudit.dto" {
 ' CAPA DE SERVICIOS (LÓGICA DE NEGOCIO)
 ' ========================================================
 package "com.gr4.owlaudit.service" {
-    interface ProyectoService{
-        + registrarProyecto() : void
-        + validarEnlace() : void
+    interface ProyectoService {
+        + solicitarRegistroDeNuevoProyecto(dto : NuevoProyectoDTO) : void
     }
 
-    interface ReglaService{
-        + registrarReglaEvaluacionTecnica() : void
-        + validarSintaxisYFormato() : void
+    interface ReglaService {
+        + registrarReglaEvaluacionTecnica(dto : NuevaReglaDTO) : void
     }
 
-    interface AuditoriaService{
-        + prepararAuditoria() : ResumenAuditoriaDTO
-        + ejecutarAuditoria() : ResultadoAuditoriaDTO
-        + calcularPuntajeMaximo() : int
-        + calcularPuntaje() : void
+    interface AuditoriaService {
+        + solicitarPreviaDeAuditoria(dto : AuditoriaDTO) : ResumenDTO
+        + confirmarEjecucionDeAuditoria(dto : AuditoriaDTO) : ResultadoDTO
     }
 
     class ProyectoServiceImpl implements ProyectoService {
         - proyectoDAO : ProyectoDAO
-        + registrarProyecto() : void
-        + validarEnlace() : void
+        + solicitarRegistroDeNuevoProyecto(dto : NuevoProyectoDTO) : void
+        - validarEnlace(urlGithub : String) : void
     }
 
     class ReglaServiceImpl implements ReglaService {
         - reglaDAO : ReglaDAO
-        + registrarReglaEvaluacionTecnica() : void
-        + validarSintaxisYFormato() : void
+        + registrarReglaEvaluacionTecnica(dto : NuevaReglaDTO) : void
+        - validarSintaxisYFormato(dto : NuevaReglaDTO) : void
     }
 
     class AuditoriaServiceImpl implements AuditoriaService {
-        - proyectoDAO : ProyectoDAO
         - reglaDAO : ReglaDAO
         - auditoriaDAO : AuditoriaDAO
         - gitHubClient : GitHubClient
         - evaluadorFactory : EvaluadorReglaFactory
-        + prepararAuditoria() : ResumenAuditoriaDTO
-        + ejecutarAuditoria() : ResultadoAuditoriaDTO
-        + calcularPuntajeMaximo() : int
-        + calcularPuntaje() : void
+        + solicitarPreviaDeAuditoria(dto : AuditoriaDTO) : ResumenDTO
+        + confirmarEjecucionDeAuditoria(dto : AuditoriaDTO) : ResultadoDTO
+        - evaluarCumplimientoDeRegla(regla : Regla, rutas : List<String>) : void
+        - calcularPuntajesDeLaAuditoria() : void
     }
 }
 
@@ -137,37 +121,31 @@ package "com.gr4.owlaudit.service" {
 ' ========================================================
 package "com.gr4.owlaudit.dao" {
     interface ProyectoDAO <<DAO>> {
-        + guardar() : void
-        + buscarPorId() : Proyecto
+        + guardarProyectoAcademico(proyecto : Proyecto) : void
     }
 
     interface ReglaDAO <<DAO>> {
-        + existePorNombre() : boolean
-        + guardar() : void
-        + listarActivas() : List
+        + existePorNombre(nombre : String) : boolean
+        + guardar(regla : Regla) : void
+        + consultarReglasDeEvaluacionVigentes() : List<Regla>
     }
 
     interface AuditoriaDAO <<DAO>> {
-        + guardar() : void
-        + buscarPorId() : Auditoria
-        + listarPorProyecto() : List
+        + registrarAuditoriaEnElHistorial(auditoria : Auditoria) : void
     }
 
     class ProyectoDAOImpl implements ProyectoDAO {
-        + guardar() : void
-        + buscarPorId() : Proyecto
+        + guardarProyectoAcademico(proyecto : Proyecto) : void
     }
 
     class ReglaDAOImpl implements ReglaDAO {
-        + existePorNombre() : boolean
-        + guardar() : void
-        + listarActivas() : List
+        + existePorNombre(nombre : String) : boolean
+        + guardar(regla : Regla) : void
+        + consultarReglasDeEvaluacionVigentes() : List<Regla>
     }
 
     class AuditoriaDAOImpl implements AuditoriaDAO {
-        + guardar() : void
-        + buscarPorId() : Auditoria
-        + listarPorProyecto() : List
+        + registrarAuditoriaEnElHistorial(auditoria : Auditoria) : void
     }
 }
 
@@ -176,23 +154,23 @@ package "com.gr4.owlaudit.dao" {
 ' ========================================================
 package "com.gr4.owlaudit.reglas.strategy" {
     class EvaluadorReglaFactory <<Factory>> {
-        + obtenerEvaluador() : EvaluadorReglaStrategy
+        + obtenerEvaluador(tipo : TipoMotorEnum) : EvaluadorReglaStrategy
     }
 
     interface EvaluadorReglaStrategy <<Strategy>> {
-        + evaluar() : boolean
+        + evaluar(parametroExacto : String, rutas : List<String>) : boolean
     }
 
     class EvaluadorPresenciaArchivo implements EvaluadorReglaStrategy {
-        + evaluar() : boolean
+        + evaluar(parametroExacto : String, rutas : List<String>) : boolean
     }
 
     class EvaluadorRestriccionArchivos implements EvaluadorReglaStrategy {
-        + evaluar() : boolean
+        + evaluar(parametroExacto : String, rutas : List<String>) : boolean
     }
 
     class EvaluadorEstructuraCarpetas implements EvaluadorReglaStrategy {
-        + evaluar() : boolean
+        + evaluar(parametroExacto : String, rutas : List<String>) : boolean
     }
 }
 
@@ -201,7 +179,7 @@ package "com.gr4.owlaudit.reglas.strategy" {
 ' ========================================================
 package "com.gr4.owlaudit.client" {
     class GitHubClient <<Client API>> {
-        + obtenerEstructura() : List
+        + obtenerEstructuraDelRepositorio(url : String) : List<String>
     }
 }
 
@@ -212,16 +190,12 @@ package "com.gr4.owlaudit.model" {
     class Auditoria <<Entity>> {
         - id : Long
         - fechaHora : LocalDateTime
-        - usuarioId : Long
         - puntajeObtenido : int
         - puntajeMaximo : int
         - porcentaje : double
-        - proyecto : Proyecto
-        - resultados : List
-        + getId() : Long
-        + agregarResultado() : void
-        + calcularPuntaje() : void
-        + getResultados() : List
+        - resultados : List<ResultadoRegla>
+        + asignarPonderacionCompleta(regla : Regla) : void
+        + registrarHallazgoDeIncumplimiento(regla : Regla) : void
     }
 
     class ResultadoRegla <<Entity>> {
@@ -231,10 +205,6 @@ package "com.gr4.owlaudit.model" {
         - regla : Regla
         - auditoria : Auditoria
         - hallazgo : Hallazgo
-        + isCumple() : boolean
-        + getPuntosObtenidos() : int
-        + getRegla() : Regla
-        + getHallazgo() : Hallazgo
     }
 
     class Hallazgo <<Entity>> {
@@ -243,37 +213,25 @@ package "com.gr4.owlaudit.model" {
         - evidencia : String
         - recomendacion : String
         - resultadoRegla : ResultadoRegla
-        + getNivelSeveridad() : NivelSeveridadEnum
-        + getEvidencia() : String
-        + getRecomendacion() : String
     }
 
     class Proyecto <<Entity>> {
         - id : Long
         - nombre : String
         - urlGithub : String
-        - estudianteId : Long
         - fechaRegistro : LocalDateTime
-        + getId() : Long
-        + getNombre() : String
-        + getUrlGithub() : String
-        + getEstudianteId() : Long
+        + Proyecto(dto : NuevoProyectoDTO)
     }
 
     class Regla <<Entity>> {
         - id : Long
         - tipoMotor : TipoMotorEnum
         - nombreRepresentativo : String
-        - descripcionDetallada : String
         - parametroExacto : String
         - nivelSeveridad : NivelSeveridadEnum
         - ponderacion : int
         - activa : boolean
-        + getId() : Long
-        + getTipoMotor() : TipoMotorEnum
-        + getNombreRepresentativo() : String
-        + getPonderacion() : int
-        + isActiva() : boolean
+        + Regla(dto : NuevaReglaDTO)
     }
 
     enum NivelSeveridadEnum {
@@ -292,26 +250,19 @@ package "com.gr4.owlaudit.model" {
 ' ========================================================
 ' RELACIONES ENTRE COMPONENTES Y CAPAS
 ' ========================================================
-
-' Servlets a Servicios
 ProyectoServlet --> ProyectoService : invoca
 ReglaServlet --> ReglaService : invoca
 AuditoriaServlet --> AuditoriaService : invoca
 
-' Servicios a DAOs
 ProyectoServiceImpl --> ProyectoDAO : utiliza
 ReglaServiceImpl --> ReglaDAO : utiliza
 AuditoriaServiceImpl --> AuditoriaDAO : utiliza
 AuditoriaServiceImpl --> ReglaDAO : utiliza
-AuditoriaServiceImpl --> ProyectoDAO : utiliza
 
-' Servicios a Clientes y Fábrica de Estrategias
 AuditoriaServiceImpl --> GitHubClient : invoca
 AuditoriaServiceImpl --> EvaluadorReglaFactory : solicita
 EvaluadorReglaFactory --> EvaluadorReglaStrategy : crea
 
-' Relaciones del Modelo / Dominio
-Auditoria --> Proyecto : evalua
 Auditoria "1" *-- "many" ResultadoRegla : contiene
 ResultadoRegla --> Regla : verifica
 ResultadoRegla "1" o-- "0..1" Hallazgo : genera
@@ -319,12 +270,10 @@ Regla --> TipoMotorEnum : tipo
 Regla --> NivelSeveridadEnum : severidad
 Hallazgo --> NivelSeveridadEnum : severidad
 
-' Disposición estructural y orden visual vertical
 ProyectoServiceImpl -[hidden]down-> NuevaReglaDTO
 NuevaReglaDTO -[hidden]right-> ProyectoDAO
 ProyectoDAO -[hidden]right-> EvaluadorReglaFactory
 EvaluadorReglaFactory -[hidden]right-> GitHubClient
-
 AuditoriaDAOImpl -[hidden]down-> Auditoria
 
 @enduml

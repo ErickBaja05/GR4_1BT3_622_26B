@@ -1,0 +1,66 @@
+@startuml
+skinparam defaultFontName "Segoe UI"
+skinparam defaultFontSize 11
+skinparam roundCorner 10
+skinparam shadowing false
+
+skinparam ActivityBackgroundColor #F0F7FF
+skinparam ActivityBorderColor #1D4ED8
+skinparam ActivityBorderThickness 1.2
+skinparam ActivityFontColor #0F172A
+
+skinparam ActivityDiamondBackgroundColor #EFF6FF
+skinparam ActivityDiamondBorderColor #1D4ED8
+skinparam ActivityDiamondFontColor #0F172A
+
+skinparam ActivityStartColor #1D4ED8
+skinparam ActivityStopColor #1D4ED8
+skinparam ActivityEndColor #1D4ED8
+
+skinparam ArrowColor #2563EB
+skinparam ArrowThickness 1.2
+
+skinparam SwimlaneBorderColor #94A3B8
+skinparam SwimlaneBorderThickness 1.2
+skinparam SwimlaneTitleBackgroundColor #F8FAFC
+skinparam SwimlaneTitleFontColor #0F172A
+skinparam SwimlaneTitleFontStyle bold
+
+|Docente Evaluador|
+start
+:Identificar buena práctica de ingeniería de software\na auditar en las entregas de código;
+
+:Determinar el tipo de inspección técnica a aplicar:
+- Presencia de un archivo obligatorio
+- Conformidad de la estructura de directorios
+- Restricción de archivos prohibidos o temporales;
+
+:Definir el elemento o patrón técnico exacto que se revisará
+(ruta específica, jerarquía de carpetas o extensiones vetadas);
+
+:Asignar un nombre representativo y redactar las instrucciones
+detalladas para orientar al estudiante;
+
+:Evaluar la criticidad técnica del incumplimiento
+(determinar si la severidad es ALTA, MEDIA o BAJA);
+
+:Establecer la ponderación o puntaje asignado a la regla;
+
+|Pauta de Evaluación del Curso|
+:Revisar el catálogo de reglas técnicas vigentes de la materia;
+
+if (¿Ya existe una regla formulada con el mismo nombre o propósito?) then (sí)
+    |Docente Evaluador|
+    :Ajustar el nombre o unificar la regla con la existente;
+    stop
+else (no)
+    |Pauta de Evaluación del Curso|
+    :Incorporar nueva regla técnica al conjunto de criterios activos;
+endif
+
+|Docente Evaluador|
+:Disponer de la regla consolidada para la posterior
+auditoría manual de los repositorios de GitHub;
+stop
+
+@enduml

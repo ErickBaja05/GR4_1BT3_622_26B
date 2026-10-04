@@ -1,0 +1,79 @@
+@startuml
+skinparam style strictuml
+skinparam defaultFontName "Segoe UI"
+skinparam defaultFontSize 11
+skinparam roundCorner 8
+skinparam shadowing false
+
+skinparam maxMessageSize 130
+skinparam ParticipantPadding 10
+skinparam BoxPadding 10
+
+skinparam participant {
+    BackgroundColor #F0F7FF
+    BorderColor #1D4ED8
+    BorderThickness 1.2
+    FontColor #0F172A
+    FontStyle bold
+}
+
+skinparam actor {
+    BackgroundColor #EFF6FF
+    BorderColor #2563EB
+    BorderThickness 1.2
+    FontColor #0F172A
+}
+
+skinparam sequence {
+    LifeLineBackgroundColor #DBEAFE
+    LifeLineBorderColor #2563EB
+    ArrowColor #1D4ED8
+    ArrowThickness 1.2
+}
+
+autonumber "<b>[00]</b>"
+
+actor "estudiante : Estudiante" as estudiante
+participant "servlet : ProyectoServlet" as servlet
+participant "servicio : ProyectoServiceImpl" as service
+participant "dao : ProyectoDAOImpl" as dao
+participant "proyecto : Proyecto" as proyecto
+
+' 1. El actor envía la petición HTTP al Servlet (Punto de entrada al backend)
+estudiante -> servlet : doPost(request, response)
+activate servlet
+
+
+' 2. Trazabilidad con actividades y pase del DTO a la capa de negocio
+servlet -> service : solicitarRegistroDeNuevoProyecto(dto)
+activate service
+
+' 3. Trazabilidad con actividades: Validación del enlace extrayéndolo del DTO
+service -> service : validarEnlace(dto.getUrlGithub())
+
+alt ¿Enlace válido?
+    ' 4. El Servicio instancia la entidad de dominio Proyecto
+    create proyecto
+    service -> proyecto : new(dto)
+
+    ' 5. Trazabilidad con actividades: Persistencia de la entidad
+    service -> dao : guardarProyectoAcademico(proyecto)
+    activate dao
+    dao --> service : void
+    deactivate dao
+
+    ' 6. El Servicio retorna el control con éxito al Servlet
+    service --> servlet : void
+    deactivate service
+
+    ' 7. Trazabilidad con actividades: Confirmar registro redirigiendo a la vista
+    servlet --> estudiante : forward("exito.jsp")
+
+else ¿Enlace inválido?
+    ' 8. Trazabilidad con actividades: Informar error con el enlace
+    service --> servlet : throw ExcepcionNegocio("Enlace no válido")
+    servlet --> estudiante : forward("error.jsp")
+end
+deactivate servlet
+
+@enduml

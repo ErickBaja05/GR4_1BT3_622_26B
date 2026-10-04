@@ -1,0 +1,55 @@
+@startuml
+left to right direction
+skinparam defaultFontName "Segoe UI"
+skinparam defaultFontSize 11
+skinparam roundCorner 10
+skinparam shadowing false
+
+skinparam boundary {
+    BackgroundColor #F8FAFC
+    BorderColor #2563EB
+    BorderThickness 1.2
+}
+skinparam control {
+    BackgroundColor #FEF3C7
+    BorderColor #D97706
+    BorderThickness 1.2
+}
+skinparam entity {
+    BackgroundColor #DCFCE7
+    BorderColor #16A34A
+    BorderThickness 1.2
+}
+skinparam actor {
+    BackgroundColor #EFF6FF
+    BorderColor #2563EB
+    BorderThickness 1.2
+}
+skinparam arrow {
+    Color #334155
+    Thickness 1.2
+}
+
+actor "Estudiante" as estudiante
+
+package "CU02: Registrar Proyecto Académico" {
+    boundary "Formulario\nProyecto" as bForm
+    boundary "Mensaje\nÉxito" as bExito
+    boundary "Mensaje\nError" as bError
+
+    control "Validar\nEnlace" as cValidar
+    control "Guardar\nProyecto" as cRegistrar
+
+    entity "Proyecto" as eProyecto
+}
+
+estudiante -- bForm : Ingresar nombre y enlace
+bExito -- estudiante : Mostrar éxito
+bError -- estudiante : Mostrar error
+
+bForm --> cValidar : Solicitar registro
+cValidar --> bError : [Enlace inválido]
+cValidar --> cRegistrar : [Enlace válido]
+cRegistrar --> eProyecto : Crear y guardar
+cRegistrar --> bExito : Confirmar registro
+@enduml
