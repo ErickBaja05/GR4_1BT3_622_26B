@@ -5,12 +5,9 @@ skinparam defaultFontSize 11
 skinparam roundCorner 8
 skinparam shadowing false
 
-' --- AJUSTES PARA COMPACTAR HORIZONTALMENTE ---
-' Define un ancho máximo en píxeles antes de hacer salto de línea en los mensajes
-skinparam maxMessageSize 180
-' Agrupa participantes o ajusta espacio si es necesario
-skinparam SequenceParticipantPadding 10
-skinparam SequenceBoxPadding 5
+skinparam maxMessageSize 130
+skinparam ParticipantPadding 10
+skinparam BoxPadding 10
 
 skinparam participant {
     BackgroundColor #F0F7FF
@@ -36,40 +33,35 @@ skinparam sequence {
 
 autonumber "<b>[00]</b>"
 
-' Nombres con saltos de línea en los participantes largos
-actor "estudiante :\nEstudiante" as estudiante
-participant "vista :\nreporteAuditoria.jsp" as jsp
+actor "estudiante" as estudiante
 participant "servlet :\nRetroalimentacionServlet" as servlet
-participant "dto :\nSolicitudRetroDTO" as dto
 participant "servicio :\nRetroalimentacionServiceImpl" as service
 participant "dao :\nRetroalimentacionDAOImpl" as dao
 participant "solicitud :\nSolicitudRetroalimentacion" as solicitud
 
-estudiante -> jsp : redactarJustificacion\n(hallazgoId, justificacionTexto)
-activate jsp
-
-jsp -> servlet : doPost(request, response)
+' 1. El estudiante envía la solicitud vía POST desde la interfaz
+estudiante -> servlet : doPost(\n  request,\n  response)
 activate servlet
 
-servlet -> servlet : extraerParametros\n(request)
+' 2. El Servlet construye internamente el DTO desde los parámetros HTTP
+servlet -> servlet : dto = extraerParametros(\n  request)
 
-create dto
-servlet -> dto : new(hallazgoId,\njustificacionTexto)
-
-servlet -> service : solicitarRevision\n(dto, estudianteId)
+' 3. Se invoca el servicio pasando el DTO
+servlet -> service : solicitarRevision(\n  dto,\n  estudianteId)
 activate service
 
-' Validación de existencia de revisión previa
-service -> dao : buscarPorHallazgoId\n(dto.getHallazgoId())
+' 4. Se verifica si el hallazgo ya tiene revisión previa
+service -> dao : buscarPorHallazgoId(\n  dto.getHallazgoId())
 activate dao
-dao --> service : solicitudExistente\n(null)
+dao --> service : solicitudExistente
 deactivate dao
 
-alt ¿Solicitud previa no existe (null)?
+alt ¿Sin solicitud previa (null)?
+    ' 5. Instanciación y guardado de la nueva solicitud
     create solicitud
-    service -> solicitud : new(hallazgoId, dto.getJustificacionEstudiante(),\nEstadoRetroEnum.PENDIENTE)
+    service -> solicitud : new(\n  dto.getHallazgoId(),\n  dto.getJustificacion())
 
-    service -> dao : guardar(solicitud)
+    service -> dao : guardar(\n  solicitud)
     activate dao
     dao --> service : return (void)
     deactivate dao
@@ -77,16 +69,12 @@ alt ¿Solicitud previa no existe (null)?
     service --> servlet : return (void)
     deactivate service
 
-    servlet -> servlet : setAttribute("mensajeConfirmacion",\n"Solicitud enviada exitosamente")
-    servlet -> jsp : forward(request, response)
-    deactivate servlet
-
-    jsp --> estudiante : renderizarMensajeExito\n("Solicitud enviada exitosamente")
-else ¿Existe una solicitud en revisión?
-    service --> servlet : throw ExcepcionNegocio\n("El hallazgo ya tiene una solicitud...")
-    servlet -> jsp : forwardConError\n("El hallazgo ya está en revisión")
-    jsp --> estudiante : renderizarMensajeError\n("En revisión")
+    ' 6. Respuesta mediante forward
+    servlet --> estudiante : forward(\n  "mensajeExito")
+else ¿Ya existe solicitud en revisión?
+    service --> servlet : throw ExcepcionNegocio(\n  "Hallazgo en revisión")
+    servlet --> estudiante : forward(\n  "mensajeError")
 end
-deactivate jsp
+deactivate servlet
 
 @enduml
