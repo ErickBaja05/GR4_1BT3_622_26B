@@ -1,11 +1,14 @@
 @startuml
+' Forzar orientación horizontal y motor de grafo (elimina las líneas de vida de secuencia)
+left to right direction
+
 skinparam defaultFontName "Segoe UI"
 skinparam defaultFontSize 11
 skinparam roundCorner 10
 skinparam shadowing false
 
 ' ========================================================
-' ESTILOS VISUALES
+' ESTILOS VISUALES BCE
 ' ========================================================
 skinparam actor {
     BackgroundColor #EFF6FF
@@ -37,11 +40,11 @@ skinparam arrow {
 }
 
 ' ========================================================
-' ELEMENTOS DEL MODELO DE ROBUSTEZ
+' ELEMENTOS DEL MODELO DE ANÁLISIS
 ' ========================================================
 actor "Docente" as actorDocente
 
-boundary "Formulario\nRegistro Regla" as bForm
+boundary "Formulario de\nRegistro de Regla" as bForm
 boundary "Mensaje de\nConfirmación" as bExito
 boundary "Mensaje de\nError" as bError
 
@@ -52,24 +55,28 @@ control "Registrar\nRegla" as cRegistrar
 entity "Regla" as eRegla
 
 ' ========================================================
-' CONEXIONES Y FLUJO DE DATOS
+' INTERACCIÓN ACTOR - FRONTERA (LÍMITES)
 ' ========================================================
-actorDocente --> bForm : Suministrar datos regla
+actorDocente -- bForm : Ingresar datos
+bExito -- actorDocente : Visualizar éxito
+bError -- actorDocente : Visualizar error
 
-bForm --> cValidar : Enviar datos
+' ========================================================
+' FLUJO DE CONTROL Y LÓGICA DE NEGOCIO
+' ========================================================
+bForm --> cValidar : Enviar solicitud
 
-cValidar --> bError : [Datos inválidos o incompletos]
-cValidar --> cVerificar : [Datos sintácticamente correctos]
+' Bifurcación 1: Validación sintáctica
+cValidar --> bError : [Datos inválidos]
+cValidar --> cVerificar : [Datos válidos]
 
-cVerificar --> eRegla : Consultar por nombreRepresentativo
-eRegla --> cVerificar : Retornar coincidencia
-cVerificar --> bError : [Nombre ya registrado]
-cVerificar --> cRegistrar : [Nombre no registrado]
+' Bifurcación 2: Verificación de unicidad con la Entidad
+cVerificar --> eRegla : Consultar existencia
+cVerificar --> bError : [Nombre duplicado]
+cVerificar --> cRegistrar : [Nombre disponible]
 
-cRegistrar --> eRegla : Instanciar y almacenar\n(activa = true)
-cRegistrar --> bExito : Notificar registro exitoso
-
-bExito --> actorDocente : Emitir confirmación
-bError --> actorDocente : Emitir mensaje de error
+' Persistencia y Notificación final
+cRegistrar --> eRegla : Instanciar y guardar
+cRegistrar --> bExito : Notificar éxito
 
 @enduml

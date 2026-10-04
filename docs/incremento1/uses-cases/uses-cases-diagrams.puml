@@ -51,9 +51,9 @@ actor :GitHub: <<Sistema Externo>> as github
 ' LÍMITE DEL SISTEMA: INCREMENTO 1
 ' ========================================================
 rectangle "OwlAudit - Incremento 1" {
-    usecase "registrarReglaEvaluacionTecnica" as cu01
-    usecase "registrarProyectoAcademico" as cu02
-    usecase "ejecutarAuditoriaCalidadRepositorio" as cu03
+    usecase "Registrar regla evaluación técnica" as cu01
+    usecase "Registrar proyecto académico" as cu02
+    usecase "Ejecutar auditoria calidad repositorio" as cu03
 }
 
 ' ========================================================

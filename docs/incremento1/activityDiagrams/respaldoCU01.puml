@@ -1,0 +1,116 @@
+@startuml
+skinparam defaultFontName "Segoe UI"
+skinparam defaultFontSize 11
+skinparam roundCorner 10
+skinparam shadowing false
+
+skinparam ActivityBackgroundColor #F0F7FF
+skinparam ActivityBorderColor #1D4ED8
+skinparam ActivityBorderThickness 1.2
+skinparam ActivityFontColor #0F172A
+
+skinparam ActivityDiamondBackgroundColor #EFF6FF
+skinparam ActivityDiamondBorderColor #1D4ED8
+skinparam ActivityDiamondFontColor #0F172A
+
+skinparam ActivityStartColor #1D4ED8
+skinparam ActivityStopColor #1D4ED8
+skinparam ActivityEndColor #1D4ED8
+
+skinparam ArrowColor #2563EB
+skinparam ArrowThickness 1.2
+
+skinparam SwimlaneBorderColor #94A3B8
+skinparam SwimlaneBorderThickness 1.2
+skinparam SwimlaneTitleBackgroundColor #F8FAFC
+skinparam SwimlaneTitleFontColor #0F172A
+skinparam SwimlaneTitleFontStyle bold
+
+|Docente|
+start
+:Suministrar datos de la regla técnica:\ntipoMotor, nombreRepresentativo, descripcionDetallada,\nparametroExacto, nivelSeveridad, ponderacion;
+
+|Sistema|
+:Validar completitud de datos;
+if (¿Algún dato es nulo o vacío?) then (sí)
+    :Emitir mensaje de error\n"Todos los datos deben proporcionarse";
+    stop
+endif
+
+:Validar tipoMotor;
+if (¿tipoMotor es: PRESENCIA_ARCHIVO, RESTRICCION_ARCHIVOS o ESTRUCTURA_CARPETAS?) then (no)
+    :Emitir mensaje de error\n"El tipo de motor es incorrecto";
+    stop
+endif
+
+:Validar longitud de nombreRepresentativo;
+if (¿Longitud entre 1 y 100 caracteres?) then (no)
+    :Emitir mensaje de error\n"La longitud del nombre representativo debe ser entre 1 y 100 caracteres";
+    stop
+endif
+
+:Validar longitud de descripcionDetallada;
+if (¿Longitud entre 1 y 200 caracteres?) then (no)
+    :Emitir mensaje de error\n"La longitud de la descripción detallada debe ser entre 1 y 200 caracteres";
+    stop
+endif
+
+:Validar longitud de parametroExacto;
+if (¿Longitud entre 1 y 100 caracteres?) then (no)
+    :Emitir mensaje de error\n"La longitud del parámetro exacto debe ser entre 1 y 100 caracteres";
+    stop
+endif
+
+:Validar caracteres permitidos en parametroExacto;
+if (¿Contiene '..' o caracteres prohibidos (: \\ " < > | ?)?) then (sí)
+    :Emitir mensaje de error\n"El parámetro exacto contiene caracteres o secuencias de escape no permitidas";
+    stop
+endif
+
+if (¿tipoMotor == "PRESENCIA_ARCHIVO"?) then (sí)
+    :Validar formato de ruta para presencia de archivo;
+    if (¿Inicia con '/', termina con '/' o contiene '*'?) then (sí)
+        :Emitir mensaje de error\n"La ruta de archivo no debe iniciar ni terminar con '/' ni usar comodines";
+        stop
+    endif
+elseif (¿tipoMotor == "ESTRUCTURA_CARPETAS"?) then (sí)
+    :Validar formato de ruta para estructura de carpetas;
+    if (¿Inicia con '/', termina con '/' o contiene '*'?) then (sí)
+        :Emitir mensaje de error\n"La ruta de carpeta no debe iniciar ni terminar con '/' ni usar comodines";
+        stop
+    endif
+else (sí, es "RESTRICCION_ARCHIVOS")
+    :Validar formato para restricción de archivos;
+    if (¿Contiene barras '/' o no coincide con extensión o archivo puntual?) then (sí)
+        :Emitir mensaje de error\n"La restricción debe ser una extensión o nombre de archivo puntual sin rutas";
+        stop
+    endif
+endif
+
+:Validar nivelSeveridad;
+if (¿nivelSeveridad es ALTA, MEDIA o BAJA?) then (no)
+    :Emitir mensaje de error\n"El nivel de severidad es incorrecto";
+    stop
+endif
+
+:Validar ponderacion;
+if (¿ponderacion es entero mayor a cero?) then (no)
+    :Emitir mensaje de error\n"La ponderación debe ser un número entero mayor a cero";
+    stop
+endif
+
+' --- VERIFICACIÓN DE PERSISTENCIA (ÚLTIMO PASO ANTES DE GUARDAR) ---
+:Verificar no existencia de nombreRepresentativo;
+if (¿Existe regla previa con el mismo nombre? (case-insensitive)) then (sí)
+    :Emitir mensaje de error\n"El nombre de la regla ya se encuentra registrado";
+    stop
+endif
+
+:Registrar entidad Regla con estado activa en verdadero;
+:Emitir mensaje "Regla registrada exitosamente";
+
+|Docente|
+:Recibir mensaje de confirmación;
+stop
+
+@enduml
