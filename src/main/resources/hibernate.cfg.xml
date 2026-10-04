@@ -26,5 +26,8 @@
         <mapping class="com.gr4.owlaudit.model.Regla"/>
         <mapping class="com.gr4.owlaudit.model.Proyecto"/>
         <mapping class="com.gr4.owlaudit.model.Usuario"/>
+        <mapping class="com.gr4.owlaudit.model.Auditoria"/>
+        <mapping class="com.gr4.owlaudit.model.ResultadoRegla"/>
+        <mapping class="com.gr4.owlaudit.model.Hallazgo"/>
     </session-factory>
 </hibernate-configuration>
