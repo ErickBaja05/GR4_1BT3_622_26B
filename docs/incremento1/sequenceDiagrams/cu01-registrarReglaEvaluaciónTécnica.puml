@@ -1,0 +1,95 @@
+@startuml
+skinparam style strictuml
+skinparam defaultFontName "Segoe UI"
+skinparam defaultFontSize 11
+skinparam roundCorner 8
+skinparam shadowing false
+
+skinparam participant {
+    BackgroundColor #F0F7FF
+    BorderColor #1D4ED8
+    BorderThickness 1.2
+    FontColor #0F172A
+    FontStyle bold
+}
+
+skinparam actor {
+    BackgroundColor #EFF6FF
+    BorderColor #2563EB
+    BorderThickness 1.2
+    FontColor #0F172A
+}
+
+skinparam sequence {
+    LifeLineBackgroundColor #DBEAFE
+    LifeLineBorderColor #2563EB
+    ArrowColor #1D4ED8
+    ArrowThickness 1.2
+}
+
+autonumber "<b>[00]</b>"
+
+actor "docente : Docente" as docente
+participant "vista : registrarRegla.jsp" as jsp
+participant "servlet : ReglaServlet" as servlet
+participant "dto : NuevaReglaDTO" as dto
+participant "servicio : ReglaServiceImpl" as service
+participant "dao : ReglaDAOImpl" as dao
+participant "regla : Regla" as regla
+
+' 1. El docente interactúa con la vista
+docente -> jsp : solicitarRegistroRegla(tipoMotor, nombre, descripcion, parametro, severidad, ponderacion)
+activate jsp
+
+' 2. La vista (navegador) envía la petición HTTP al Servlet ejecutando doPost()
+jsp -> servlet : doPost(request, response)
+activate servlet
+
+' 3. El Servlet extrae los parámetros de la petición HTTP
+servlet -> servlet : extraerParametros(request)
+
+' 4. El Servlet crea el DTO en memoria
+create dto
+servlet -> dto : new(tipoMotor, nombre, descripcion, parametro, severidad, ponderacion)
+
+' 5. El Servlet invoca el método de negocio del Servicio
+servlet -> service : registrarReglaEvaluacionTecnica(dto)
+activate service
+
+' 6. El Servicio ejecuta validaciones internas en memoria
+service -> service : validarSintaxisYFormato(dto)
+
+' 7. El Servicio consulta al DAO para verificar unicidad
+service -> dao : existePorNombre(dto.getNombreRepresentativo())
+activate dao
+
+dao --> service : false
+deactivate dao
+
+' 8. El Servicio crea la entidad de dominio Regla
+create regla
+service -> regla : new(nombre, descripcion, tipoMotor, parametro, severidad, ponderacion, true)
+
+' 9. El Servicio solicita al DAO persistir la entidad mediante Hibernate
+service -> dao : guardarRegla(regla)
+activate dao
+
+dao --> service : return (void)
+deactivate dao
+
+' 10. El Servicio confirma la finalización exitosa al Servlet
+service --> servlet : return (void)
+deactivate service
+
+' 11. El Servlet prepara el atributo de sesión/request para el JSP
+servlet -> servlet : setAttribute("mensajeConfirmacion", "Regla registrada exitosamente")
+
+' 12. El Servlet realiza forward a la vista con la respuesta procesada
+servlet -> jsp : forward(request, response)
+deactivate servlet
+
+' 13. La vista despliega el resultado final al Docente
+jsp --> docente : renderizarMensajeExito("Regla registrada exitosamente")
+deactivate jsp
+
+@enduml
