@@ -68,4 +68,16 @@ public class NuevaReglaDTO {
     public void setPonderacion(int ponderacion) {
         this.ponderacion = ponderacion;
     }
+
+    @Override
+    public String toString() {
+        return "NuevaReglaDTO{" +
+                "tipoMotor='" + tipoMotor + '\'' +
+                ", nombreRepresentativo='" + nombreRepresentativo + '\'' +
+                ", descripcionDetallada='" + descripcionDetallada + '\'' +
+                ", parametroExacto='" + parametroExacto + '\'' +
+                ", nivelSeveridad='" + nivelSeveridad + '\'' +
+                ", ponderacion=" + ponderacion +
+                '}';
+    }
 }
