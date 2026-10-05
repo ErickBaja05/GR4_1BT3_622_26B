@@ -4,29 +4,26 @@ import com.gr4.owlaudit.common.config.HibernateUtil;
 import com.gr4.owlaudit.model.SolicitudRetroalimentacion;
 import org.hibernate.Session;
 import org.hibernate.Transaction;
-import org.hibernate.query.Query;
 
-/**
- * Trazabilidad Diagrama de Clases: com.gr4.owlaudit.dao.SolicitudDAOImpl
- * Implementación DAO utilizando Hibernate ORM para la gestión de persistencia de solicitudes.
- */
 public class SolicitudDAOImpl implements SolicitudDAO {
 
     @Override
     public SolicitudRetroalimentacion buscarPorHallazgoId(Long hallazgoId) {
-        if (hallazgoId == null) {
-            return null;
-        }
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
-            Query<SolicitudRetroalimentacion> query = session.createQuery(
-                "SELECT s FROM SolicitudRetroalimentacion s WHERE s.hallazgo.id = :hallazgoId",
+            return session.createQuery(
+                "SELECT s FROM SolicitudRetroalimentacion s " +
+                "LEFT JOIN FETCH s.hallazgo h " +
+                "LEFT JOIN FETCH h.resultadoRegla r " +
+                "LEFT JOIN FETCH r.regla " +
+                "LEFT JOIN FETCH r.auditoria a " +
+                "LEFT JOIN FETCH a.proyecto " +
+                "WHERE s.hallazgo.id = :hallazgoId",
                 SolicitudRetroalimentacion.class
-            );
-            query.setParameter("hallazgoId", hallazgoId);
-            return query.uniqueResultOptional().orElse(null);
+            )
+            .setParameter("hallazgoId", hallazgoId)
+            .uniqueResult();
         } catch (Exception e) {
-            System.err.println("[SolicitudDAOImpl] Error al buscar solicitud por hallazgoId: " + e.getMessage());
-            return null;
+            throw new RuntimeException("Error al buscar solicitud por hallazgo ID: " + e.getMessage(), e);
         }
     }
 
@@ -41,20 +38,27 @@ public class SolicitudDAOImpl implements SolicitudDAO {
             if (tx != null && tx.isActive()) {
                 tx.rollback();
             }
-            throw new RuntimeException("Error al crear la solicitud de retroalimentación: " + e.getMessage(), e);
+            throw new RuntimeException("Error al crear solicitud de retroalimentación: " + e.getMessage(), e);
         }
     }
 
     @Override
     public SolicitudRetroalimentacion buscarPorId(Long solicitudId) {
-        if (solicitudId == null) {
-            return null;
-        }
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
-            return session.get(SolicitudRetroalimentacion.class, solicitudId);
+            return session.createQuery(
+                "SELECT s FROM SolicitudRetroalimentacion s " +
+                "LEFT JOIN FETCH s.hallazgo h " +
+                "LEFT JOIN FETCH h.resultadoRegla r " +
+                "LEFT JOIN FETCH r.regla " +
+                "LEFT JOIN FETCH r.auditoria a " +
+                "LEFT JOIN FETCH a.proyecto " +
+                "WHERE s.id = :solicitudId",
+                SolicitudRetroalimentacion.class
+            )
+            .setParameter("solicitudId", solicitudId)
+            .uniqueResult();
         } catch (Exception e) {
-            System.err.println("[SolicitudDAOImpl] Error al buscar solicitud por id: " + e.getMessage());
-            return null;
+            throw new RuntimeException("Error al buscar solicitud por ID: " + e.getMessage(), e);
         }
     }
 

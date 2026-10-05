@@ -5,19 +5,13 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
-import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 
-/**
- * Trazabilidad Diagrama de Clases: com.gr4.owlaudit.model.SolicitudRetroalimentacion
- * Entidad JPA que representa una solicitud de retroalimentación formulada por un Estudiante
- * sobre un hallazgo específico de una auditoría.
- */
 @Entity
 @Table(name = "solicitudes_retroalimentacion")
 public class SolicitudRetroalimentacion {
@@ -36,24 +30,18 @@ public class SolicitudRetroalimentacion {
     @Column(name = "estado", nullable = false, length = 20)
     private EstadoRetroEnum estado;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "hallazgo_id")
+    @OneToOne
+    @JoinColumn(name = "hallazgo_id", nullable = false, unique = true)
     private Hallazgo hallazgo;
 
     public SolicitudRetroalimentacion() {
+        this.estado = EstadoRetroEnum.PENDIENTE;
     }
 
-    /**
-     * Constructor 1:1 definido en Diagrama de Clases: + SolicitudRetroalimentacion(dto : SolicitudDTO)
-     * Inicializa la entidad a partir del DTO recibido en el escenario de creación.
-     */
     public SolicitudRetroalimentacion(SolicitudDTO dto) {
-        if (dto != null) {
-            this.id = dto.getSolicitudId();
-            this.justificacion = dto.getJustificacion();
-            this.orientacionTecnica = dto.getOrientacion();
-            this.estado = EstadoRetroEnum.PENDIENTE; // Estado inicial según CU05 Postcondición
-        }
+        this.justificacion = dto != null ? dto.getJustificacion() : null;
+        this.orientacionTecnica = dto != null ? dto.getOrientacion() : null;
+        this.estado = EstadoRetroEnum.PENDIENTE;
     }
 
     public Long getId() {
@@ -76,11 +64,8 @@ public class SolicitudRetroalimentacion {
         return orientacionTecnica;
     }
 
-    /**
-     * Método 1:1 definido en Diagrama de Clases: + setOrientacionTecnica(orientacion : String) : void
-     */
-    public void setOrientacionTecnica(String orientacionTecnica) {
-        this.orientacionTecnica = orientacionTecnica;
+    public void setOrientacionTecnica(String orientacion) {
+        this.orientacionTecnica = orientacion;
     }
 
     public EstadoRetroEnum getEstado() {
@@ -99,10 +84,6 @@ public class SolicitudRetroalimentacion {
         this.hallazgo = hallazgo;
     }
 
-    /**
-     * Método 1:1 definido en Diagrama de Clases: + marcarSolicitudComoAtendida() : void
-     * Cambia el estado de la solicitud a ATENDIDA tras la respuesta del docente.
-     */
     public void marcarSolicitudComoAtendida() {
         this.estado = EstadoRetroEnum.ATENDIDA;
     }

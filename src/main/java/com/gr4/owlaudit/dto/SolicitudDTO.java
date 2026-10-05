@@ -1,10 +1,5 @@
 package com.gr4.owlaudit.dto;
 
-/**
- * Trazabilidad Diagrama de Clases: com.gr4.owlaudit.dto.SolicitudDTO
- * Objeto de Transferencia de Datos (DTO) para transportar la información de la solicitud
- * de retroalimentación de hallazgos entre capas.
- */
 public class SolicitudDTO {
 
     private Long hallazgoId;
@@ -18,6 +13,11 @@ public class SolicitudDTO {
     public SolicitudDTO(Long hallazgoId, String justificacion) {
         this.hallazgoId = hallazgoId;
         this.justificacion = justificacion;
+    }
+
+    public SolicitudDTO(Long solicitudId, String orientacion, boolean esDocente) {
+        this.solicitudId = solicitudId;
+        this.orientacion = orientacion;
     }
 
     public SolicitudDTO(Long hallazgoId, Long solicitudId, String justificacion, String orientacion) {
