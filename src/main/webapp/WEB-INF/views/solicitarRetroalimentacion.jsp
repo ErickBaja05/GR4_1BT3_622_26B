@@ -8,10 +8,22 @@
 
     Long hallazgoId = (solicitudDTO != null && solicitudDTO.getHallazgoId() != null) ? solicitudDTO.getHallazgoId() : 202L;
     String justificacion = (solicitudDTO != null && solicitudDTO.getJustificacion() != null) ? solicitudDTO.getJustificacion() : "";
-    String reglaNombre = (solicitudDTO != null && solicitudDTO.getReglaNombre() != null) ? solicitudDTO.getReglaNombre() : "Restricción de ejecutables y binarios (.exe, .jar)";
-    String severidad = (solicitudDTO != null && solicitudDTO.getSeveridad() != null) ? solicitudDTO.getSeveridad() : "ALTA";
-    String evidencia = (solicitudDTO != null && solicitudDTO.getEvidencia() != null) ? solicitudDTO.getEvidencia() : "Se detectó el archivo 'dist/app.jar' en el repositorio.";
-    String proyectoNombre = (solicitudDTO != null && solicitudDTO.getNombreProyecto() != null) ? solicitudDTO.getNombreProyecto() : "Sistema de Gestión Académica - GR4";
+    String reglaNombre = (String) request.getAttribute("reglaNombre");
+    if (reglaNombre == null || reglaNombre.isBlank()) {
+        reglaNombre = "Restricción de ejecutables y binarios (.exe, .jar)";
+    }
+    String severidad = (String) request.getAttribute("severidad");
+    if (severidad == null || severidad.isBlank()) {
+        severidad = "ALTA";
+    }
+    String evidencia = (String) request.getAttribute("evidencia");
+    if (evidencia == null || evidencia.isBlank()) {
+        evidencia = "Se detectó el archivo 'dist/app.jar' en el repositorio.";
+    }
+    String proyectoNombre = (String) request.getAttribute("nombreProyecto");
+    if (proyectoNombre == null || proyectoNombre.isBlank()) {
+        proyectoNombre = "Sistema de Gestión Académica - GR4";
+    }
 %>
 <!DOCTYPE html>
 <html lang="es">

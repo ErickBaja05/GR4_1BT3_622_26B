@@ -1,5 +1,9 @@
 package com.gr4.owlaudit.dto;
 
+/**
+ * DTO para la solicitud y atención de retroalimentación técnica sobre hallazgos (CU05 y CU06).
+ * Estrictamente 1:1 con diagramaClasesIncremento2.puml.
+ */
 public class SolicitudDTO {
 
     private Long hallazgoId;

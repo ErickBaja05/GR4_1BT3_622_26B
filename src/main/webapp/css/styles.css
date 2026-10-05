@@ -587,6 +587,11 @@ body {
   transition: all 0.2s;
 }
 
+.request-item.selected {
+  border-color: var(--brand-blue);
+  background-color: #F0F7FF;
+}
+
 .request-item:hover {
   border-color: var(--brand-blue);
   box-shadow: var(--shadow-sm);

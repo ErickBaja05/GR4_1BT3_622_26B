@@ -2,11 +2,16 @@ package com.gr4.owlaudit.servlet;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
+import com.gr4.owlaudit.common.exception.ExcepcionNegocio;
 import com.gr4.owlaudit.dto.SolicitudDTO;
 import com.gr4.owlaudit.dto.UsuarioDTO;
 import com.gr4.owlaudit.model.RolEnum;
+import com.gr4.owlaudit.service.RetroalimentacionService;
+import com.gr4.owlaudit.service.RetroalimentacionServiceImpl;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -27,6 +32,16 @@ public class RetroalimentacionServlet extends HttpServlet {
     private static final String VISTA_SOLICITAR = "/WEB-INF/views/solicitarRetroalimentacion.jsp";
     private static final String VISTA_ATENDER = "/WEB-INF/views/atenderRetroalimentacion.jsp";
 
+    private final RetroalimentacionService retroalimentacionService;
+
+    public RetroalimentacionServlet() {
+        this(new RetroalimentacionServiceImpl());
+    }
+
+    public RetroalimentacionServlet(RetroalimentacionService retroalimentacionService) {
+        this.retroalimentacionService = retroalimentacionService;
+    }
+
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) 
             throws ServletException, IOException {
@@ -43,11 +58,6 @@ public class RetroalimentacionServlet extends HttpServlet {
                 accion = "solicitar";
             }
         }
-
-        System.out.println("------------------------------------------------------------------");
-        System.out.println("[RetroalimentacionServlet - GET] Navegación: accion=" + accion 
-                + ", usuario=" + (usuario != null ? usuario.getCorreo() : "anónimo"));
-        System.out.println("------------------------------------------------------------------");
 
         if ("atender".equalsIgnoreCase(accion)) {
             prepararVistaAtender(request);
@@ -66,7 +76,7 @@ public class RetroalimentacionServlet extends HttpServlet {
         String accion = request.getParameter("accion");
 
         // CU05: Solicitar retroalimentación (Estudiante)
-        if ("solicitar".equalsIgnoreCase(accion) || request.getParameter("justificacion") != null && request.getParameter("orientacion") == null) {
+        if ("solicitar".equalsIgnoreCase(accion) || (request.getParameter("justificacion") != null && request.getParameter("orientacion") == null)) {
             procesarSolicitudEstudiante(request, response);
             return;
         }
@@ -91,22 +101,17 @@ public class RetroalimentacionServlet extends HttpServlet {
         String justificacion = request.getParameter("justificacion");
         Long hallazgoId = parseLongOrNull(hallazgoIdStr);
 
-        // 1. Armado del DTO según diagrama de clases
-        SolicitudDTO dto = new SolicitudDTO();
-        dto.setHallazgoId(hallazgoId);
-        dto.setJustificacion(justificacion != null ? justificacion.trim() : "");
-        dto.setReglaNombre(request.getParameter("reglaNombre"));
-        dto.setSeveridad(request.getParameter("severidad"));
-
+        // 1. Armado del DTO según diagrama de clases y secuencia5.puml
+        SolicitudDTO dto = new SolicitudDTO(hallazgoId, justificacion != null ? justificacion.trim() : "");
         request.setAttribute("solicitudDTO", dto);
 
-        // Trazabilidad por consola para pruebas rápidas
-        System.out.println("==================================================================");
-        System.out.println("[RetroalimentacionServlet - POST] CU05: Solicitar Retroalimentación");
-        System.out.println("  -> DTO armado: " + dto);
-        System.out.println("  -> Hallazgo ID: " + dto.getHallazgoId());
-        System.out.println("  -> Justificación técnica: " + dto.getJustificacion());
-        System.out.println("==================================================================");
+        // Preservar atributos de contexto para la vista
+        if (request.getParameter("reglaNombre") != null) {
+            request.setAttribute("reglaNombre", request.getParameter("reglaNombre"));
+        }
+        if (request.getParameter("severidad") != null) {
+            request.setAttribute("severidad", request.getParameter("severidad"));
+        }
 
         // Validaciones según el caso de uso solicitarRetroalimentacionHallazgo.md
         if (dto.getHallazgoId() == null || dto.getHallazgoId() <= 0) {
@@ -123,19 +128,23 @@ public class RetroalimentacionServlet extends HttpServlet {
             return;
         }
 
-        // Simulación de control de hallazgo en revisión (ejemplo: ID 999 ya registrado)
-        if (Long.valueOf(999L).equals(dto.getHallazgoId())) {
-            System.out.println("[RetroalimentacionServlet] Hallazgo ya en revisión: ID=" + dto.getHallazgoId());
-            request.setAttribute("mensajeError", "El hallazgo ya se encuentra en proceso de revisión.");
-            prepararVistaSolicitar(request);
-            request.getRequestDispatcher(VISTA_SOLICITAR).forward(request, response);
-            return;
+        // 2. Invocación del servicio según secuencia5.puml
+        try {
+            retroalimentacionService.solicitarRetroalimentacionDeHallazgo(dto);
+            // 5. Notificar nueva solicitud creada
+            request.setAttribute("mensajeExito", "Solicitud de retroalimentación enviada con éxito.");
+        } catch (ExcepcionNegocio e) {
+            // 6. Informar que el hallazgo está en revisión u otro error de negocio
+            if ("Hallazgo en revisión".equalsIgnoreCase(e.getMessage())) {
+                request.setAttribute("mensajeError", "El hallazgo ya se encuentra en proceso de revisión.");
+            } else {
+                request.setAttribute("mensajeError", e.getMessage());
+            }
+        } catch (RuntimeException e) {
+            System.err.println("[RetroalimentacionServlet] Error técnico al solicitar retroalimentación: " + e.getMessage());
+            request.setAttribute("mensajeError", "Ocurrió un error inesperado al enviar la solicitud.");
         }
 
-        // Caso de éxito
-        System.out.println("[RetroalimentacionServlet] Solicitud creada con éxito y notificada al docente.");
-        request.setAttribute("mensajeExito", "Solicitud de retroalimentación enviada con éxito.");
-        
         prepararVistaSolicitar(request);
         request.getRequestDispatcher(VISTA_SOLICITAR).forward(request, response);
     }
@@ -150,22 +159,9 @@ public class RetroalimentacionServlet extends HttpServlet {
         String orientacion = request.getParameter("orientacion");
         Long solicitudId = parseLongOrNull(solicitudIdStr);
 
-        // 1. Armado del DTO según diagrama de clases
-        SolicitudDTO dto = new SolicitudDTO();
-        dto.setSolicitudId(solicitudId);
-        dto.setOrientacion(orientacion != null ? orientacion.trim() : "");
-        dto.setReglaNombre(request.getParameter("reglaNombre"));
-        dto.setJustificacion(request.getParameter("justificacion"));
-
+        // 1. Armado del DTO según diagrama de clases y secuencia6.puml
+        SolicitudDTO dto = new SolicitudDTO(solicitudId, orientacion != null ? orientacion.trim() : "", true);
         request.setAttribute("solicitudDTO", dto);
-
-        // Trazabilidad por consola para pruebas rápidas
-        System.out.println("==================================================================");
-        System.out.println("[RetroalimentacionServlet - POST] CU06: Atender Retroalimentación (Docente)");
-        System.out.println("  -> DTO armado: " + dto);
-        System.out.println("  -> Solicitud ID: " + dto.getSolicitudId());
-        System.out.println("  -> Orientación técnica redactada: " + dto.getOrientacion());
-        System.out.println("==================================================================");
 
         // Validaciones según el caso de uso cu06-atenderFeedback.md
         if (dto.getSolicitudId() == null || dto.getSolicitudId() <= 0) {
@@ -176,15 +172,24 @@ public class RetroalimentacionServlet extends HttpServlet {
         }
 
         if (dto.getOrientacion() == null || dto.getOrientacion().isBlank() || dto.getOrientacion().length() < 10) {
-            request.setAttribute("mensajeError", "Error: La respuesta técnica no puede estar vacía y debe contener al menos 10 caracteres.");
+            request.setAttribute("mensajeError", "Orientación en blanco o inválida (mínimo 10 caracteres).");
             prepararVistaAtender(request);
             request.getRequestDispatcher(VISTA_ATENDER).forward(request, response);
             return;
         }
 
-        // Caso de éxito: persistencia simulada y cambio de estado a ATENDIDA
-        System.out.println("[RetroalimentacionServlet] Retroalimentación ID=" + dto.getSolicitudId() + " atendida exitosamente.");
-        request.setAttribute("mensajeExito", "Retroalimentación atendida exitosamente.");
+        // 2. Invocación del servicio según secuencia6.puml
+        try {
+            retroalimentacionService.registrarOrientacionTecnicaEnLaSolicitud(dto);
+            // 6. Notificar orientación técnica exitosa
+            request.setAttribute("mensajeExito", "Retroalimentación atendida exitosamente.");
+        } catch (ExcepcionNegocio e) {
+            // 7. Informar error en la redacción u otro error de negocio
+            request.setAttribute("mensajeError", e.getMessage());
+        } catch (RuntimeException e) {
+            System.err.println("[RetroalimentacionServlet] Error técnico al atender retroalimentación: " + e.getMessage());
+            request.setAttribute("mensajeError", "Ocurrió un error inesperado al registrar la orientación técnica.");
+        }
 
         prepararVistaAtender(request);
         request.getRequestDispatcher(VISTA_ATENDER).forward(request, response);
@@ -201,36 +206,57 @@ public class RetroalimentacionServlet extends HttpServlet {
         if (dtoActual == null) {
             SolicitudDTO demo = new SolicitudDTO();
             demo.setHallazgoId(hallazgoId);
-            demo.setNombreProyecto("Sistema de Gestión Académica - GR4");
-            demo.setReglaNombre("Restricción de ejecutables y binarios (.exe, .jar)");
-            demo.setSeveridad("ALTA");
-            demo.setEvidencia("Se detectó el archivo 'dist/app.jar' en el repositorio.");
             request.setAttribute("solicitudDTO", demo);
+        }
+
+        if (request.getAttribute("nombreProyecto") == null) {
+            request.setAttribute("nombreProyecto", "Sistema de Gestión Académica - GR4");
+        }
+        if (request.getAttribute("reglaNombre") == null) {
+            request.setAttribute("reglaNombre", "Restricción de ejecutables y binarios (.exe, .jar)");
+        }
+        if (request.getAttribute("severidad") == null) {
+            request.setAttribute("severidad", "ALTA");
+        }
+        if (request.getAttribute("evidencia") == null) {
+            request.setAttribute("evidencia", "Se detectó el archivo 'dist/app.jar' en el repositorio.");
         }
     }
 
     private void prepararVistaAtender(HttpServletRequest request) {
-        List<SolicitudDTO> pendientes = new ArrayList<>();
+        String solicitudIdParam = request.getParameter("solicitudId");
+        Long solicitudIdSeleccionada = parseLongOrNull(solicitudIdParam);
 
-        SolicitudDTO s1 = new SolicitudDTO(202L, 501L, 
-                "El archivo JAR detectado corresponde a una dependencia requerida para ejecutar la base de datos embebida en pruebas locales.", 
-                null);
-        s1.setNombreProyecto("Sistema de Gestión Académica - GR4");
-        s1.setReglaNombre("Restricción de ejecutables y binarios (.exe, .jar)");
-        s1.setSeveridad("ALTA");
-        s1.setEvidencia("Archivo 'dist/app.jar' en el repositorio.");
-        s1.setEstado("PENDIENTE");
-        s1.setFechaHora("2026-10-02 11:20:00");
+        SolicitudDTO dtoActual = (SolicitudDTO) request.getAttribute("solicitudDTO");
+        if (dtoActual == null && solicitudIdSeleccionada != null) {
+            SolicitudDTO seleccionado = new SolicitudDTO();
+            seleccionado.setSolicitudId(solicitudIdSeleccionada);
+            request.setAttribute("solicitudDTO", seleccionado);
+        }
 
-        SolicitudDTO s2 = new SolicitudDTO(203L, 502L, 
-                "Se movieron los paquetes bajo 'src/main/kotlin' debido a una migración parcial y no se detectó el paquete java estándar.", 
-                null);
-        s2.setNombreProyecto("Portal de Reservas - GR2");
-        s2.setReglaNombre("Estructura estándar de carpetas /src/main/java");
-        s2.setSeveridad("MEDIA");
-        s2.setEvidencia("No existe la ruta 'src/main/java'.");
-        s2.setEstado("PENDIENTE");
-        s2.setFechaHora("2026-10-03 09:45:00");
+        List<Map<String, Object>> pendientes = new ArrayList<>();
+
+        Map<String, Object> s1 = new HashMap<>();
+        s1.put("solicitudId", 501L);
+        s1.put("hallazgoId", 202L);
+        s1.put("nombreProyecto", "Sistema de Gestión Académica - GR4");
+        s1.put("reglaNombre", "Restricción de ejecutables y binarios (.exe, .jar)");
+        s1.put("severidad", "ALTA");
+        s1.put("evidencia", "Archivo 'dist/app.jar' en el repositorio.");
+        s1.put("justificacion", "El archivo JAR detectado corresponde a una dependencia requerida para ejecutar la base de datos embebida en pruebas locales.");
+        s1.put("estado", "PENDIENTE");
+        s1.put("fechaHora", "2026-10-02 11:20:00");
+
+        Map<String, Object> s2 = new HashMap<>();
+        s2.put("solicitudId", 502L);
+        s2.put("hallazgoId", 203L);
+        s2.put("nombreProyecto", "Portal de Reservas - GR2");
+        s2.put("reglaNombre", "Estructura estándar de carpetas /src/main/java");
+        s2.put("severidad", "MEDIA");
+        s2.put("evidencia", "No existe la ruta 'src/main/java'.");
+        s2.put("justificacion", "Se movieron los paquetes bajo 'src/main/kotlin' debido a una migración parcial y no se detectó el paquete java estándar.");
+        s2.put("estado", "PENDIENTE");
+        s2.put("fechaHora", "2026-10-03 09:45:00");
 
         pendientes.add(s1);
         pendientes.add(s2);
