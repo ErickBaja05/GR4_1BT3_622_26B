@@ -26,7 +26,7 @@ title Diagrama de Clases Unificado (Incremento 1 e Incremento 2)\nOwlAudit: Sist
 ' ========================================================
 ' 1. CAPA WEB / SERVLETS
 ' ========================================================
-package "com.gr4.owlaudit.servlet" {
+package "com.gr4.owlaudit.web" {
     class ProyectoServlet {
         # doPost(request : HttpServletRequest, response : HttpServletResponse) : void
     }
@@ -230,7 +230,6 @@ package "com.gr4.owlaudit.model" {
         - id : Long
         - tipoMotor : TipoMotorEnum
         - nombreRepresentativo : String
-        -descripcionDetallada: String
         - parametroExacto : String
         - nivelSeveridad : NivelSeveridadEnum
         - ponderacion : int
