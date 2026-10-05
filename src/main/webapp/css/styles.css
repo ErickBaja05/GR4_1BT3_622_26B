@@ -345,3 +345,262 @@ body {
   letter-spacing: 0.6px;
   margin: 2rem 0 1rem;
 }
+
+/* ========================================================
+   INCREMENTO 2: Estilos para Evolución y Retroalimentación
+   ======================================================== */
+
+/* Grid de métricas de evolución */
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.stat-card {
+  background: #F8FAFC;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 1.25rem;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.stat-card.primary {
+  border-top: 4px solid var(--brand-blue);
+}
+
+.stat-card.success {
+  border-top: 4px solid #16A34A;
+}
+
+.stat-card.warning {
+  border-top: 4px solid #F59E0B;
+}
+
+.stat-card.danger {
+  border-top: 4px solid #DC2626;
+}
+
+.stat-value {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--bg-primary);
+  line-height: 1.2;
+}
+
+.stat-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-top: 0.25rem;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.stat-delta {
+  display: inline-block;
+  font-size: 0.85rem;
+  font-weight: 700;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  margin-top: 0.5rem;
+}
+
+.stat-delta.positive {
+  background-color: #DCFCE7;
+  color: #166534;
+}
+
+.stat-delta.negative {
+  background-color: #FEE2E2;
+  color: #991B1B;
+}
+
+.stat-delta.neutral {
+  background-color: #F1F5F9;
+  color: var(--text-muted);
+}
+
+/* Badges de estados de hallazgo */
+.badge-nuevo {
+  background-color: #FEF3C7;
+  color: #92400E;
+  border: 1px solid #FDE68A;
+}
+
+.badge-corregido {
+  background-color: #DCFCE7;
+  color: #166534;
+  border: 1px solid #BBF7D0;
+}
+
+.badge-persistente {
+  background-color: #FEE2E2;
+  color: #991B1B;
+  border: 1px solid #FECACA;
+}
+
+.badge-alta {
+  background-color: #FEE2E2;
+  color: #991B1B;
+}
+
+.badge-media {
+  background-color: #FEF3C7;
+  color: #92400E;
+}
+
+.badge-baja {
+  background-color: #E0F2FE;
+  color: #0369A1;
+}
+
+.badge-pendiente {
+  background-color: #FEF3C7;
+  color: #92400E;
+}
+
+.badge-atendida {
+  background-color: #DCFCE7;
+  color: #166534;
+}
+
+/* Tablas con diseño SaaS */
+.table-responsive {
+  width: 100%;
+  overflow-x: auto;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+  margin-top: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 0.9rem;
+}
+
+.data-table th {
+  background-color: #F8FAFC;
+  color: var(--bg-primary);
+  font-weight: 600;
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.data-table td {
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid var(--border-color);
+  color: var(--text-main);
+  vertical-align: middle;
+}
+
+.data-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.data-table tbody tr:hover {
+  background-color: #F8FAFC;
+}
+
+/* Selector y comparación de auditorías */
+.comparison-picker {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+@media (max-width: 640px) {
+  .comparison-picker {
+    grid-template-columns: 1fr;
+  }
+}
+
+.picker-box {
+  background: #F8FAFC;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 1.25rem;
+}
+
+.picker-box h4 {
+  font-size: 0.95rem;
+  margin-bottom: 0.75rem;
+  color: var(--bg-primary);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Cajas de contexto técnico y evidencia */
+.context-box {
+  background: #F8FAFC;
+  border-left: 4px solid var(--brand-blue);
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
+  padding: 1rem 1.25rem;
+  margin-bottom: 1.25rem;
+}
+
+.context-box p {
+  margin-bottom: 0.35rem;
+  font-size: 0.92rem;
+}
+
+.context-box p:last-child {
+  margin-bottom: 0;
+}
+
+.evidence-code {
+  font-family: 'Consolas', 'Courier New', monospace;
+  background: #0F172A;
+  color: #38BDF8;
+  padding: 0.2rem 0.4rem;
+  border-radius: 4px;
+  font-size: 0.85rem;
+}
+
+/* Área de texto con contador */
+.textarea-wrapper {
+  position: relative;
+}
+
+.char-counter {
+  text-align: right;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-top: 0.35rem;
+}
+
+/* Lista interactiva de solicitudes */
+.request-item {
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 1.25rem;
+  margin-bottom: 1rem;
+  background: var(--bg-surface);
+  transition: all 0.2s;
+}
+
+.request-item:hover {
+  border-color: var(--brand-blue);
+  box-shadow: var(--shadow-sm);
+}
+
+.request-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.request-title {
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--bg-primary);
+}

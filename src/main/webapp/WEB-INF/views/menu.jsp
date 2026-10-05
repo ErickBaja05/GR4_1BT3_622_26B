@@ -54,7 +54,14 @@
             <% } %>
         </div>
 
-        <h2 class="section-title">Próximamente (Incremento 2)</h2>
+        <% 
+           boolean tieneProximas = false;
+           for (OpcionMenu op : opciones) {
+               if (!op.isDisponible()) { tieneProximas = true; break; }
+           }
+           if (tieneProximas) { 
+        %>
+        <h2 class="section-title">Próximamente</h2>
         <div class="menu-grid">
             <% for (OpcionMenu opcion : opciones) {
                    if (opcion.isDisponible()) continue; %>
@@ -69,6 +76,7 @@
                 </div>
             <% } %>
         </div>
+        <% } %>
     </main>
 
 </body>
