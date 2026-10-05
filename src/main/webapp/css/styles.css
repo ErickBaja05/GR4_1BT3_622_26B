@@ -345,3 +345,114 @@ body {
   letter-spacing: 0.6px;
   margin: 2rem 0 1rem;
 }
+
+/* Tablas de Historial y Comparación */
+.table-container {
+  overflow-x: auto;
+  margin-top: 1rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 0.9rem;
+}
+
+.table th {
+  background-color: #F8FAFC;
+  color: var(--text-muted);
+  font-weight: 600;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.table td {
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid var(--border-color);
+  color: var(--text-main);
+  vertical-align: middle;
+}
+
+.table tr:last-child td {
+  border-bottom: none;
+}
+
+.table tr:hover td {
+  background-color: #F8FAFC;
+}
+
+/* Insignias de severidad y estado de evolución */
+.badge-nuevo {
+  background-color: #DBEAFE;
+  color: #1D4ED8;
+}
+
+.badge-persistente {
+  background-color: #FEE2E2;
+  color: #B91C1C;
+}
+
+.badge-corregido {
+  background-color: #DCFCE7;
+  color: #15803D;
+}
+
+.badge-alta {
+  background-color: #FEE2E2;
+  color: #991B1B;
+}
+
+.badge-media {
+  background-color: #FEF3C7;
+  color: #B45309;
+}
+
+.badge-baja {
+  background-color: #F1F5F9;
+  color: #475569;
+}
+
+/* Tarjetas de métricas de evolución */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1rem;
+  margin: 1.5rem 0;
+}
+
+.stat-card {
+  background-color: #F8FAFC;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 1rem;
+  text-align: center;
+}
+
+.stat-card .stat-value {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--bg-primary);
+  margin-top: 0.25rem;
+}
+
+.stat-card .stat-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+.stat-positive {
+  color: #16A34A !important;
+}
+
+.stat-negative {
+  color: #DC2626 !important;
+}
+
+.stat-neutral {
+  color: #475569 !important;
+}

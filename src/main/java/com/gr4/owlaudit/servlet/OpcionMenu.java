@@ -33,7 +33,7 @@ public enum OpcionMenu {
 
     CONSULTAR_EVOLUCION("evolucion", "CU04", "Consultar Evolución de Calidad", "Evolución",
             "Revise el historial de auditorías y la evolución del puntaje del proyecto.",
-            "📈", null, false, RolEnum.ESTUDIANTE, RolEnum.DOCENTE),
+            "📈", "/evolucion", true, RolEnum.ESTUDIANTE, RolEnum.DOCENTE),
 
     SOLICITAR_RETROALIMENTACION("solicitarFeedback", "CU05", "Solicitar Retroalimentación", "Solicitar Feedback",
             "Solicite una revisión o aclaración sobre un hallazgo de auditoría.",
