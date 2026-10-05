@@ -2,38 +2,10 @@
 <web-app xmlns="https://jakarta.ee/xml/ns/jakartaee"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="https://jakarta.ee/xml/ns/jakartaee
-                             https://jakarta.ee/xml/ns/jakartaee/web-app_5_0.xsd"
-         version="5.0">
+                             https://jakarta.ee/xml/ns/jakartaee/web-app_6_0.xsd"
+         version="6.0">
 
     <display-name>Owl_Audit_App</display-name>
-
-    <!-- SERVLETS -->
-    <servlet>
-        <servlet-name>ProyectoServlet</servlet-name>
-        <servlet-class>com.gr4.owlaudit.servlet.ProyectoServlet</servlet-class>
-    </servlet>
-    <servlet-mapping>
-        <servlet-name>ProyectoServlet</servlet-name>
-        <url-pattern>/proyecto</url-pattern>
-    </servlet-mapping>
-
-    <servlet>
-        <servlet-name>ReglaServlet</servlet-name>
-        <servlet-class>com.gr4.owlaudit.servlet.ReglaServlet</servlet-class>
-    </servlet>
-    <servlet-mapping>
-        <servlet-name>ReglaServlet</servlet-name>
-        <url-pattern>/regla</url-pattern>
-    </servlet-mapping>
-
-    <servlet>
-        <servlet-name>AuditoriaServlet</servlet-name>
-        <servlet-class>com.gr4.owlaudit.servlet.AuditoriaServlet</servlet-class>
-    </servlet>
-    <servlet-mapping>
-        <servlet-name>AuditoriaServlet</servlet-name>
-        <url-pattern>/auditoria</url-pattern>
-    </servlet-mapping>
 
     <welcome-file-list>
         <welcome-file>index.jsp</welcome-file>
