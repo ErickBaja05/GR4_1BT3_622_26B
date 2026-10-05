@@ -29,7 +29,7 @@ title Diagrama de Clases Unificado — Incremento 2: Seguimiento Evolutivo y Ret
 ' ========================================================
 ' 1. CAPA WEB / SERVLETS (ENTRADA AL SISTEMA)
 ' ========================================================
-package "com.gr4.owlaudit.web" {
+package "com.gr4.owlaudit.servlet" {
     class ProyectoServlet {
         - proyectoService : ProyectoService
         # doGet() : void
