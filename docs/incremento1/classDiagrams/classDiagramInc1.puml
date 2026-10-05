@@ -228,6 +228,7 @@ package "com.gr4.owlaudit.model" {
         - id : Long
         - tipoMotor : TipoMotorEnum
         - nombreRepresentativo : String
+        -descripcionDetallada: String
         - parametroExacto : String
         - nivelSeveridad : NivelSeveridadEnum
         - ponderacion : int

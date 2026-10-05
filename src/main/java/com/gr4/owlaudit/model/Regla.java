@@ -25,6 +25,9 @@ public class Regla {
     @Column(name = "nombre_representativo", nullable = false, unique = true, length = 100)
     private String nombreRepresentativo;
 
+    @Column(name = "descripcion_detallada", length = 200)
+    private String descripcionDetallada;
+
     @Column(name = "parametro_exacto", nullable = false, length = 100)
     private String parametroExacto;
 
@@ -47,6 +50,7 @@ public class Regla {
                 this.tipoMotor = TipoMotorEnum.valueOf(dto.getTipoMotor().trim().toUpperCase());
             }
             this.nombreRepresentativo = dto.getNombreRepresentativo();
+            this.descripcionDetallada = dto.getDescripcionDetallada();
             this.parametroExacto = dto.getParametroExacto();
             if (dto.getNivelSeveridad() != null) {
                 this.nivelSeveridad = NivelSeveridadEnum.valueOf(dto.getNivelSeveridad().trim().toUpperCase());
@@ -78,6 +82,14 @@ public class Regla {
 
     public void setNombreRepresentativo(String nombreRepresentativo) {
         this.nombreRepresentativo = nombreRepresentativo;
+    }
+
+    public String getDescripcionDetallada() {
+        return descripcionDetallada;
+    }
+
+    public void setDescripcionDetallada(String descripcionDetallada) {
+        this.descripcionDetallada = descripcionDetallada;
     }
 
     public String getParametroExacto() {
