@@ -239,9 +239,9 @@ class EvolucionServiceImplTest {
 
         assertNotNull(resumen);
         assertEquals(1L, resumen.getProyectoId());
-        assertEquals(2, resumen.getHistorialAuditorias().size());
-        assertEquals(101L, resumen.getHistorialAuditorias().get(0).getAuditoriaId());
-        assertEquals(102L, resumen.getHistorialAuditorias().get(1).getAuditoriaId());
+        assertEquals(2, resumen.getAuditorias().size());
+        assertEquals(101L, resumen.getAuditorias().get(0).getId());
+        assertEquals(102L, resumen.getAuditorias().get(1).getId());
     }
 
     @Test

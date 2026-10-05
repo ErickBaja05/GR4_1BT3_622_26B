@@ -1,7 +1,7 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ page import="com.gr4.owlaudit.dto.EvolucionDTO" %>
 <%@ page import="com.gr4.owlaudit.dto.ResumenHistorialDTO" %>
-<%@ page import="com.gr4.owlaudit.dto.ResumenHistorialDTO.AuditoriaItemDTO" %>
+<%@ page import="com.gr4.owlaudit.dto.AuditoriaResumenDTO" %>
 <%@ page import="com.gr4.owlaudit.dto.EvolucionFinalDTO" %>
 <%@ page import="com.gr4.owlaudit.dto.EvolucionFinalDTO.ComparacionRegla" %>
 <%@ page import="com.gr4.owlaudit.common.util.HtmlUtil" %>
@@ -63,8 +63,8 @@
         </div>
 
         <!-- Paso 2: Historial de auditorías registradas del proyecto -->
-        <% if (resumen != null && resumen.getHistorialAuditorias() != null && !resumen.getHistorialAuditorias().isEmpty()) { 
-               List<AuditoriaItemDTO> historial = resumen.getHistorialAuditorias();
+        <% if (resumen != null && resumen.getAuditorias() != null && !resumen.getAuditorias().isEmpty()) { 
+               List<AuditoriaResumenDTO> historial = resumen.getAuditorias();
         %>
             <div class="card">
                 <h2 style="font-size: 1.25rem; font-weight: 700; margin-bottom: 0.5rem;">📋 Historial de Auditorías del Proyecto #<%= resumen.getProyectoId() %></h2>
@@ -87,20 +87,20 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                <% for (AuditoriaItemDTO item : historial) { 
-                                       boolean esBase = baseIdActual != null && baseIdActual.equals(item.getAuditoriaId());
-                                       boolean esComp = comparadaIdActual != null && comparadaIdActual.equals(item.getAuditoriaId());
+                                <% for (AuditoriaResumenDTO item : historial) { 
+                                       boolean esBase = baseIdActual != null && baseIdActual.equals(item.getId());
+                                       boolean esComp = comparadaIdActual != null && comparadaIdActual.equals(item.getId());
                                 %>
                                     <tr>
                                         <td style="text-align: center;">
-                                            <input type="radio" name="baseId" value="<%= item.getAuditoriaId() %>" 
+                                            <input type="radio" name="baseId" value="<%= item.getId() %>" 
                                                    <%= esBase ? "checked" : "" %> required>
                                         </td>
                                         <td style="text-align: center;">
-                                            <input type="radio" name="comparadaId" value="<%= item.getAuditoriaId() %>" 
+                                            <input type="radio" name="comparadaId" value="<%= item.getId() %>" 
                                                    <%= esComp ? "checked" : "" %> required>
                                         </td>
-                                        <td><strong>#<%= item.getAuditoriaId() %></strong></td>
+                                        <td><strong>#<%= item.getId() %></strong></td>
                                         <td><%= item.getFechaFormateada() %></td>
                                         <td><%= item.getPuntajeObtenido() %> pts</td>
                                         <td><%= item.getPuntajeMaximo() %> pts</td>

@@ -6,8 +6,8 @@ import com.gr4.owlaudit.dao.AuditoriaDAOImpl;
 import com.gr4.owlaudit.dto.EvolucionDTO;
 import com.gr4.owlaudit.dto.EvolucionFinalDTO;
 import com.gr4.owlaudit.dto.EvolucionFinalDTO.ComparacionRegla;
+import com.gr4.owlaudit.dto.AuditoriaResumenDTO;
 import com.gr4.owlaudit.dto.ResumenHistorialDTO;
-import com.gr4.owlaudit.dto.ResumenHistorialDTO.AuditoriaItemDTO;
 import com.gr4.owlaudit.model.Auditoria;
 import com.gr4.owlaudit.model.Regla;
 import com.gr4.owlaudit.model.ResultadoRegla;
@@ -59,9 +59,9 @@ public class EvolucionServiceImpl implements EvolucionService {
 
         historial.sort(Comparator.comparing(Auditoria::getFechaHora));
 
-        List<AuditoriaItemDTO> items = new ArrayList<>();
+        List<AuditoriaResumenDTO> items = new ArrayList<>();
         for (Auditoria a : historial) {
-            items.add(new AuditoriaItemDTO(
+            items.add(new AuditoriaResumenDTO(
                 a.getId(),
                 a.getFechaHora(),
                 a.getPuntajeObtenido(),

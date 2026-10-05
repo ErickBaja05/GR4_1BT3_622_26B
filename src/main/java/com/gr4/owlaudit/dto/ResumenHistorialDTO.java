@@ -1,22 +1,20 @@
 package com.gr4.owlaudit.dto;
 
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
 public class ResumenHistorialDTO {
 
     private Long proyectoId;
-    private List<AuditoriaItemDTO> historialAuditorias;
+    private List<AuditoriaResumenDTO> auditorias;
 
     public ResumenHistorialDTO() {
-        this.historialAuditorias = new ArrayList<>();
+        this.auditorias = new ArrayList<>();
     }
 
-    public ResumenHistorialDTO(Long proyectoId, List<AuditoriaItemDTO> historialAuditorias) {
+    public ResumenHistorialDTO(Long proyectoId, List<AuditoriaResumenDTO> auditorias) {
         this.proyectoId = proyectoId;
-        this.historialAuditorias = historialAuditorias != null ? historialAuditorias : new ArrayList<>();
+        this.auditorias = auditorias != null ? auditorias : new ArrayList<>();
     }
 
     public Long getProyectoId() {
@@ -27,77 +25,11 @@ public class ResumenHistorialDTO {
         this.proyectoId = proyectoId;
     }
 
-    public List<AuditoriaItemDTO> getHistorialAuditorias() {
-        return historialAuditorias;
+    public List<AuditoriaResumenDTO> getAuditorias() {
+        return auditorias;
     }
 
-    public void setHistorialAuditorias(List<AuditoriaItemDTO> historialAuditorias) {
-        this.historialAuditorias = historialAuditorias;
-    }
-
-    public static class AuditoriaItemDTO {
-        private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
-
-        private Long auditoriaId;
-        private LocalDateTime fechaHora;
-        private int puntajeObtenido;
-        private int puntajeMaximo;
-        private double porcentaje;
-
-        public AuditoriaItemDTO() {
-        }
-
-        public AuditoriaItemDTO(Long auditoriaId, LocalDateTime fechaHora, int puntajeObtenido,
-                                int puntajeMaximo, double porcentaje) {
-            this.auditoriaId = auditoriaId;
-            this.fechaHora = fechaHora;
-            this.puntajeObtenido = puntajeObtenido;
-            this.puntajeMaximo = puntajeMaximo;
-            this.porcentaje = porcentaje;
-        }
-
-        public Long getAuditoriaId() {
-            return auditoriaId;
-        }
-
-        public void setAuditoriaId(Long auditoriaId) {
-            this.auditoriaId = auditoriaId;
-        }
-
-        public LocalDateTime getFechaHora() {
-            return fechaHora;
-        }
-
-        public void setFechaHora(LocalDateTime fechaHora) {
-            this.fechaHora = fechaHora;
-        }
-
-        public int getPuntajeObtenido() {
-            return puntajeObtenido;
-        }
-
-        public void setPuntajeObtenido(int puntajeObtenido) {
-            this.puntajeObtenido = puntajeObtenido;
-        }
-
-        public int getPuntajeMaximo() {
-            return puntajeMaximo;
-        }
-
-        public void setPuntajeMaximo(int puntajeMaximo) {
-            this.puntajeMaximo = puntajeMaximo;
-        }
-
-        public double getPorcentaje() {
-            return porcentaje;
-        }
-
-        public void setPorcentaje(double porcentaje) {
-            this.porcentaje = porcentaje;
-        }
-
-        public String getFechaFormateada() {
-            return fechaHora != null ? fechaHora.format(FORMATTER) : "";
-        }
+    public void setAuditorias(List<AuditoriaResumenDTO> auditorias) {
+        this.auditorias = auditorias;
     }
 }
