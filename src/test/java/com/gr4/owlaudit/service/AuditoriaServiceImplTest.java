@@ -65,6 +65,16 @@ class AuditoriaServiceImplTest {
         public void registrarAuditoriaEnElHistorial(Auditoria auditoria) {
             this.auditoriaRegistrada = auditoria;
         }
+
+        @Override
+        public List<Auditoria> consultarHistorialDeAuditorias(Long proyectoId) {
+            return auditoriaRegistrada != null ? List.of(auditoriaRegistrada) : List.of();
+        }
+
+        @Override
+        public List<ResultadoRegla> consultarResultadosDeReglas(Long baseId, Long comparadaId) {
+            return List.of();
+        }
     }
 
     static class GitHubClientFalso extends GitHubClient {
