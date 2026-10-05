@@ -1,0 +1,242 @@
+/*
+ * Estilos del Incremento 2 (CU04 Evolución, CU05 Solicitar y CU06 Atender retroalimentación).
+ * Se carga después de styles.css y reutiliza sus variables.
+ */
+
+/* Encabezado de tarjeta con icono */
+.card-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.card-header .card-icon {
+  font-size: 1.75rem;
+  line-height: 1;
+  background: #EFF6FF;
+  border-radius: var(--radius-md);
+  padding: 0.6rem;
+}
+
+.card-header .card-subtitle {
+  margin-bottom: 0;
+}
+
+/* Formularios: filas, ayudas y acciones */
+.form-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.form-inline {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 1rem;
+}
+
+.form-inline .form-group {
+  flex: 1;
+  min-width: 200px;
+  margin-bottom: 0;
+}
+
+.form-hint {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 0.4rem;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.form-hint .contador.invalido {
+  color: #B91C1C;
+  font-weight: 600;
+}
+
+.form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-top: 0.5rem;
+}
+
+textarea.form-control {
+  resize: vertical;
+  min-height: 120px;
+  line-height: 1.5;
+}
+
+/* Tablas */
+.table-wrapper {
+  overflow-x: auto;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  margin-bottom: 1.25rem;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.table th {
+  background: #F8FAFC;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  text-align: left;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.table td {
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid var(--border-color);
+  vertical-align: middle;
+}
+
+.table tr:last-child td {
+  border-bottom: none;
+}
+
+.table tbody tr:hover {
+  background: #F8FAFC;
+}
+
+.table tr.seleccionada {
+  background: #EFF6FF;
+}
+
+.table input[type="checkbox"] {
+  width: 1.1rem;
+  height: 1.1rem;
+  accent-color: var(--brand-blue);
+  cursor: pointer;
+}
+
+/* Barra de progreso del porcentaje */
+.progress {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.progress-bar {
+  flex: 1;
+  min-width: 80px;
+  height: 8px;
+  background: var(--border-color);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.progress-bar span {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, var(--brand-blue), #38BDF8);
+  border-radius: 999px;
+}
+
+/* Métricas */
+.metric-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.metric {
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 1rem 1.25rem;
+  background: var(--bg-surface);
+}
+
+.metric-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+  margin-bottom: 0.35rem;
+}
+
+.metric-value {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.metric-detail {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-top: 0.2rem;
+}
+
+.metric-nuevo { border-top: 4px solid #DC2626; }
+.metric-persistente { border-top: 4px solid #F59E0B; }
+.metric-corregido { border-top: 4px solid #16A34A; }
+
+/* Variaciones */
+.delta-positiva { color: #15803D; }
+.delta-negativa { color: #B91C1C; }
+.delta-neutra { color: var(--text-muted); }
+
+/* Insignias de estado de hallazgo y severidad */
+.badge-nuevo { background: #FEE2E2; color: #B91C1C; }
+.badge-persistente { background: #FEF3C7; color: #B45309; }
+.badge-corregido { background: #DCFCE7; color: #15803D; }
+
+.badge-alta { background: #FEE2E2; color: #991B1B; }
+.badge-media { background: #FEF3C7; color: #92400E; }
+.badge-baja { background: #E0F2FE; color: #075985; }
+
+/* Resumen de datos enviados */
+.detalle {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 0.5rem 1rem;
+  font-size: 0.9rem;
+}
+
+.detalle dt {
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.detalle dd {
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.card-accent {
+  border-left: 4px solid var(--brand-blue);
+}
+
+/* Estado vacío */
+.empty-state {
+  text-align: center;
+  padding: 2rem 1rem;
+  color: var(--text-muted);
+}
+
+.empty-state .empty-icon {
+  font-size: 2.25rem;
+  margin-bottom: 0.5rem;
+}
+
+@media (max-width: 600px) {
+  .card {
+    padding: 1.25rem;
+  }
+
+  .detalle {
+    grid-template-columns: 1fr;
+  }
+}
