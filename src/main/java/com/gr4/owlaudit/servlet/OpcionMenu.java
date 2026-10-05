@@ -37,11 +37,11 @@ public enum OpcionMenu {
 
     SOLICITAR_RETROALIMENTACION("solicitarFeedback", "CU05", "Solicitar Retroalimentación", "Solicitar Feedback",
             "Solicite una revisión o aclaración sobre un hallazgo de auditoría.",
-            "💬", null, false, RolEnum.ESTUDIANTE),
+            "💬", "/retroalimentacion?accion=solicitar", true, RolEnum.ESTUDIANTE),
 
     ATENDER_RETROALIMENTACION("atenderFeedback", "CU06", "Atender Retroalimentación", "Atender Feedback",
             "Responda las solicitudes de retroalimentación enviadas por los estudiantes.",
-            "📝", null, false, RolEnum.DOCENTE);
+            "📝", "/retroalimentacion?accion=atender", true, RolEnum.DOCENTE);
 
     private final String clave;
     private final String casoUso;
@@ -93,14 +93,17 @@ public enum OpcionMenu {
         return null;
     }
 
-    /** Busca la opción asociada a la ruta de un Servlet (p. ej. "/regla"). */
+    /** Busca la opción asociada a la ruta de un Servlet (p. ej. "/regla", "/retroalimentacion"). */
     public static OpcionMenu porRuta(String ruta) {
         if (ruta == null) {
             return null;
         }
         for (OpcionMenu opcion : values()) {
-            if (ruta.equals(opcion.ruta)) {
-                return opcion;
+            if (opcion.ruta != null) {
+                String rutaBase = opcion.ruta.contains("?") ? opcion.ruta.substring(0, opcion.ruta.indexOf("?")) : opcion.ruta;
+                if (ruta.equals(opcion.ruta) || ruta.equals(rutaBase)) {
+                    return opcion;
+                }
             }
         }
         return null;
