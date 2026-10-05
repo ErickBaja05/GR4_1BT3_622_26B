@@ -204,8 +204,43 @@ package "com.gr4.owlaudit.dto" {
         - baseId : Long
         - comparadaId : Long
     }
-    class ResumenHistorialDTO <<DTO>>
-    class EvolucionFinalDTO <<DTO>>
+    class ResumenHistorialDTO <<DTO>> {
+        - proyectoId : Long
+        - historialAuditorias : List<AuditoriaItemDTO>
+    }
+    class AuditoriaItemDTO <<DTO>> {
+        - auditoriaId : Long
+        - fechaHora : LocalDateTime
+        - puntajeObtenido : int
+        - puntajeMaximo : int
+        - porcentaje : double
+    }
+    class EvolucionFinalDTO <<DTO>> {
+        - baseId : Long
+        - fechaHoraBase : LocalDateTime
+        - puntajeObtenidoBase : int
+        - puntajeMaximoBase : int
+        - porcentajeBase : double
+        - comparadaId : Long
+        - fechaHoraComparada : LocalDateTime
+        - puntajeObtenidoComparada : int
+        - puntajeMaximoComparada : int
+        - porcentajeComparada : double
+        - variacionPuntaje : int
+        - variacionPorcentaje : double
+        - comparaciones : List<ComparacionRegla>
+        - totalNuevos : int
+        - totalPersistentes : int
+        - totalCorregidos : int
+        - mensaje : String
+    }
+    class ComparacionRegla <<DTO>> {
+        - nombreRepresentativo : String
+        - nivelSeveridad : NivelSeveridadEnum
+        - estado : String
+        - evidencia : String
+        - recomendacion : String
+    }
     class SolicitudDTO <<DTO>> {
         - hallazgoId : Long
         - solicitudId : Long
