@@ -26,7 +26,7 @@ title Diagrama de Clases Unificado (Incremento 1 e Incremento 2)\nOwlAudit: Sist
 ' ========================================================
 ' 1. CAPA WEB / SERVLETS
 ' ========================================================
-package "com.gr4.owlaudit.web" {
+package "com.gr4.owlaudit.servlet" {
     class ProyectoServlet {
         # doPost(request : HttpServletRequest, response : HttpServletResponse) : void
     }

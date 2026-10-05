@@ -1,0 +1,32 @@
+<%--
+    Barra de navegación compartida (se incluye estáticamente en cada vista protegida).
+    Muestra solo las funcionalidades habilitadas para el rol del usuario en sesión.
+--%>
+<%@ page import="com.gr4.owlaudit.dto.UsuarioDTO" %>
+<%@ page import="com.gr4.owlaudit.servlet.OpcionMenu" %>
+<%@ page import="com.gr4.owlaudit.servlet.LoginServlet" %>
+<%@ page import="com.gr4.owlaudit.common.util.HtmlUtil" %>
+<%
+    String navCtx = request.getContextPath();
+    UsuarioDTO navUsuario = (UsuarioDTO) session.getAttribute(LoginServlet.ATRIBUTO_USUARIO);
+%>
+<header class="navbar">
+    <a class="brand" href="<%= navCtx %>/vistas">🦉 OwlAudit</a>
+    <nav>
+        <a href="<%= navCtx %>/vistas">Inicio</a>
+        <% if (navUsuario != null) {
+               for (OpcionMenu navOpcion : OpcionMenu.opcionesPara(navUsuario.getRol())) {
+                   if (navOpcion.isDisponible()) { %>
+            <a href="<%= navCtx + navOpcion.getRuta() %>"><%= navOpcion.getTituloCorto() %></a>
+        <%         }
+               }
+           } %>
+    </nav>
+    <% if (navUsuario != null) { %>
+        <div class="navbar-user">
+            <span><%= HtmlUtil.escape(navUsuario.getNombre()) %></span>
+            <span class="badge badge-<%= navUsuario.getRol().name().toLowerCase() %>"><%= navUsuario.getRol() %></span>
+            <a class="btn-logout" href="<%= navCtx %>/logout">Cerrar sesión</a>
+        </div>
+    <% } %>
+</header>
