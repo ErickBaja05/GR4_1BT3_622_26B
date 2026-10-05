@@ -2,9 +2,12 @@ package com.gr4.owlaudit.servlet;
 
 import java.io.IOException;
 
+import com.gr4.owlaudit.common.exception.ExcepcionNegocio;
 import com.gr4.owlaudit.dto.AuditoriaDTO;
 import com.gr4.owlaudit.dto.ResultadoDTO;
 import com.gr4.owlaudit.dto.ResumenDTO;
+import com.gr4.owlaudit.service.AuditoriaService;
+import com.gr4.owlaudit.service.AuditoriaServiceImpl;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -12,8 +15,15 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
+/**
+ * CU03 - Ejecutar auditoría de calidad del repositorio (roles ESTUDIANTE y DOCENTE).
+ */
 @WebServlet("/auditoria")
 public class AuditoriaServlet extends HttpServlet {
+
+    private static final String VISTA = "/WEB-INF/views/evaluarRepositorio.jsp";
+
+    private final AuditoriaService auditoriaService = new AuditoriaServiceImpl();
 
     // 1. Previa de Auditoría (doGet) según secuencia3.puml
     @Override
@@ -22,21 +32,21 @@ public class AuditoriaServlet extends HttpServlet {
         
         String urlRepo = request.getParameter("url");
         if (urlRepo != null && !urlRepo.isBlank()) {
-            AuditoriaDTO dto = new AuditoriaDTO(urlRepo);
-
-            // Simulación del ResumenDTO devuelto por el servicio
-            ResumenDTO resumenDTO = new ResumenDTO(100);
-
-            System.out.println("====== [FRONTEND LOG: AuditoriaServlet - Previa] ======");
-            System.out.println("Solicitando previa para: " + dto.getUrl());
-            System.out.println("Puntaje Máximo Posible: " + resumenDTO.getPuntajeMaximo());
-            System.out.println("=======================================================");
-
+            AuditoriaDTO dto = new AuditoriaDTO(urlRepo.trim());
             request.setAttribute("auditoriaDTO", dto);
-            request.setAttribute("resumenDTO", resumenDTO);
+
+            try {
+                ResumenDTO resumenDTO = auditoriaService.solicitarPreviaDeAuditoria(dto);
+                request.setAttribute("resumenDTO", resumenDTO);
+            } catch (ExcepcionNegocio e) {
+                request.setAttribute("mensajeError", e.getMessage());
+            } catch (RuntimeException e) {
+                System.err.println("[AuditoriaServlet] Error técnico en previa: " + e.getMessage());
+                request.setAttribute("mensajeError", "Ocurrió un error inesperado al preparar la auditoría. Intente nuevamente.");
+            }
         }
 
-        request.getRequestDispatcher("/WEB-INF/views/evaluarRepositorio.jsp").forward(request, response);
+        request.getRequestDispatcher(VISTA).forward(request, response);
     }
 
     // 2. Ejecución Definitiva de Auditoría (doPost) según secuencia3.puml
@@ -47,21 +57,20 @@ public class AuditoriaServlet extends HttpServlet {
         request.setCharacterEncoding("UTF-8");
         String urlRepo = request.getParameter("urlGithub");
 
-        AuditoriaDTO dto = new AuditoriaDTO(urlRepo);
-
-        // Simulación del ResultadoDTO devuelto por el servicio
-        ResultadoDTO resultadoDTO = new ResultadoDTO(85, 100, 85.0);
-
-        System.out.println("====== [FRONTEND LOG: AuditoriaServlet - Ejecución] ======");
-        System.out.println("Confirmando ejecución de auditoría.");
-        System.out.println("AuditoriaDTO: " + dto.getUrl());
-        System.out.println("ResultadoDTO Generado: " + resultadoDTO.getPuntajeObtenido() + "/" + resultadoDTO.getPuntajeMaximo() + " (" + resultadoDTO.getPorcentaje() + "%)");
-        System.out.println("==========================================================");
-
-        request.setAttribute("mensajeExito", "Auditoría ejecutada correctamente en la capa de presentación.");
+        AuditoriaDTO dto = new AuditoriaDTO(urlRepo == null ? null : urlRepo.trim());
         request.setAttribute("auditoriaDTO", dto);
-        request.setAttribute("resultadoDTO", resultadoDTO);
 
-        request.getRequestDispatcher("/WEB-INF/views/evaluarRepositorio.jsp").forward(request, response);
+        try {
+            ResultadoDTO resultadoDTO = auditoriaService.confirmarEjecucionDeAuditoria(dto);
+            request.setAttribute("resultadoDTO", resultadoDTO);
+            request.setAttribute("mensajeExito", "Auditoría ejecutada y registrada en el historial correctamente.");
+        } catch (ExcepcionNegocio e) {
+            request.setAttribute("mensajeError", e.getMessage());
+        } catch (RuntimeException e) {
+            System.err.println("[AuditoriaServlet] Error técnico en ejecución: " + e.getMessage());
+            request.setAttribute("mensajeError", "Ocurrió un error inesperado al ejecutar la auditoría. Intente nuevamente.");
+        }
+
+        request.getRequestDispatcher(VISTA).forward(request, response);
     }
 }

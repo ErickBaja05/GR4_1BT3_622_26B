@@ -1,95 +1,65 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
-    <!DOCTYPE html>
-    <html lang="es">
+<%@ page import="com.gr4.owlaudit.servlet.LoginServlet" %>
+<%@ page import="com.gr4.owlaudit.common.util.HtmlUtil" %>
+<%
+    // Si el usuario ya tiene una sesión activa, se envía directamente al menú principal
+    if (session.getAttribute(LoginServlet.ATRIBUTO_USUARIO) != null) {
+        response.sendRedirect(request.getContextPath() + "/vistas");
+        return;
+    }
+    String mensajeError = (String) request.getAttribute("mensajeError");
+    String correo = (String) request.getAttribute("correo");
+%>
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OwlAudit - Iniciar Sesión</title>
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/css/styles.css">
+</head>
+<body>
 
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Inicio - Proyecto</title>
-        <style>
-            body {
-                font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-                background-color: #f8fafc;
-                color: #1e293b;
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                min-height: 100vh;
-                margin: 0;
-                padding: 1.5rem;
-                box-sizing: border-box;
-            }
+    <header class="navbar">
+        <div class="brand">🦉 OwlAudit</div>
+    </header>
 
-            .container {
-                background-color: #ffffff;
-                border-radius: 12px;
-                box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-                max-width: 650px;
-                width: 100%;
-                padding: 2.5rem;
-                text-align: center;
-            }
-
-            h1 {
-                color: #0f172a;
-                font-size: 1.75rem;
-                margin-bottom: 2rem;
-                border-bottom: 2px solid #e2e8f0;
-                padding-bottom: 1rem;
-            }
-
-            .verse-card {
-                background-color: #f1f5f9;
-                border-left: 4px solid #2563eb;
-                margin: 1.25rem 0;
-                padding: 1rem 1.25rem;
-                text-align: left;
-                border-radius: 0 8px 8px 0;
-            }
-
-            .verse-text {
-                font-style: italic;
-                color: #334155;
-                margin: 0 0 0.5rem 0;
-                line-height: 1.6;
-            }
-
-            .verse-ref {
-                font-weight: 600;
-                color: #2563eb;
-                font-size: 0.9rem;
-                margin: 0;
-                text-align: right;
-            }
-        </style>
-    </head>
-
-    <body>
-        <div class="container">
-            <h1>Infraestructura lista para el proyecto</h1>
-
-            <div class="verse-card">
-                <p class="verse-text">"Mira que te mando que te esfuerces y seas valiente; no temas ni desmayes, porque
-                    Jehová tu Dios estará contigo en dondequiera que vayas."</p>
-                <p class="verse-ref">— Josué 1:9</p>
+    <main class="login-wrapper">
+        <div class="card login-card">
+            <div class="login-brand">
+                <div class="logo">🦉</div>
+                <h1>Owl<span>Audit</span></h1>
+                <p class="card-subtitle" style="margin-bottom: 0;">Auditoría de calidad de repositorios académicos</p>
             </div>
 
-            <div class="verse-card">
-                <p class="verse-text">"Y todo lo que hagáis, hacedlo de corazón, como para el Señor y no para los
-                    hombres."</p>
-                <p class="verse-ref">— Colosenses 3:23</p>
-            </div>
+            <% if (mensajeError != null) { %>
+                <div class="alert alert-error"><%= HtmlUtil.escape(mensajeError) %></div>
+            <% } else if (request.getParameter("logout") != null) { %>
+                <div class="alert alert-success">Sesión cerrada correctamente.</div>
+            <% } else if (request.getParameter("sesion") != null) { %>
+                <div class="alert alert-info">Inicie sesión para acceder a las funcionalidades del sistema.</div>
+            <% } %>
 
-            <div class="verse-card">
-                <p class="verse-text">"Encomienda a Jehová tus obras, y tus pensamientos serán afirmados."</p>
-                <p class="verse-ref">— Proverbios 16:3</p>
-            </div>
+            <form action="${pageContext.request.contextPath}/login" method="POST">
+                <div class="form-group">
+                    <label for="correo" class="form-label">Correo Institucional</label>
+                    <input type="email" id="correo" name="correo" class="form-control"
+                           placeholder="usuario@epn.edu.ec" value="<%= HtmlUtil.escape(correo) %>"
+                           autocomplete="username" required autofocus>
+                </div>
 
-            <div class="verse-card">
-                <p class="verse-text">"Todo lo puedo en Cristo que me fortalece."</p>
-                <p class="verse-ref">— Filipenses 4:13</p>
-            </div>
+                <div class="form-group">
+                    <label for="contrasena" class="form-label">Contraseña</label>
+                    <input type="password" id="contrasena" name="contrasena" class="form-control"
+                           placeholder="••••••••" autocomplete="current-password" required>
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-block">Iniciar Sesión</button>
+            </form>
+
+            <p class="login-footer">Acceso exclusivo para Docentes y Estudiantes registrados.</p>
         </div>
-    </body>
+    </main>
 
-    </html>
+</body>
+</html>

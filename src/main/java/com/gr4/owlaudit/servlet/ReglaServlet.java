@@ -2,7 +2,10 @@ package com.gr4.owlaudit.servlet;
 
 import java.io.IOException;
 
+import com.gr4.owlaudit.common.exception.ExcepcionNegocio;
 import com.gr4.owlaudit.dto.NuevaReglaDTO;
+import com.gr4.owlaudit.service.ReglaService;
+import com.gr4.owlaudit.service.ReglaServiceImpl;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -10,13 +13,20 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
+/**
+ * CU01 - Registrar regla de evaluación técnica (rol DOCENTE, validado por AutenticacionFilter).
+ */
 @WebServlet("/regla")
 public class ReglaServlet extends HttpServlet {
+
+    private static final String VISTA = "/WEB-INF/views/registrarRegla.jsp";
+
+    private final ReglaService reglaService = new ReglaServiceImpl();
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) 
             throws ServletException, IOException {
-        request.getRequestDispatcher("/WEB-INF/views/registrarRegla.jsp").forward(request, response);
+        request.getRequestDispatcher(VISTA).forward(request, response);
     }
 
     @Override
@@ -48,17 +58,19 @@ public class ReglaServlet extends HttpServlet {
             nivelSeveridad, 
             ponderacion
         );
-
-        // 3. Impresión por consola para depuración
-        System.out.println("====== [FRONTEND LOG: ReglaServlet] ======");
-        System.out.println("Petición POST capturada correctamente.");
-        System.out.println("DTO Instanciado: " + dto.toString());
-        System.out.println("==========================================");
-
-        // 4. Atributos para la vista
-        request.setAttribute("mensajeExito", "Regla '" + dto.getNombreRepresentativo() + "' registrada con éxito en la capa de presentación.");
         request.setAttribute("reglaDTO", dto);
 
-        request.getRequestDispatcher("/WEB-INF/views/registrarRegla.jsp").forward(request, response);
+        // 3. Delegación a la capa de servicio (validación de sintaxis, unicidad y persistencia)
+        try {
+            reglaService.registrarReglaEvaluacionTecnica(dto);
+            request.setAttribute("mensajeExito", "Regla '" + dto.getNombreRepresentativo() + "' registrada con éxito y activa para las auditorías.");
+        } catch (ExcepcionNegocio e) {
+            request.setAttribute("mensajeError", e.getMessage());
+        } catch (RuntimeException e) {
+            System.err.println("[ReglaServlet] Error técnico: " + e.getMessage());
+            request.setAttribute("mensajeError", "Ocurrió un error inesperado al registrar la regla. Intente nuevamente.");
+        }
+
+        request.getRequestDispatcher(VISTA).forward(request, response);
     }
 }
