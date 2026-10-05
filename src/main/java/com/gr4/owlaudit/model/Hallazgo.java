@@ -83,4 +83,15 @@ public class Hallazgo {
     public void setResultadoRegla(ResultadoRegla resultadoRegla) {
         this.resultadoRegla = resultadoRegla;
     }
+
+    @OneToOne(mappedBy = "hallazgo")
+    private SolicitudRetroalimentacion solicitudRetroalimentacion;
+
+    public SolicitudRetroalimentacion getSolicitudRetroalimentacion() {
+        return solicitudRetroalimentacion;
+    }
+
+    public void setSolicitudRetroalimentacion(SolicitudRetroalimentacion solicitudRetroalimentacion) {
+        this.solicitudRetroalimentacion = solicitudRetroalimentacion;
+    }
 }

@@ -29,5 +29,6 @@
         <mapping class="com.gr4.owlaudit.model.Auditoria"/>
         <mapping class="com.gr4.owlaudit.model.ResultadoRegla"/>
         <mapping class="com.gr4.owlaudit.model.Hallazgo"/>
+        <mapping class="com.gr4.owlaudit.model.SolicitudRetroalimentacion"/>
     </session-factory>
 </hibernate-configuration>
