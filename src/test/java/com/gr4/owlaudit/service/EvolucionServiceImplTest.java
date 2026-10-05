@@ -2,9 +2,9 @@ package com.gr4.owlaudit.service;
 
 import com.gr4.owlaudit.common.exception.ExcepcionNegocio;
 import com.gr4.owlaudit.dao.AuditoriaDAO;
-import com.gr4.owlaudit.dto.ComparacionReglaDTO;
 import com.gr4.owlaudit.dto.EvolucionDTO;
 import com.gr4.owlaudit.dto.EvolucionFinalDTO;
+import com.gr4.owlaudit.dto.EvolucionFinalDTO.ComparacionRegla;
 import com.gr4.owlaudit.dto.ResumenHistorialDTO;
 import com.gr4.owlaudit.model.Auditoria;
 import com.gr4.owlaudit.model.Hallazgo;
@@ -201,22 +201,22 @@ class EvolucionServiceImplTest {
         // - Carpeta src es Corregido (MEDIA)
         // - Sin archivos env es Persistente (ALTA)
         // - Archivo gitignore no tiene hallazgo
-        List<ComparacionReglaDTO> comparaciones = evolucion.getComparaciones();
+        List<ComparacionRegla> comparaciones = evolucion.getComparaciones();
         assertEquals(3, comparaciones.size(), "Deben existir 3 comparaciones de hallazgos clasificados");
 
-        ComparacionReglaDTO compReadme = comparaciones.stream()
+        ComparacionRegla compReadme = comparaciones.stream()
                 .filter(c -> "Archivo README".equals(c.getNombreRepresentativo())).findFirst().orElse(null);
         assertNotNull(compReadme);
         assertEquals("Nuevo", compReadme.getEstado());
         assertEquals(NivelSeveridadEnum.BAJA, compReadme.getNivelSeveridad());
 
-        ComparacionReglaDTO compSrc = comparaciones.stream()
+        ComparacionRegla compSrc = comparaciones.stream()
                 .filter(c -> "Carpeta src".equals(c.getNombreRepresentativo())).findFirst().orElse(null);
         assertNotNull(compSrc);
         assertEquals("Corregido", compSrc.getEstado());
         assertEquals(NivelSeveridadEnum.MEDIA, compSrc.getNivelSeveridad());
 
-        ComparacionReglaDTO compEnv = comparaciones.stream()
+        ComparacionRegla compEnv = comparaciones.stream()
                 .filter(c -> "Sin archivos env".equals(c.getNombreRepresentativo())).findFirst().orElse(null);
         assertNotNull(compEnv);
         assertEquals("Persistente", compEnv.getEstado());

@@ -1,5 +1,7 @@
 package com.gr4.owlaudit.dto;
 
+import com.gr4.owlaudit.model.NivelSeveridadEnum;
+
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -9,14 +11,14 @@ public class EvolucionFinalDTO {
 
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
 
-    // Auditoría Base (más antigua)
+    // Datos de auditoría base
     private Long baseId;
     private LocalDateTime fechaHoraBase;
     private int puntajeObtenidoBase;
     private int puntajeMaximoBase;
     private double porcentajeBase;
 
-    // Auditoría Comparada (más reciente)
+    // Datos de auditoría comparada
     private Long comparadaId;
     private LocalDateTime fechaHoraComparada;
     private int puntajeObtenidoComparada;
@@ -27,10 +29,10 @@ public class EvolucionFinalDTO {
     private int variacionPuntaje;
     private double variacionPorcentaje;
 
-    // Lista de comparaciones por regla
-    private List<ComparacionReglaDTO> comparaciones;
+    // Comparaciones por regla
+    private List<ComparacionRegla> comparaciones;
 
-    // Conteo de hallazgos por estado
+    // Totales por estado
     private int totalNuevos;
     private int totalPersistentes;
     private int totalCorregidos;
@@ -138,11 +140,11 @@ public class EvolucionFinalDTO {
         this.variacionPorcentaje = variacionPorcentaje;
     }
 
-    public List<ComparacionReglaDTO> getComparaciones() {
+    public List<ComparacionRegla> getComparaciones() {
         return comparaciones;
     }
 
-    public void setComparaciones(List<ComparacionReglaDTO> comparaciones) {
+    public void setComparaciones(List<ComparacionRegla> comparaciones) {
         this.comparaciones = comparaciones;
     }
 
@@ -184,5 +186,65 @@ public class EvolucionFinalDTO {
 
     public String getFechaComparadaFormateada() {
         return fechaHoraComparada != null ? fechaHoraComparada.format(FORMATTER) : "";
+    }
+
+    public static class ComparacionRegla {
+        private String nombreRepresentativo;
+        private NivelSeveridadEnum nivelSeveridad;
+        private String estado; // "Nuevo", "Persistente", "Corregido"
+        private String evidencia;
+        private String recomendacion;
+
+        public ComparacionRegla() {
+        }
+
+        public ComparacionRegla(String nombreRepresentativo, NivelSeveridadEnum nivelSeveridad,
+                                String estado, String evidencia, String recomendacion) {
+            this.nombreRepresentativo = nombreRepresentativo;
+            this.nivelSeveridad = nivelSeveridad;
+            this.estado = estado;
+            this.evidencia = evidencia;
+            this.recomendacion = recomendacion;
+        }
+
+        public String getNombreRepresentativo() {
+            return nombreRepresentativo;
+        }
+
+        public void setNombreRepresentativo(String nombreRepresentativo) {
+            this.nombreRepresentativo = nombreRepresentativo;
+        }
+
+        public NivelSeveridadEnum getNivelSeveridad() {
+            return nivelSeveridad;
+        }
+
+        public void setNivelSeveridad(NivelSeveridadEnum nivelSeveridad) {
+            this.nivelSeveridad = nivelSeveridad;
+        }
+
+        public String getEstado() {
+            return estado;
+        }
+
+        public void setEstado(String estado) {
+            this.estado = estado;
+        }
+
+        public String getEvidencia() {
+            return evidencia;
+        }
+
+        public void setEvidencia(String evidencia) {
+            this.evidencia = evidencia;
+        }
+
+        public String getRecomendacion() {
+            return recomendacion;
+        }
+
+        public void setRecomendacion(String recomendacion) {
+            this.recomendacion = recomendacion;
+        }
     }
 }

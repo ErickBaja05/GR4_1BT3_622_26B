@@ -3,7 +3,7 @@
 <%@ page import="com.gr4.owlaudit.dto.ResumenHistorialDTO" %>
 <%@ page import="com.gr4.owlaudit.dto.ResumenHistorialDTO.AuditoriaItemDTO" %>
 <%@ page import="com.gr4.owlaudit.dto.EvolucionFinalDTO" %>
-<%@ page import="com.gr4.owlaudit.dto.ComparacionReglaDTO" %>
+<%@ page import="com.gr4.owlaudit.dto.EvolucionFinalDTO.ComparacionRegla" %>
 <%@ page import="com.gr4.owlaudit.common.util.HtmlUtil" %>
 <%@ page import="java.util.List" %>
 <%
@@ -182,7 +182,7 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                <% for (ComparacionReglaDTO comp : evolucion.getComparaciones()) { 
+                                <% for (ComparacionRegla comp : evolucion.getComparaciones()) { 
                                        String badgeEstado = "badge-muted";
                                        if ("Nuevo".equalsIgnoreCase(comp.getEstado())) badgeEstado = "badge-nuevo";
                                        else if ("Persistente".equalsIgnoreCase(comp.getEstado())) badgeEstado = "badge-persistente";
