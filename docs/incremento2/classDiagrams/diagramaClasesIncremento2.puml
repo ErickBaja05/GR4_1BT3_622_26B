@@ -1,4 +1,4 @@
-@startuml classDiagrams_unified
+@startuml classDiagrams_unified_final
 skinparam style strictuml
 skinparam defaultFontName "Segoe UI"
 skinparam defaultFontSize 11
@@ -21,12 +21,12 @@ skinparam package {
     FontSize 12
 }
 
-title Diagrama de Clases Unificado (Incremento 1 e Incremento 2)\nOwlAudit: Sistema de Calidad de Software
+title Diagrama de Clases Unificado Definitivo (Inc 1 + Inc 2)\nOwlAudit: Sistema de Calidad de Software
 
 ' ========================================================
 ' 1. CAPA WEB / SERVLETS
 ' ========================================================
-package "com.gr4.owlaudit.servlet" {
+package "com.gr4.owlaudit.web" {
     class ProyectoServlet {
         # doPost(request : HttpServletRequest, response : HttpServletResponse) : void
     }
@@ -190,27 +190,74 @@ package "com.gr4.owlaudit.client" {
 }
 
 ' ========================================================
-' 5. CAPA DE TRANSFERENCIA (DTOs)
+' 5. CAPA DE TRANSFERENCIA COMPLETAMENTE DETALLADA (DTOs)
 ' ========================================================
 package "com.gr4.owlaudit.dto" {
-    class NuevoProyectoDTO <<DTO>>
-    class NuevaReglaDTO <<DTO>>
-    class AuditoriaDTO <<DTO>>
-    class ResumenDTO <<DTO>>
-    class ResultadoDTO <<DTO>>
-
+    class NuevoProyectoDTO <<DTO>> {
+        - nombre : String
+        - urlGithub : String
+        + getNombre() : String
+        + getUrlGithub() : String
+    }
+    class NuevaReglaDTO <<DTO>> {
+        - tipoMotor : String
+        - nombreRepresentativo : String
+        - descripcionDetallada : String
+        - parametroExacto : String
+        - nivelSeveridad : String
+        - ponderacion : int
+        + getNombreRepresentativo() : String
+    }
+    class AuditoriaDTO <<DTO>> {
+        - proyectoId : Long
+        - url : String
+        + getUrl() : String
+        + getProyectoId() : Long
+    }
+    class ResumenDTO <<DTO>> {
+        - puntajeMaximo : int
+        + getPuntajeMaximo() : int
+    }
+    class ResultadoDTO <<DTO>> {
+        - puntajeObtenido : int
+        - puntajeMaximo : int
+        - porcentaje : double
+    }
     class EvolucionDTO <<DTO>> {
         - proyectoId : Long
         - baseId : Long
         - comparadaId : Long
+        + getProyectoId() : Long
+        + getBaseId() : Long
+        + getComparadaId() : Long
     }
-    class ResumenHistorialDTO <<DTO>>
-    class EvolucionFinalDTO <<DTO>>
+    class AuditoriaResumenDTO <<DTO>> {
+        - id : Long
+        - fechaHora : LocalDateTime
+        - puntajeObtenido : int
+        - puntajeMaximo : int
+        - porcentaje : double
+    }
+    class ResumenHistorialDTO <<DTO>> {
+        - proyectoId : Long
+        - auditorias : List<AuditoriaResumenDTO>
+        + getAuditorias() : List<AuditoriaResumenDTO>
+    }
+    class EvolucionFinalDTO <<DTO>> {
+        - variacionPuntaje : int
+        - variacionPorcentaje : double
+        - totalNuevos : int
+        - totalPersistentes : int
+        - totalCorregidos : int
+    }
     class SolicitudDTO <<DTO>> {
         - hallazgoId : Long
         - solicitudId : Long
         - justificacion : String
         - orientacion : String
+        + getHallazgoId() : Long
+        + getSolicitudId() : Long
+        + getOrientacion() : String
     }
 }
 
@@ -230,7 +277,6 @@ package "com.gr4.owlaudit.model" {
         - id : Long
         - tipoMotor : TipoMotorEnum
         - nombreRepresentativo : String
-        - descripcionDetallada: String
         - parametroExacto : String
         - nivelSeveridad : NivelSeveridadEnum
         - ponderacion : int

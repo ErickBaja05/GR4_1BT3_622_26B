@@ -1,9 +1,5 @@
 package com.gr4.owlaudit.dto;
 
-/**
- * DTO para la transferencia de datos en la consulta y comparación de evolución de calidad (CU04).
- * Basado en diagramaClasesIncremento2.puml y secuencia4.puml.
- */
 public class EvolucionDTO {
 
     private Long proyectoId;

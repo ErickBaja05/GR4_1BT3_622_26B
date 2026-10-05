@@ -1,53 +1,47 @@
 package com.gr4.owlaudit.dto;
 
+import com.gr4.owlaudit.model.NivelSeveridadEnum;
+
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * DTO que contiene el resultado consolidado de la evolución de calidad entre dos auditorías (CU04).
- * Basado en diagramaClasesIncremento2.puml, secuencia4.puml y el caso de uso consultarEvolucionCalidad.md.
- */
 public class EvolucionFinalDTO {
 
-    private Long proyectoId;
-    private String nombreProyecto;
+    private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
+
+    // Datos de auditoría base
     private Long baseId;
-    private Long comparadaId;
-    private String fechaBase;
-    private String fechaComparada;
-
-    private int puntajeBase;
-    private int puntajeComparada;
-    private int variacionPuntaje;
-
+    private LocalDateTime fechaHoraBase;
+    private int puntajeObtenidoBase;
+    private int puntajeMaximoBase;
     private double porcentajeBase;
+
+    // Datos de auditoría comparada
+    private Long comparadaId;
+    private LocalDateTime fechaHoraComparada;
+    private int puntajeObtenidoComparada;
+    private int puntajeMaximoComparada;
     private double porcentajeComparada;
+
+    // Variaciones
+    private int variacionPuntaje;
     private double variacionPorcentaje;
 
-    private int totalNuevos;
-    private int totalCorregidos;
-    private int totalPersistentes;
+    // Comparaciones por regla
+    private List<ComparacionRegla> comparaciones;
 
-    private List<ReglaComparadaDTO> detallesReglas;
+    // Totales por estado
+    private int totalNuevos;
+    private int totalPersistentes;
+    private int totalCorregidos;
+
+    // Mensaje para escenarios alternativos (p. ej. "No existen hallazgos en las auditorías comparadas")
+    private String mensaje;
 
     public EvolucionFinalDTO() {
-        this.detallesReglas = new ArrayList<>();
-    }
-
-    public Long getProyectoId() {
-        return proyectoId;
-    }
-
-    public void setProyectoId(Long proyectoId) {
-        this.proyectoId = proyectoId;
-    }
-
-    public String getNombreProyecto() {
-        return nombreProyecto;
-    }
-
-    public void setNombreProyecto(String nombreProyecto) {
-        this.nombreProyecto = nombreProyecto;
+        this.comparaciones = new ArrayList<>();
     }
 
     public Long getBaseId() {
@@ -58,52 +52,28 @@ public class EvolucionFinalDTO {
         this.baseId = baseId;
     }
 
-    public Long getComparadaId() {
-        return comparadaId;
+    public LocalDateTime getFechaHoraBase() {
+        return fechaHoraBase;
     }
 
-    public void setComparadaId(Long comparadaId) {
-        this.comparadaId = comparadaId;
+    public void setFechaHoraBase(LocalDateTime fechaHoraBase) {
+        this.fechaHoraBase = fechaHoraBase;
     }
 
-    public String getFechaBase() {
-        return fechaBase;
+    public int getPuntajeObtenidoBase() {
+        return puntajeObtenidoBase;
     }
 
-    public void setFechaBase(String fechaBase) {
-        this.fechaBase = fechaBase;
+    public void setPuntajeObtenidoBase(int puntajeObtenidoBase) {
+        this.puntajeObtenidoBase = puntajeObtenidoBase;
     }
 
-    public String getFechaComparada() {
-        return fechaComparada;
+    public int getPuntajeMaximoBase() {
+        return puntajeMaximoBase;
     }
 
-    public void setFechaComparada(String fechaComparada) {
-        this.fechaComparada = fechaComparada;
-    }
-
-    public int getPuntajeBase() {
-        return puntajeBase;
-    }
-
-    public void setPuntajeBase(int puntajeBase) {
-        this.puntajeBase = puntajeBase;
-    }
-
-    public int getPuntajeComparada() {
-        return puntajeComparada;
-    }
-
-    public void setPuntajeComparada(int puntajeComparada) {
-        this.puntajeComparada = puntajeComparada;
-    }
-
-    public int getVariacionPuntaje() {
-        return variacionPuntaje;
-    }
-
-    public void setVariacionPuntaje(int variacionPuntaje) {
-        this.variacionPuntaje = variacionPuntaje;
+    public void setPuntajeMaximoBase(int puntajeMaximoBase) {
+        this.puntajeMaximoBase = puntajeMaximoBase;
     }
 
     public double getPorcentajeBase() {
@@ -114,12 +84,52 @@ public class EvolucionFinalDTO {
         this.porcentajeBase = porcentajeBase;
     }
 
+    public Long getComparadaId() {
+        return comparadaId;
+    }
+
+    public void setComparadaId(Long comparadaId) {
+        this.comparadaId = comparadaId;
+    }
+
+    public LocalDateTime getFechaHoraComparada() {
+        return fechaHoraComparada;
+    }
+
+    public void setFechaHoraComparada(LocalDateTime fechaHoraComparada) {
+        this.fechaHoraComparada = fechaHoraComparada;
+    }
+
+    public int getPuntajeObtenidoComparada() {
+        return puntajeObtenidoComparada;
+    }
+
+    public void setPuntajeObtenidoComparada(int puntajeObtenidoComparada) {
+        this.puntajeObtenidoComparada = puntajeObtenidoComparada;
+    }
+
+    public int getPuntajeMaximoComparada() {
+        return puntajeMaximoComparada;
+    }
+
+    public void setPuntajeMaximoComparada(int puntajeMaximoComparada) {
+        this.puntajeMaximoComparada = puntajeMaximoComparada;
+    }
+
     public double getPorcentajeComparada() {
         return porcentajeComparada;
     }
 
     public void setPorcentajeComparada(double porcentajeComparada) {
         this.porcentajeComparada = porcentajeComparada;
+    }
+
+    public int getVariacionPuntaje() {
+        return variacionPuntaje;
+    }
+
+    public void setVariacionPuntaje(int variacionPuntaje) {
+        this.variacionPuntaje = variacionPuntaje;
     }
 
     public double getVariacionPorcentaje() {
@@ -130,20 +140,20 @@ public class EvolucionFinalDTO {
         this.variacionPorcentaje = variacionPorcentaje;
     }
 
+    public List<ComparacionRegla> getComparaciones() {
+        return comparaciones;
+    }
+
+    public void setComparaciones(List<ComparacionRegla> comparaciones) {
+        this.comparaciones = comparaciones;
+    }
+
     public int getTotalNuevos() {
         return totalNuevos;
     }
 
     public void setTotalNuevos(int totalNuevos) {
         this.totalNuevos = totalNuevos;
-    }
-
-    public int getTotalCorregidos() {
-        return totalCorregidos;
-    }
-
-    public void setTotalCorregidos(int totalCorregidos) {
-        this.totalCorregidos = totalCorregidos;
     }
 
     public int getTotalPersistentes() {
@@ -154,117 +164,63 @@ public class EvolucionFinalDTO {
         this.totalPersistentes = totalPersistentes;
     }
 
-    public List<ReglaComparadaDTO> getDetallesReglas() {
-        return detallesReglas;
+    public int getTotalCorregidos() {
+        return totalCorregidos;
     }
 
-    public void setDetallesReglas(List<ReglaComparadaDTO> detallesReglas) {
-        this.detallesReglas = detallesReglas;
+    public void setTotalCorregidos(int totalCorregidos) {
+        this.totalCorregidos = totalCorregidos;
     }
 
-    public void agregarDetalle(ReglaComparadaDTO detalle) {
-        if (this.detallesReglas == null) {
-            this.detallesReglas = new ArrayList<>();
-        }
-        this.detallesReglas.add(detalle);
+    public String getMensaje() {
+        return mensaje;
     }
 
-    @Override
-    public String toString() {
-        return "EvolucionFinalDTO{" +
-                "baseId=" + baseId +
-                ", comparadaId=" + comparadaId +
-                ", variacionPuntaje=" + variacionPuntaje +
-                ", variacionPorcentaje=" + variacionPorcentaje +
-                ", totalNuevos=" + totalNuevos +
-                ", totalCorregidos=" + totalCorregidos +
-                ", totalPersistentes=" + totalPersistentes +
-                '}';
+    public void setMensaje(String mensaje) {
+        this.mensaje = mensaje;
     }
 
-    /**
-     * DTO que representa la comparación del cumplimiento de una regla entre ambas auditorías.
-     */
-    public static class ReglaComparadaDTO {
-        private Long hallazgoId;
-        private String nombreRegla;
-        private String severidad;
-        private boolean cumpleBase;
-        private boolean cumpleComparada;
-        private int puntosBase;
-        private int puntosComparada;
-        private String estado; // "Nuevo", "Corregido", "Persistente", "Sin Hallazgo"
+    public String getFechaBaseFormateada() {
+        return fechaHoraBase != null ? fechaHoraBase.format(FORMATTER) : "";
+    }
 
-        public ReglaComparadaDTO() {
+    public String getFechaComparadaFormateada() {
+        return fechaHoraComparada != null ? fechaHoraComparada.format(FORMATTER) : "";
+    }
+
+    public static class ComparacionRegla {
+        private String nombreRepresentativo;
+        private NivelSeveridadEnum nivelSeveridad;
+        private String estado; // "Nuevo", "Persistente", "Corregido"
+        private String evidencia;
+        private String recomendacion;
+
+        public ComparacionRegla() {
         }
 
-        public ReglaComparadaDTO(Long hallazgoId, String nombreRegla, String severidad,
-                                 boolean cumpleBase, boolean cumpleComparada,
-                                 int puntosBase, int puntosComparada, String estado) {
-            this.hallazgoId = hallazgoId;
-            this.nombreRegla = nombreRegla;
-            this.severidad = severidad;
-            this.cumpleBase = cumpleBase;
-            this.cumpleComparada = cumpleComparada;
-            this.puntosBase = puntosBase;
-            this.puntosComparada = puntosComparada;
+        public ComparacionRegla(String nombreRepresentativo, NivelSeveridadEnum nivelSeveridad,
+                                String estado, String evidencia, String recomendacion) {
+            this.nombreRepresentativo = nombreRepresentativo;
+            this.nivelSeveridad = nivelSeveridad;
             this.estado = estado;
+            this.evidencia = evidencia;
+            this.recomendacion = recomendacion;
         }
 
-        public Long getHallazgoId() {
-            return hallazgoId;
+        public String getNombreRepresentativo() {
+            return nombreRepresentativo;
         }
 
-        public void setHallazgoId(Long hallazgoId) {
-            this.hallazgoId = hallazgoId;
+        public void setNombreRepresentativo(String nombreRepresentativo) {
+            this.nombreRepresentativo = nombreRepresentativo;
         }
 
-        public String getNombreRegla() {
-            return nombreRegla;
+        public NivelSeveridadEnum getNivelSeveridad() {
+            return nivelSeveridad;
         }
 
-        public void setNombreRegla(String nombreRegla) {
-            this.nombreRegla = nombreRegla;
-        }
-
-        public String getSeveridad() {
-            return severidad;
-        }
-
-        public void setSeveridad(String severidad) {
-            this.severidad = severidad;
-        }
-
-        public boolean isCumpleBase() {
-            return cumpleBase;
-        }
-
-        public void setCumpleBase(boolean cumpleBase) {
-            this.cumpleBase = cumpleBase;
-        }
-
-        public boolean isCumpleComparada() {
-            return cumpleComparada;
-        }
-
-        public void setCumpleComparada(boolean cumpleComparada) {
-            this.cumpleComparada = cumpleComparada;
-        }
-
-        public int getPuntosBase() {
-            return puntosBase;
-        }
-
-        public void setPuntosBase(int puntosBase) {
-            this.puntosBase = puntosBase;
-        }
-
-        public int getPuntosComparada() {
-            return puntosComparada;
-        }
-
-        public void setPuntosComparada(int puntosComparada) {
-            this.puntosComparada = puntosComparada;
+        public void setNivelSeveridad(NivelSeveridadEnum nivelSeveridad) {
+            this.nivelSeveridad = nivelSeveridad;
         }
 
         public String getEstado() {
@@ -275,15 +231,20 @@ public class EvolucionFinalDTO {
             this.estado = estado;
         }
 
-        @Override
-        public String toString() {
-            return "ReglaComparadaDTO{" +
-                    "nombreRegla='" + nombreRegla + '\'' +
-                    ", severidad='" + severidad + '\'' +
-                    ", estado='" + estado + '\'' +
-                    ", cumpleBase=" + cumpleBase +
-                    ", cumpleComparada=" + cumpleComparada +
-                    '}';
+        public String getEvidencia() {
+            return evidencia;
+        }
+
+        public void setEvidencia(String evidencia) {
+            this.evidencia = evidencia;
+        }
+
+        public String getRecomendacion() {
+            return recomendacion;
+        }
+
+        public void setRecomendacion(String recomendacion) {
+            this.recomendacion = recomendacion;
         }
     }
 }
