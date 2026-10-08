@@ -19,7 +19,7 @@ import jakarta.servlet.http.HttpSession;
  *  1. Exige una sesión autenticada (si no, redirige al login).
  *  2. Verifica que el rol del usuario tenga permiso sobre la funcionalidad (según OpcionMenu).
  */
-@WebFilter(urlPatterns = {"/vistas", "/proyecto", "/regla", "/auditoria", "/evolucion"})
+@WebFilter(urlPatterns = {"/vistas", "/proyecto", "/regla", "/auditoria", "/evolucion", "/retroalimentacion"})
 public class AutenticacionFilter implements Filter {
 
     @Override
@@ -42,7 +42,10 @@ public class AutenticacionFilter implements Filter {
             return;
         }
 
-        OpcionMenu opcion = OpcionMenu.porRuta(request.getServletPath());
+        String servletPath = request.getServletPath();
+        String accion = request.getParameter("accion");
+        OpcionMenu opcion = OpcionMenu.porRutaYAccion(servletPath, accion, usuario.getRol());
+
         if (opcion != null && (!opcion.permiteRol(usuario.getRol()) || !opcion.isDisponible())) {
             response.sendRedirect(request.getContextPath() + "/vistas?error=acceso");
             return;

@@ -237,18 +237,54 @@ package "com.gr4.owlaudit.dto" {
         - puntajeObtenido : int
         - puntajeMaximo : int
         - porcentaje : double
+        + getId() : Long
+        + getFechaHora() : LocalDateTime
+        + getPuntajeObtenido() : int
+        + getPuntajeMaximo() : int
+        + getPorcentaje() : double
+        + getFechaFormateada() : String
     }
     class ResumenHistorialDTO <<DTO>> {
         - proyectoId : Long
         - auditorias : List<AuditoriaResumenDTO>
+        + getProyectoId() : Long
         + getAuditorias() : List<AuditoriaResumenDTO>
     }
     class EvolucionFinalDTO <<DTO>> {
+        - baseId : Long
+        - comparadaId : Long
+        - puntajeObtenidoComparada : int
+        - porcentajeComparada : double
         - variacionPuntaje : int
         - variacionPorcentaje : double
         - totalNuevos : int
         - totalPersistentes : int
         - totalCorregidos : int
+        - comparaciones : List<ComparacionRegla>
+        - mensaje : String
+        + getBaseId() : Long
+        + getComparadaId() : Long
+        + getPuntajeObtenidoComparada() : int
+        + getPorcentajeComparada() : double
+        + getVariacionPuntaje() : int
+        + getVariacionPorcentaje() : double
+        + getTotalNuevos() : int
+        + getTotalPersistentes() : int
+        + getTotalCorregidos() : int
+        + getComparaciones() : List<ComparacionRegla>
+        + getMensaje() : String
+    }
+    class ComparacionRegla <<DTO>> {
+        - nombreRepresentativo : String
+        - nivelSeveridad : NivelSeveridadEnum
+        - estado : String
+        - evidencia : String
+        - recomendacion : String
+        + getNombreRepresentativo() : String
+        + getNivelSeveridad() : NivelSeveridadEnum
+        + getEstado() : String
+        + getEvidencia() : String
+        + getRecomendacion() : String
     }
     class SolicitudDTO <<DTO>> {
         - hallazgoId : Long

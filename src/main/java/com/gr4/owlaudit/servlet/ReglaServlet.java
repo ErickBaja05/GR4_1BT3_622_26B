@@ -3,6 +3,8 @@ package com.gr4.owlaudit.servlet;
 import java.io.IOException;
 
 import com.gr4.owlaudit.common.exception.ExcepcionNegocio;
+import com.gr4.owlaudit.dao.ReglaDAO;
+import com.gr4.owlaudit.dao.ReglaDAOImpl;
 import com.gr4.owlaudit.dto.NuevaReglaDTO;
 import com.gr4.owlaudit.service.ReglaService;
 import com.gr4.owlaudit.service.ReglaServiceImpl;
@@ -22,10 +24,16 @@ public class ReglaServlet extends HttpServlet {
     private static final String VISTA = "/WEB-INF/views/registrarRegla.jsp";
 
     private final ReglaService reglaService = new ReglaServiceImpl();
+    private final ReglaDAO reglaDAO = new ReglaDAOImpl();
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) 
             throws ServletException, IOException {
+        try {
+            request.setAttribute("reglasVigentes", reglaDAO.consultarReglasDeEvaluacionVigentes());
+        } catch (Exception e) {
+            System.err.println("[ReglaServlet] Error al consultar reglas vigentes: " + e.getMessage());
+        }
         request.getRequestDispatcher(VISTA).forward(request, response);
     }
 
@@ -70,6 +78,10 @@ public class ReglaServlet extends HttpServlet {
             System.err.println("[ReglaServlet] Error técnico: " + e.getMessage());
             request.setAttribute("mensajeError", "Ocurrió un error inesperado al registrar la regla. Intente nuevamente.");
         }
+
+        try {
+            request.setAttribute("reglasVigentes", reglaDAO.consultarReglasDeEvaluacionVigentes());
+        } catch (Exception ignored) {}
 
         request.getRequestDispatcher(VISTA).forward(request, response);
     }

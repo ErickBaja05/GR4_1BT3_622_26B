@@ -194,17 +194,32 @@ public class EvolucionFinalDTO {
         private String estado; // "Nuevo", "Persistente", "Corregido"
         private String evidencia;
         private String recomendacion;
+        private Long hallazgoId;
 
         public ComparacionRegla() {
         }
 
         public ComparacionRegla(String nombreRepresentativo, NivelSeveridadEnum nivelSeveridad,
                                 String estado, String evidencia, String recomendacion) {
+            this(nombreRepresentativo, nivelSeveridad, estado, evidencia, recomendacion, null);
+        }
+
+        public ComparacionRegla(String nombreRepresentativo, NivelSeveridadEnum nivelSeveridad,
+                                String estado, String evidencia, String recomendacion, Long hallazgoId) {
             this.nombreRepresentativo = nombreRepresentativo;
             this.nivelSeveridad = nivelSeveridad;
             this.estado = estado;
             this.evidencia = evidencia;
             this.recomendacion = recomendacion;
+            this.hallazgoId = hallazgoId;
+        }
+
+        public Long getHallazgoId() {
+            return hallazgoId;
+        }
+
+        public void setHallazgoId(Long hallazgoId) {
+            this.hallazgoId = hallazgoId;
         }
 
         public String getNombreRepresentativo() {

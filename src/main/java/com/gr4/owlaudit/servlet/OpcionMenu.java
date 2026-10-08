@@ -109,6 +109,25 @@ public enum OpcionMenu {
         return null;
     }
 
+    /** Busca la opción asociada a la ruta y acción específica, o considerando el rol si no se especifica acción. */
+    public static OpcionMenu porRutaYAccion(String ruta, String accion, RolEnum rol) {
+        if (ruta == null) {
+            return null;
+        }
+        if ("/retroalimentacion".equals(ruta)) {
+            if ("atender".equalsIgnoreCase(accion)) {
+                return ATENDER_RETROALIMENTACION;
+            } else if ("solicitar".equalsIgnoreCase(accion)) {
+                return SOLICITAR_RETROALIMENTACION;
+            } else if (rol == RolEnum.DOCENTE) {
+                return ATENDER_RETROALIMENTACION;
+            } else {
+                return SOLICITAR_RETROALIMENTACION;
+            }
+        }
+        return porRuta(ruta);
+    }
+
     public String getClave() { return clave; }
     public String getCasoUso() { return casoUso; }
     public String getTitulo() { return titulo; }

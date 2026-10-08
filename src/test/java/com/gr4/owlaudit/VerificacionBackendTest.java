@@ -93,6 +93,17 @@ public class VerificacionBackendTest {
             proyectos.add(proyecto);
         }
 
+        @Override
+        public List<Proyecto> listarTodos() {
+            return new ArrayList<>(proyectos);
+        }
+
+        @Override
+        public Proyecto buscarPorId(Long id) {
+            if (id == null) return null;
+            return proyectos.stream().filter(p -> id.equals(p.getId())).findFirst().orElse(null);
+        }
+
         public List<Proyecto> getProyectos() {
             return proyectos;
         }

@@ -1,18 +1,22 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ page import="com.gr4.owlaudit.dto.EvolucionDTO" %>
 <%@ page import="com.gr4.owlaudit.dto.ResumenHistorialDTO" %>
-<%@ page import="com.gr4.owlaudit.dto.ResumenHistorialDTO.AuditoriaItemDTO" %>
+<%@ page import="com.gr4.owlaudit.dto.AuditoriaResumenDTO" %>
 <%@ page import="com.gr4.owlaudit.dto.EvolucionFinalDTO" %>
-<%@ page import="com.gr4.owlaudit.dto.EvolucionFinalDTO.ReglaComparadaDTO" %>
+<%@ page import="com.gr4.owlaudit.dto.EvolucionFinalDTO.ComparacionRegla" %>
+<%@ page import="com.gr4.owlaudit.model.Proyecto" %>
 <%@ page import="com.gr4.owlaudit.common.util.HtmlUtil" %>
+<%@ page import="java.util.List" %>
 <%
     String mensajeExito = (String) request.getAttribute("mensajeExito");
     String mensajeError = (String) request.getAttribute("mensajeError");
     EvolucionDTO evolucionDTO = (EvolucionDTO) request.getAttribute("evolucionDTO");
     ResumenHistorialDTO resumenHistorial = (ResumenHistorialDTO) request.getAttribute("resumenHistorialDTO");
     EvolucionFinalDTO evolucionFinal = (EvolucionFinalDTO) request.getAttribute("evolucionFinalDTO");
+    @SuppressWarnings("unchecked")
+    List<Proyecto> listaProyectos = (List<Proyecto>) request.getAttribute("listaProyectos");
 
-    Long proyectoIdActual = evolucionDTO != null && evolucionDTO.getProyectoId() != null ? evolucionDTO.getProyectoId() : 1L;
+    Long proyectoIdActual = evolucionDTO != null && evolucionDTO.getProyectoId() != null ? evolucionDTO.getProyectoId() : null;
     Long baseIdActual = evolucionDTO != null ? evolucionDTO.getBaseId() : null;
     Long comparadaIdActual = evolucionDTO != null ? evolucionDTO.getComparadaId() : null;
 %>
@@ -46,10 +50,21 @@
             <!-- Paso 1: Selección del Proyecto -->
             <form action="${pageContext.request.contextPath}/evolucion" method="GET" style="display: flex; gap: 1rem; align-items: flex-end; margin-bottom: 0.5rem;">
                 <div class="form-group" style="flex: 1; margin-bottom: 0;">
-                    <label for="proyectoId" class="form-label">ID del Proyecto Académico</label>
-                    <input type="number" id="proyectoId" name="proyectoId" class="form-control" 
-                           placeholder="Ingrese el identificador del proyecto"
-                           value="<%= proyectoIdActual != null ? proyectoIdActual : "" %>" min="1" required>
+                    <label for="proyectoId" class="form-label">Proyecto Académico</label>
+                    <% if (listaProyectos != null && !listaProyectos.isEmpty()) { %>
+                        <select id="proyectoId" name="proyectoId" class="form-control" onchange="this.form.submit()" required>
+                            <option value="">-- Seleccione un Proyecto Registrado --</option>
+                            <% for (Proyecto p : listaProyectos) { %>
+                                <option value="<%= p.getId() %>" <%= (proyectoIdActual != null && proyectoIdActual.equals(p.getId())) ? "selected" : "" %>>
+                                    #<%= p.getId() %> &middot; <%= HtmlUtil.escape(p.getNombre()) %> (<%= HtmlUtil.escape(p.getUrlGithub()) %>)
+                                </option>
+                            <% } %>
+                        </select>
+                    <% } else { %>
+                        <input type="number" id="proyectoId" name="proyectoId" class="form-control" 
+                               placeholder="Ingrese el identificador del proyecto"
+                               value="<%= proyectoIdActual != null ? proyectoIdActual : "" %>" min="1" required>
+                    <% } %>
                 </div>
                 <button type="submit" class="btn btn-secondary">Cargar Historial</button>
             </form>
@@ -60,8 +75,8 @@
             <div class="card">
                 <h3 style="margin-bottom: 0.25rem;">📋 Historial de Auditorías Registradas</h3>
                 <p class="card-subtitle" style="margin-bottom: 1rem;">
-                    Proyecto: <strong><%= HtmlUtil.escape(resumenHistorial.getNombreProyecto()) %></strong> &middot; 
-                    Total registradas: <%= resumenHistorial.getTotalAuditorias() %>
+                    Proyecto ID: <strong><%= resumenHistorial.getProyectoId() != null ? resumenHistorial.getProyectoId() : proyectoIdActual %></strong> &middot; 
+                    Total registradas: <%= resumenHistorial.getAuditorias().size() %>
                 </p>
 
                 <!-- Tabla informativa de auditorías -->
@@ -76,10 +91,10 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <% for (AuditoriaItemDTO item : resumenHistorial.getAuditorias()) { %>
+                            <% for (AuditoriaResumenDTO item : resumenHistorial.getAuditorias()) { %>
                                 <tr>
-                                    <td><strong>#<%= item.getAuditoriaId() %></strong></td>
-                                    <td><%= HtmlUtil.escape(item.getFechaHora()) %></td>
+                                    <td><strong>#<%= item.getId() %></strong></td>
+                                    <td><%= HtmlUtil.escape(item.getFechaFormateada()) %></td>
                                     <td><%= item.getPuntajeObtenido() %> / <%= item.getPuntajeMaximo() %> pts</td>
                                     <td>
                                         <span class="badge <%= item.getPorcentaje() >= 80 ? "badge-corregido" : "badge-alta" %>">
@@ -94,7 +109,7 @@
 
                 <!-- Formulario para Indicar Dos Auditorías a Comparar (secuencia4.puml) -->
                 <form action="${pageContext.request.contextPath}/evolucion" method="POST">
-                    <input type="hidden" name="proyectoId" value="<%= proyectoIdActual %>">
+                    <input type="hidden" name="proyectoId" value="<%= proyectoIdActual != null ? proyectoIdActual : resumenHistorial.getProyectoId() %>">
 
                     <h4 style="margin: 1.5rem 0 1rem; color: var(--bg-primary);">Seleccione las dos auditorías a comparar:</h4>
 
@@ -106,10 +121,10 @@
                                 <label for="baseId" class="form-label">Seleccione Auditoría Base</label>
                                 <select id="baseId" name="baseId" class="form-control" required>
                                     <option value="">-- Seleccionar --</option>
-                                    <% for (AuditoriaItemDTO item : resumenHistorial.getAuditorias()) { %>
-                                        <option value="<%= item.getAuditoriaId() %>" 
-                                            <%= (baseIdActual != null && baseIdActual.equals(item.getAuditoriaId())) ? "selected" : "" %>>
-                                            #<%= item.getAuditoriaId() %> &middot; <%= item.getFechaHora() %> (<%= item.getPorcentaje() %>%)
+                                    <% for (AuditoriaResumenDTO item : resumenHistorial.getAuditorias()) { %>
+                                        <option value="<%= item.getId() %>" 
+                                            <%= (baseIdActual != null && baseIdActual.equals(item.getId())) ? "selected" : "" %>>
+                                            #<%= item.getId() %> &middot; <%= item.getFechaFormateada() %> (<%= item.getPorcentaje() %>%)
                                         </option>
                                     <% } %>
                                 </select>
@@ -123,10 +138,10 @@
                                 <label for="comparadaId" class="form-label">Seleccione Auditoría Comparada</label>
                                 <select id="comparadaId" name="comparadaId" class="form-control" required>
                                     <option value="">-- Seleccionar --</option>
-                                    <% for (AuditoriaItemDTO item : resumenHistorial.getAuditorias()) { %>
-                                        <option value="<%= item.getAuditoriaId() %>" 
-                                            <%= (comparadaIdActual != null && comparadaIdActual.equals(item.getAuditoriaId())) ? "selected" : "" %>>
-                                            #<%= item.getAuditoriaId() %> &middot; <%= item.getFechaHora() %> (<%= item.getPorcentaje() %>%)
+                                    <% for (AuditoriaResumenDTO item : resumenHistorial.getAuditorias()) { %>
+                                        <option value="<%= item.getId() %>" 
+                                            <%= (comparadaIdActual != null && comparadaIdActual.equals(item.getId())) ? "selected" : "" %>>
+                                            #<%= item.getId() %> &middot; <%= item.getFechaFormateada() %> (<%= item.getPorcentaje() %>%)
                                         </option>
                                     <% } %>
                                 </select>
@@ -139,23 +154,27 @@
             </div>
         <% } %>
 
-        <!-- Paso 3: Resultados de la Evolución (secuencia4.puml & consultarEvolucionCalidad.md) -->
+        <!-- Paso 3: Resultados de la Evolución (secuencia4.puml & cu04-consultarEvolucionCalidad.md) -->
         <% if (evolucionFinal != null) { %>
             <div class="card" style="border-top: 4px solid var(--brand-blue);">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
                     <div>
                         <h2 style="color: var(--bg-primary); font-size: 1.4rem;">🎯 Reporte Comparativo de Calidad</h2>
                         <p class="card-subtitle" style="margin-bottom: 0;">
-                            Auditoría Base <strong>#<%= evolucionFinal.getBaseId() %></strong> (<%= evolucionFinal.getFechaBase() %>) vs 
-                            Auditoría Comparada <strong>#<%= evolucionFinal.getComparadaId() %></strong> (<%= evolucionFinal.getFechaComparada() %>)
+                            Auditoría Base <strong>#<%= evolucionFinal.getBaseId() %></strong> (<%= evolucionFinal.getFechaBaseFormateada() %>) vs 
+                            Auditoría Comparada <strong>#<%= evolucionFinal.getComparadaId() %></strong> (<%= evolucionFinal.getFechaComparadaFormateada() %>)
                         </p>
                     </div>
                 </div>
 
+                <% if (evolucionFinal.getMensaje() != null) { %>
+                    <div class="alert alert-info"><%= HtmlUtil.escape(evolucionFinal.getMensaje()) %></div>
+                <% } %>
+
                 <!-- Métricas Clave de Evolución -->
                 <div class="stat-grid">
                     <div class="stat-card primary">
-                        <div class="stat-value"><%= evolucionFinal.getPuntajeComparada() %> pts</div>
+                        <div class="stat-value"><%= evolucionFinal.getPuntajeObtenidoComparada() %> pts</div>
                         <div class="stat-label">Puntaje Reciente</div>
                         <span class="stat-delta <%= evolucionFinal.getVariacionPuntaje() >= 0 ? "positive" : "negative" %>">
                             <%= evolucionFinal.getVariacionPuntaje() >= 0 ? "+" : "" %><%= evolucionFinal.getVariacionPuntaje() %> pts
@@ -191,62 +210,63 @@
 
                 <!-- Detalle por Reglas Técnicas Evaluadas -->
                 <h3 style="margin: 1.5rem 0 0.5rem; font-size: 1.1rem;">Detalle de Reglas y Clasificación de Hallazgos</h3>
-                <div class="table-responsive">
-                    <table class="data-table">
-                        <thead>
-                            <tr>
-                                <th>Regla Técnica</th>
-                                <th>Severidad</th>
-                                <th>Base (#<%= evolucionFinal.getBaseId() %>)</th>
-                                <th>Comparada (#<%= evolucionFinal.getComparadaId() %>)</th>
-                                <th>Estado de Evolución</th>
-                                <th>Acción</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <% for (ReglaComparadaDTO r : evolucionFinal.getDetallesReglas()) { %>
+                <% if (evolucionFinal.getComparaciones() != null && !evolucionFinal.getComparaciones().isEmpty()) { %>
+                    <div class="table-responsive">
+                        <table class="data-table">
+                            <thead>
                                 <tr>
-                                    <td><strong><%= HtmlUtil.escape(r.getNombreRegla()) %></strong></td>
-                                    <td>
-                                        <span class="badge badge-<%= r.getSeveridad().toLowerCase() %>">
-                                            <%= r.getSeveridad() %>
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <%= r.isCumpleBase() ? "✅ Cumple (" + r.getPuntosBase() + " pts)" : "❌ No cumple (0 pts)" %>
-                                    </td>
-                                    <td>
-                                        <%= r.isCumpleComparada() ? "✅ Cumple (" + r.getPuntosComparada() + " pts)" : "❌ No cumple (0 pts)" %>
-                                    </td>
-                                    <td>
-                                        <% if ("Corregido".equalsIgnoreCase(r.getEstado())) { %>
-                                            <span class="badge badge-corregido">✨ Corregido</span>
-                                        <% } else if ("Persistente".equalsIgnoreCase(r.getEstado())) { %>
-                                            <span class="badge badge-persistente">⚠️ Persistente</span>
-                                        <% } else if ("Nuevo".equalsIgnoreCase(r.getEstado())) { %>
-                                            <span class="badge badge-nuevo">⚡ Nuevo</span>
-                                        <% } else { %>
-                                            <span class="badge badge-muted"><%= r.getEstado() %></span>
-                                        <% } %>
-                                    </td>
-                                    <td>
-                                        <% if (!r.isCumpleComparada() && r.getHallazgoId() != null) { %>
-                                            <a class="btn btn-secondary" style="padding: 0.35rem 0.75rem; font-size: 0.8rem;" 
-                                               href="${pageContext.request.contextPath}/retroalimentacion?accion=solicitar&hallazgoId=<%= r.getHallazgoId() %>">
-                                                💬 Consultar
-                                            </a>
-                                        <% } else { %>
-                                            <span style="color: var(--text-muted); font-size: 0.8rem;">—</span>
-                                        <% } %>
-                                    </td>
+                                    <th>Regla Técnica</th>
+                                    <th>Severidad</th>
+                                    <th>Estado de Evolución</th>
+                                    <th>Evidencia</th>
+                                    <th>Recomendación</th>
+                                    <th style="text-align: center;">Acción</th>
                                 </tr>
-                            <% } %>
-                        </tbody>
-                    </table>
-                </div>
+                            </thead>
+                            <tbody>
+                                <% for (ComparacionRegla r : evolucionFinal.getComparaciones()) { %>
+                                    <tr>
+                                        <td><strong><%= HtmlUtil.escape(r.getNombreRepresentativo()) %></strong></td>
+                                        <td>
+                                            <% String sev = r.getNivelSeveridad() != null ? r.getNivelSeveridad().name() : "BAJA"; %>
+                                            <span class="badge badge-<%= sev.toLowerCase() %>">
+                                                <%= sev %>
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <% if ("Corregido".equalsIgnoreCase(r.getEstado())) { %>
+                                                <span class="badge badge-corregido">✨ Corregido</span>
+                                            <% } else if ("Persistente".equalsIgnoreCase(r.getEstado())) { %>
+                                                <span class="badge badge-persistente">⚠️ Persistente</span>
+                                            <% } else if ("Nuevo".equalsIgnoreCase(r.getEstado())) { %>
+                                                <span class="badge badge-nuevo">⚡ Nuevo</span>
+                                            <% } else { %>
+                                                <span class="badge badge-muted"><%= HtmlUtil.escape(r.getEstado()) %></span>
+                                            <% } %>
+                                        </td>
+                                        <td><%= HtmlUtil.escape(r.getEvidencia() != null && !r.getEvidencia().isBlank() ? r.getEvidencia() : "—") %></td>
+                                        <td><%= HtmlUtil.escape(r.getRecomendacion() != null && !r.getRecomendacion().isBlank() ? r.getRecomendacion() : "—") %></td>
+                                        <td style="text-align: center;">
+                                            <% if (r.getHallazgoId() != null && ("Nuevo".equalsIgnoreCase(r.getEstado()) || "Persistente".equalsIgnoreCase(r.getEstado()))) { %>
+                                                <a href="${pageContext.request.contextPath}/retroalimentacion?accion=solicitar&hallazgoId=<%= r.getHallazgoId() %>" 
+                                                   class="btn btn-sm btn-primary">
+                                                    Solicitar Feedback
+                                                </a>
+                                            <% } else { %>
+                                                <span style="color: var(--text-muted);">—</span>
+                                            <% } %>
+                                        </td>
+                                    </tr>
+                                <% } %>
+                            </tbody>
+                        </table>
+                    </div>
+                <% } else { %>
+                    <p style="color: var(--text-muted); margin-top: 0.5rem;">No existen hallazgos técnicos en las auditorías comparadas.</p>
+                <% } %>
 
                 <div style="margin-top: 1rem;">
-                    <a href="${pageContext.request.contextPath}/evolucion?proyectoId=<%= proyectoIdActual %>" class="btn btn-secondary">Nueva Consulta</a>
+                    <a href="${pageContext.request.contextPath}/evolucion?proyectoId=<%= proyectoIdActual != null ? proyectoIdActual : "" %>" class="btn btn-secondary">Nueva Consulta</a>
                 </div>
             </div>
         <% } %>

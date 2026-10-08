@@ -7,9 +7,20 @@ import java.util.List;
 import java.util.Map;
 
 import com.gr4.owlaudit.common.exception.ExcepcionNegocio;
+import com.gr4.owlaudit.dao.AuditoriaDAO;
+import com.gr4.owlaudit.dao.AuditoriaDAOImpl;
+import com.gr4.owlaudit.dao.ProyectoDAO;
+import com.gr4.owlaudit.dao.ProyectoDAOImpl;
+import com.gr4.owlaudit.dao.SolicitudDAO;
+import com.gr4.owlaudit.dao.SolicitudDAOImpl;
 import com.gr4.owlaudit.dto.SolicitudDTO;
 import com.gr4.owlaudit.dto.UsuarioDTO;
+import com.gr4.owlaudit.model.Auditoria;
+import com.gr4.owlaudit.model.Hallazgo;
+import com.gr4.owlaudit.model.Proyecto;
+import com.gr4.owlaudit.model.ResultadoRegla;
 import com.gr4.owlaudit.model.RolEnum;
+import com.gr4.owlaudit.model.SolicitudRetroalimentacion;
 import com.gr4.owlaudit.service.RetroalimentacionService;
 import com.gr4.owlaudit.service.RetroalimentacionServiceImpl;
 
@@ -33,13 +44,28 @@ public class RetroalimentacionServlet extends HttpServlet {
     private static final String VISTA_ATENDER = "/WEB-INF/views/atenderRetroalimentacion.jsp";
 
     private final RetroalimentacionService retroalimentacionService;
+    private final SolicitudDAO solicitudDAO;
+    private final ProyectoDAO proyectoDAO;
+    private final AuditoriaDAO auditoriaDAO;
 
     public RetroalimentacionServlet() {
-        this(new RetroalimentacionServiceImpl());
+        this(new RetroalimentacionServiceImpl(), new SolicitudDAOImpl(), new ProyectoDAOImpl(), new AuditoriaDAOImpl());
     }
 
     public RetroalimentacionServlet(RetroalimentacionService retroalimentacionService) {
+        this(retroalimentacionService, new SolicitudDAOImpl(), new ProyectoDAOImpl(), new AuditoriaDAOImpl());
+    }
+
+    public RetroalimentacionServlet(RetroalimentacionService retroalimentacionService, SolicitudDAO solicitudDAO) {
+        this(retroalimentacionService, solicitudDAO, new ProyectoDAOImpl(), new AuditoriaDAOImpl());
+    }
+
+    public RetroalimentacionServlet(RetroalimentacionService retroalimentacionService, SolicitudDAO solicitudDAO,
+                                   ProyectoDAO proyectoDAO, AuditoriaDAO auditoriaDAO) {
         this.retroalimentacionService = retroalimentacionService;
+        this.solicitudDAO = solicitudDAO;
+        this.proyectoDAO = proyectoDAO;
+        this.auditoriaDAO = auditoriaDAO;
     }
 
     @Override
@@ -48,6 +74,10 @@ public class RetroalimentacionServlet extends HttpServlet {
         
         request.setCharacterEncoding("UTF-8");
         UsuarioDTO usuario = (UsuarioDTO) request.getSession().getAttribute(LoginServlet.ATRIBUTO_USUARIO);
+
+        if (request.getParameter("cancelado") != null) {
+            request.setAttribute("mensajeInfo", "Solicitud cancelada");
+        }
 
         String accion = request.getParameter("accion");
         if (accion == null || accion.isBlank()) {
@@ -97,6 +127,14 @@ public class RetroalimentacionServlet extends HttpServlet {
     private void procesarSolicitudEstudiante(HttpServletRequest request, HttpServletResponse response) 
             throws ServletException, IOException {
         
+        // Si el estudiante decide cancelar la solicitud (Escenario Alternativo 3)
+        if (request.getParameter("cancelar") != null) {
+            request.setAttribute("mensajeInfo", "Solicitud cancelada");
+            prepararVistaSolicitar(request);
+            request.getRequestDispatcher(VISTA_SOLICITAR).forward(request, response);
+            return;
+        }
+
         String hallazgoIdStr = request.getParameter("hallazgoId");
         String justificacion = request.getParameter("justificacion");
         Long hallazgoId = parseLongOrNull(hallazgoIdStr);
@@ -121,8 +159,10 @@ public class RetroalimentacionServlet extends HttpServlet {
             return;
         }
 
-        if (dto.getJustificacion() == null || dto.getJustificacion().length() < 10) {
-            request.setAttribute("mensajeError", "Debe proporcionar una justificación técnica válida (mínimo 10 caracteres).");
+        // Escenario Alternativo 2: longitud requerida
+        if (dto.getJustificacion() == null || dto.getJustificacion().isBlank() 
+                || dto.getJustificacion().length() < 10 || dto.getJustificacion().length() > 1000) {
+            request.setAttribute("mensajeError", "Debe proporcionar una justificación técnica válida");
             prepararVistaSolicitar(request);
             request.getRequestDispatcher(VISTA_SOLICITAR).forward(request, response);
             return;
@@ -131,10 +171,11 @@ public class RetroalimentacionServlet extends HttpServlet {
         // 2. Invocación del servicio según secuencia5.puml
         try {
             retroalimentacionService.solicitarRetroalimentacionDeHallazgo(dto);
-            // 5. Notificar nueva solicitud creada
+            // 5. Notificar nueva solicitud creada (Escenario Básico paso 9)
             request.setAttribute("mensajeExito", "Solicitud de retroalimentación enviada con éxito.");
+            request.removeAttribute("solicitudDTO");
         } catch (ExcepcionNegocio e) {
-            // 6. Informar que el hallazgo está en revisión u otro error de negocio
+            // 6. Informar que el hallazgo está en revisión u otro error de negocio (Escenario Alternativo 1)
             if ("Hallazgo en revisión".equalsIgnoreCase(e.getMessage())) {
                 request.setAttribute("mensajeError", "El hallazgo ya se encuentra en proceso de revisión.");
             } else {
@@ -198,28 +239,114 @@ public class RetroalimentacionServlet extends HttpServlet {
     private void prepararVistaSolicitar(HttpServletRequest request) {
         String hallazgoIdParam = request.getParameter("hallazgoId");
         Long hallazgoId = parseLongOrNull(hallazgoIdParam);
-        if (hallazgoId == null) {
-            hallazgoId = 202L; // Hallazgo demo: Restricción de ejecutables
-        }
 
         SolicitudDTO dtoActual = (SolicitudDTO) request.getAttribute("solicitudDTO");
-        if (dtoActual == null) {
-            SolicitudDTO demo = new SolicitudDTO();
-            demo.setHallazgoId(hallazgoId);
-            request.setAttribute("solicitudDTO", demo);
+        if (dtoActual != null && dtoActual.getHallazgoId() != null) {
+            hallazgoId = dtoActual.getHallazgoId();
         }
 
-        if (request.getAttribute("nombreProyecto") == null) {
-            request.setAttribute("nombreProyecto", "Sistema de Gestión Académica - GR4");
+        if (hallazgoId != null) {
+            if (dtoActual == null) {
+                SolicitudDTO nuevo = new SolicitudDTO();
+                nuevo.setHallazgoId(hallazgoId);
+                request.setAttribute("solicitudDTO", nuevo);
+            }
+
+            try {
+                Hallazgo h = solicitudDAO.buscarHallazgoPorId(hallazgoId);
+                if (h != null) {
+                    if (h.getResultadoRegla() != null) {
+                        ResultadoRegla rr = h.getResultadoRegla();
+                        if (rr.getRegla() != null && request.getAttribute("reglaNombre") == null) {
+                            request.setAttribute("reglaNombre", rr.getRegla().getNombreRepresentativo());
+                        }
+                        if (rr.getAuditoria() != null) {
+                            if (rr.getAuditoria().getId() != null && request.getAttribute("auditoriaId") == null) {
+                                request.setAttribute("auditoriaId", rr.getAuditoria().getId());
+                            }
+                            if (rr.getAuditoria().getFechaHora() != null && request.getAttribute("fechaAuditoria") == null) {
+                                request.setAttribute("fechaAuditoria", rr.getAuditoria().getFechaHora().toString().replace('T', ' '));
+                            }
+                            if (rr.getAuditoria().getProyecto() != null && request.getAttribute("nombreProyecto") == null) {
+                                request.setAttribute("nombreProyecto", rr.getAuditoria().getProyecto().getNombre());
+                            }
+                        }
+                    }
+                    if (h.getNivelSeveridad() != null && request.getAttribute("severidad") == null) {
+                        request.setAttribute("severidad", h.getNivelSeveridad().name());
+                    }
+                    if (h.getEvidencia() != null && request.getAttribute("evidencia") == null) {
+                        request.setAttribute("evidencia", h.getEvidencia());
+                    }
+                    if (h.getRecomendacion() != null && request.getAttribute("recomendacion") == null) {
+                        request.setAttribute("recomendacion", h.getRecomendacion());
+                    }
+                }
+                SolicitudRetroalimentacion existente = solicitudDAO.buscarPorHallazgoId(hallazgoId);
+                if (existente != null) {
+                    request.setAttribute("solicitudExistente", existente);
+                }
+            } catch (Exception e) {
+                System.err.println("[RetroalimentacionServlet] Error al cargar hallazgo real " + hallazgoId + ": " + e.getMessage());
+            }
         }
-        if (request.getAttribute("reglaNombre") == null) {
-            request.setAttribute("reglaNombre", "Restricción de ejecutables y binarios (.exe, .jar)");
-        }
-        if (request.getAttribute("severidad") == null) {
-            request.setAttribute("severidad", "ALTA");
-        }
-        if (request.getAttribute("evidencia") == null) {
-            request.setAttribute("evidencia", "Se detectó el archivo 'dist/app.jar' en el repositorio.");
+
+        // Cargar proyectos y auditorías para selección (Paso 1 y 2 CU05)
+        try {
+            List<Proyecto> listaProyectos = proyectoDAO.listarTodos();
+            request.setAttribute("proyectosDisponibles", listaProyectos);
+
+            String proyectoIdStr = request.getParameter("proyectoId");
+            Long proyectoId = parseLongOrNull(proyectoIdStr);
+            request.setAttribute("proyectoIdFiltro", proyectoId);
+
+            List<Auditoria> auditorias;
+            if (proyectoId != null) {
+                auditorias = auditoriaDAO.consultarHistorialDeAuditorias(proyectoId);
+            } else {
+                auditorias = auditoriaDAO.consultarTodas();
+            }
+
+            List<Map<String, Object>> hallazgosDisponibles = new ArrayList<>();
+            if (auditorias != null) {
+                for (Auditoria aud : auditorias) {
+                    if (aud.getResultados() != null) {
+                        for (ResultadoRegla rr : aud.getResultados()) {
+                            if (!rr.isCumple() && rr.getHallazgo() != null) {
+                                Hallazgo h = rr.getHallazgo();
+                                Map<String, Object> map = new HashMap<>();
+                                map.put("hallazgoId", h.getId());
+                                map.put("auditoriaId", aud.getId());
+                                map.put("fechaHora", aud.getFechaHora() != null ? aud.getFechaHora().toString().replace('T', ' ') : "");
+                                map.put("proyectoNombre", aud.getProyecto() != null ? aud.getProyecto().getNombre() : "Proyecto Académico");
+                                map.put("reglaNombre", rr.getRegla() != null ? rr.getRegla().getNombreRepresentativo() : "Regla de Evaluación");
+                                map.put("severidad", h.getNivelSeveridad() != null ? h.getNivelSeveridad().name() : "MEDIA");
+                                map.put("evidencia", h.getEvidencia() != null ? h.getEvidencia() : "");
+                                map.put("recomendacion", h.getRecomendacion() != null ? h.getRecomendacion() : "");
+
+                                SolicitudRetroalimentacion sol = solicitudDAO.buscarPorHallazgoId(h.getId());
+                                if (sol != null) {
+                                    map.put("tieneSolicitud", true);
+                                    map.put("estadoSolicitud", sol.getEstado() != null ? sol.getEstado().name() : "PENDIENTE");
+                                    map.put("solicitudId", sol.getId());
+                                } else {
+                                    map.put("tieneSolicitud", false);
+                                    map.put("estadoSolicitud", "SIN_SOLICITUD");
+                                }
+                                hallazgosDisponibles.add(map);
+                            }
+                        }
+                    }
+                }
+            }
+            request.setAttribute("hallazgosDisponibles", hallazgosDisponibles);
+
+            // Cargar solicitudes previas para consulta del estudiante (cierre del corte vertical)
+            List<SolicitudRetroalimentacion> misSolicitudes = solicitudDAO.consultarTodasLasSolicitudes();
+            request.setAttribute("misSolicitudes", misSolicitudes);
+
+        } catch (Exception e) {
+            System.err.println("[RetroalimentacionServlet] Error al preparar datos de selección para CU05: " + e.getMessage());
         }
     }
 
@@ -234,32 +361,57 @@ public class RetroalimentacionServlet extends HttpServlet {
             request.setAttribute("solicitudDTO", seleccionado);
         }
 
+        List<SolicitudRetroalimentacion> lista = null;
+        try {
+            lista = solicitudDAO.consultarSolicitudesPendientes();
+        } catch (Exception e) {
+            System.err.println("[RetroalimentacionServlet] Error al consultar pendientes: " + e.getMessage());
+        }
+
         List<Map<String, Object>> pendientes = new ArrayList<>();
+        if (lista != null) {
+            for (SolicitudRetroalimentacion s : lista) {
+                Map<String, Object> map = new HashMap<>();
+                map.put("solicitudId", s.getId());
+                map.put("justificacion", s.getJustificacion() != null ? s.getJustificacion() : "");
+                map.put("estado", s.getEstado() != null ? s.getEstado().name() : "PENDIENTE");
+                map.put("fechaHora", "");
 
-        Map<String, Object> s1 = new HashMap<>();
-        s1.put("solicitudId", 501L);
-        s1.put("hallazgoId", 202L);
-        s1.put("nombreProyecto", "Sistema de Gestión Académica - GR4");
-        s1.put("reglaNombre", "Restricción de ejecutables y binarios (.exe, .jar)");
-        s1.put("severidad", "ALTA");
-        s1.put("evidencia", "Archivo 'dist/app.jar' en el repositorio.");
-        s1.put("justificacion", "El archivo JAR detectado corresponde a una dependencia requerida para ejecutar la base de datos embebida en pruebas locales.");
-        s1.put("estado", "PENDIENTE");
-        s1.put("fechaHora", "2026-10-02 11:20:00");
+                if (s.getHallazgo() != null) {
+                    map.put("hallazgoId", s.getHallazgo().getId());
+                    map.put("severidad", s.getHallazgo().getNivelSeveridad() != null ? s.getHallazgo().getNivelSeveridad().name() : "MEDIA");
+                    map.put("evidencia", s.getHallazgo().getEvidencia() != null ? s.getHallazgo().getEvidencia() : "");
 
-        Map<String, Object> s2 = new HashMap<>();
-        s2.put("solicitudId", 502L);
-        s2.put("hallazgoId", 203L);
-        s2.put("nombreProyecto", "Portal de Reservas - GR2");
-        s2.put("reglaNombre", "Estructura estándar de carpetas /src/main/java");
-        s2.put("severidad", "MEDIA");
-        s2.put("evidencia", "No existe la ruta 'src/main/java'.");
-        s2.put("justificacion", "Se movieron los paquetes bajo 'src/main/kotlin' debido a una migración parcial y no se detectó el paquete java estándar.");
-        s2.put("estado", "PENDIENTE");
-        s2.put("fechaHora", "2026-10-03 09:45:00");
-
-        pendientes.add(s1);
-        pendientes.add(s2);
+                    if (s.getHallazgo().getResultadoRegla() != null) {
+                        ResultadoRegla rr = s.getHallazgo().getResultadoRegla();
+                        if (rr.getRegla() != null) {
+                            map.put("reglaNombre", rr.getRegla().getNombreRepresentativo());
+                        }
+                        if (rr.getAuditoria() != null) {
+                            if (rr.getAuditoria().getFechaHora() != null) {
+                                map.put("fechaHora", rr.getAuditoria().getFechaHora().toString());
+                            }
+                            if (rr.getAuditoria().getProyecto() != null) {
+                                map.put("nombreProyecto", rr.getAuditoria().getProyecto().getNombre());
+                            }
+                        }
+                    }
+                }
+                if (map.get("nombreProyecto") == null) {
+                    map.put("nombreProyecto", "Proyecto Académico");
+                }
+                if (map.get("reglaNombre") == null) {
+                    map.put("reglaNombre", "Regla de Evaluación");
+                }
+                if (map.get("severidad") == null) {
+                    map.put("severidad", "MEDIA");
+                }
+                if (map.get("evidencia") == null) {
+                    map.put("evidencia", "—");
+                }
+                pendientes.add(map);
+            }
+        }
 
         request.setAttribute("solicitudesPendientes", pendientes);
     }
