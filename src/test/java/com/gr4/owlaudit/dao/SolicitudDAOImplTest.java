@@ -7,7 +7,6 @@ import com.gr4.owlaudit.model.Hallazgo;
 import com.gr4.owlaudit.model.NivelSeveridadEnum;
 import com.gr4.owlaudit.model.Proyecto;
 import com.gr4.owlaudit.model.Regla;
-import com.gr4.owlaudit.model.ResultadoRegla;
 import com.gr4.owlaudit.model.SolicitudRetroalimentacion;
 import com.gr4.owlaudit.model.TipoMotorEnum;
 import org.hibernate.Session;
