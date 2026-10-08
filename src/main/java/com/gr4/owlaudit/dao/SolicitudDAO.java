@@ -16,5 +16,8 @@ public interface SolicitudDAO {
     default Hallazgo buscarHallazgoPorId(Long hallazgoId) {
         return null;
     }
+    default List<SolicitudRetroalimentacion> consultarTodasLasSolicitudes() {
+        return java.util.Collections.emptyList();
+    }
 }
 

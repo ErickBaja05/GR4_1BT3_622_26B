@@ -8,4 +8,10 @@ public interface AuditoriaDAO {
     void registrarAuditoriaEnElHistorial(Auditoria auditoria);
     List<Auditoria> consultarHistorialDeAuditorias(Long proyectoId);
     List<ResultadoRegla> consultarResultadosDeReglas(Long baseId, Long comparadaId);
+    default List<Auditoria> consultarTodas() {
+        return java.util.Collections.emptyList();
+    }
+    default Auditoria buscarPorId(Long id) {
+        return null;
+    }
 }

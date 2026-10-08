@@ -219,4 +219,39 @@ class RetroalimentacionServiceImplTest {
                 retroService.solicitarRetroalimentacionDeHallazgo(dtoDuplicado));
         assertEquals("Hallazgo en revisión", ex.getMessage());
     }
+
+    @Test
+    @DisplayName("CU05 - CP-CU05-01: Solicitud exitosa para el hallazgo de una auditoría")
+    void testSolicitudExitosaCP_CU05_01() {
+        SolicitudDTO dto = new SolicitudDTO(801L, "La función requiere múltiples estructuras condicionales para el control de errores de entrada");
+        retroService.solicitarRetroalimentacionDeHallazgo(dto);
+
+        SolicitudRetroalimentacion creada = mockDao.buscarPorHallazgoId(801L);
+        assertNotNull(creada, "La solicitud debe haber sido creada y persistida");
+        assertEquals(EstadoRetroEnum.PENDIENTE, creada.getEstado(), "El estado inicial debe ser PENDIENTE");
+        assertEquals(dto.getJustificacion(), creada.getJustificacion());
+    }
+
+    @Test
+    @DisplayName("CU05 - Escenario Alternativo 1: Hallazgo ya en proceso de revisión")
+    void testSolicitudHallazgoYaEnRevision() {
+        SolicitudDTO dtoDuplicado = new SolicitudDTO(401L, "Otra consulta sobre el mismo hallazgo R4");
+        ExcepcionNegocio ex = assertThrows(ExcepcionNegocio.class, () ->
+                retroService.solicitarRetroalimentacionDeHallazgo(dtoDuplicado));
+        assertEquals("Hallazgo en revisión", ex.getMessage());
+    }
+
+    @Test
+    @DisplayName("CU05: Validación de hallazgoId inválido")
+    void testSolicitudHallazgoIdInvalido() {
+        SolicitudDTO dtoNull = new SolicitudDTO(null, "Justificación con longitud válida");
+        ExcepcionNegocio ex1 = assertThrows(ExcepcionNegocio.class, () ->
+                retroService.solicitarRetroalimentacionDeHallazgo(dtoNull));
+        assertEquals("El identificador del hallazgo no es válido.", ex1.getMessage());
+
+        SolicitudDTO dtoCero = new SolicitudDTO(0L, "Justificación con longitud válida");
+        ExcepcionNegocio ex2 = assertThrows(ExcepcionNegocio.class, () ->
+                retroService.solicitarRetroalimentacionDeHallazgo(dtoCero));
+        assertEquals("El identificador del hallazgo no es válido.", ex2.getMessage());
+    }
 }

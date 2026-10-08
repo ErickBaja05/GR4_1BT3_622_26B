@@ -63,4 +63,41 @@ public class AuditoriaDAOImpl implements AuditoriaDAO {
             throw new RuntimeException("Error al consultar los resultados de reglas: " + e.getMessage(), e);
         }
     }
+
+    @Override
+    public List<Auditoria> consultarTodas() {
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            return session.createQuery(
+                "SELECT DISTINCT a FROM Auditoria a " +
+                "LEFT JOIN FETCH a.proyecto " +
+                "LEFT JOIN FETCH a.resultados r " +
+                "LEFT JOIN FETCH r.regla " +
+                "LEFT JOIN FETCH r.hallazgo " +
+                "ORDER BY a.fechaHora DESC",
+                Auditoria.class
+            ).getResultList();
+        } catch (Exception e) {
+            throw new RuntimeException("Error al consultar todas las auditorías: " + e.getMessage(), e);
+        }
+    }
+
+    @Override
+    public Auditoria buscarPorId(Long id) {
+        if (id == null) return null;
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            return session.createQuery(
+                "SELECT DISTINCT a FROM Auditoria a " +
+                "LEFT JOIN FETCH a.proyecto " +
+                "LEFT JOIN FETCH a.resultados r " +
+                "LEFT JOIN FETCH r.regla " +
+                "LEFT JOIN FETCH r.hallazgo " +
+                "WHERE a.id = :id",
+                Auditoria.class
+            )
+            .setParameter("id", id)
+            .uniqueResult();
+        } catch (Exception e) {
+            throw new RuntimeException("Error al buscar auditoría por ID: " + e.getMessage(), e);
+        }
+    }
 }
