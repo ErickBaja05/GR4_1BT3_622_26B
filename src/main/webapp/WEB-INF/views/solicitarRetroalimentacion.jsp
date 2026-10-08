@@ -6,24 +6,12 @@
     String mensajeError = (String) request.getAttribute("mensajeError");
     SolicitudDTO solicitudDTO = (SolicitudDTO) request.getAttribute("solicitudDTO");
 
-    Long hallazgoId = (solicitudDTO != null && solicitudDTO.getHallazgoId() != null) ? solicitudDTO.getHallazgoId() : 202L;
+    Long hallazgoId = (solicitudDTO != null && solicitudDTO.getHallazgoId() != null) ? solicitudDTO.getHallazgoId() : null;
     String justificacion = (solicitudDTO != null && solicitudDTO.getJustificacion() != null) ? solicitudDTO.getJustificacion() : "";
     String reglaNombre = (String) request.getAttribute("reglaNombre");
-    if (reglaNombre == null || reglaNombre.isBlank()) {
-        reglaNombre = "Restricción de ejecutables y binarios (.exe, .jar)";
-    }
     String severidad = (String) request.getAttribute("severidad");
-    if (severidad == null || severidad.isBlank()) {
-        severidad = "ALTA";
-    }
     String evidencia = (String) request.getAttribute("evidencia");
-    if (evidencia == null || evidencia.isBlank()) {
-        evidencia = "Se detectó el archivo 'dist/app.jar' en el repositorio.";
-    }
     String proyectoNombre = (String) request.getAttribute("nombreProyecto");
-    if (proyectoNombre == null || proyectoNombre.isBlank()) {
-        proyectoNombre = "Sistema de Gestión Académica - GR4";
-    }
 %>
 <!DOCTYPE html>
 <html lang="es">
@@ -55,41 +43,61 @@
                 </div>
             <% } %>
 
-            <!-- Contexto del Hallazgo a Consultar -->
-            <div class="context-box">
-                <p><strong>📁 Proyecto:</strong> <%= HtmlUtil.escape(proyectoNombre) %></p>
-                <p>
-                    <strong>🔍 Hallazgo Referencia:</strong> #<%= hallazgoId %> &middot; 
-                    <span class="badge badge-<%= severidad.toLowerCase() %>">Severidad <%= severidad %></span>
-                </p>
-                <p><strong>📐 Regla Evaluada:</strong> <%= HtmlUtil.escape(reglaNombre) %></p>
-                <p><strong>⚠️ Evidencia Detectada:</strong> <span class="evidence-code"><%= HtmlUtil.escape(evidencia) %></span></p>
-            </div>
+            <% if (hallazgoId != null) { %>
+                <!-- Contexto del Hallazgo a Consultar -->
+                <div class="context-box">
+                    <% if (proyectoNombre != null && !proyectoNombre.isBlank()) { %>
+                        <p><strong>📁 Proyecto:</strong> <%= HtmlUtil.escape(proyectoNombre) %></p>
+                    <% } %>
+                    <p>
+                        <strong>🔍 Hallazgo Referencia:</strong> #<%= hallazgoId %>
+                        <% if (severidad != null && !severidad.isBlank()) { %>
+                            &middot; <span class="badge badge-<%= severidad.toLowerCase() %>">Severidad <%= HtmlUtil.escape(severidad) %></span>
+                        <% } %>
+                    </p>
+                    <% if (reglaNombre != null && !reglaNombre.isBlank()) { %>
+                        <p><strong>📐 Regla Evaluada:</strong> <%= HtmlUtil.escape(reglaNombre) %></p>
+                    <% } %>
+                    <% if (evidencia != null && !evidencia.isBlank()) { %>
+                        <p><strong>⚠️ Evidencia Detectada:</strong> <span class="evidence-code"><%= HtmlUtil.escape(evidencia) %></span></p>
+                    <% } %>
+                </div>
 
-            <!-- Formulario de Solicitud (secuencia5.puml) -->
-            <form action="${pageContext.request.contextPath}/retroalimentacion" method="POST">
-                <input type="hidden" name="accion" value="solicitar">
-                <input type="hidden" name="hallazgoId" value="<%= hallazgoId %>">
-                <input type="hidden" name="reglaNombre" value="<%= HtmlUtil.escape(reglaNombre) %>">
-                <input type="hidden" name="severidad" value="<%= HtmlUtil.escape(severidad) %>">
+                <!-- Formulario de Solicitud (secuencia5.puml) -->
+                <form action="${pageContext.request.contextPath}/retroalimentacion" method="POST">
+                    <input type="hidden" name="accion" value="solicitar">
+                    <input type="hidden" name="hallazgoId" value="<%= hallazgoId %>">
+                    <% if (reglaNombre != null) { %><input type="hidden" name="reglaNombre" value="<%= HtmlUtil.escape(reglaNombre) %>"><% } %>
+                    <% if (severidad != null) { %><input type="hidden" name="severidad" value="<%= HtmlUtil.escape(severidad) %>"><% } %>
 
-                <div class="form-group">
-                    <label for="justificacion" class="form-label">
-                        Justificación Técnica o Consulta <span style="color: #DC2626;">*</span>
-                    </label>
-                    <div class="textarea-wrapper">
-                        <textarea id="justificacion" name="justificacion" class="form-control" rows="6" 
-                                  placeholder="Explique las razones técnicas, excepciones o dudas de diseño respecto a este hallazgo (mínimo 10 caracteres)..."
-                                  minlength="10" maxlength="1000" required oninput="actualizarContador(this)"><%= HtmlUtil.escape(justificacion) %></textarea>
-                        <div class="char-counter" id="contadorChar">0 / 1000 caracteres (mínimo 10)</div>
+                    <div class="form-group">
+                        <label for="justificacion" class="form-label">
+                            Justificación Técnica o Consulta <span style="color: #DC2626;">*</span>
+                        </label>
+                        <div class="textarea-wrapper">
+                            <textarea id="justificacion" name="justificacion" class="form-control" rows="6" 
+                                      placeholder="Explique las razones técnicas, excepciones o dudas de diseño respecto a este hallazgo (mínimo 10 caracteres)..."
+                                      minlength="10" maxlength="1000" required oninput="actualizarContador(this)"><%= HtmlUtil.escape(justificacion) %></textarea>
+                            <div class="char-counter" id="contadorChar">0 / 1000 caracteres (mínimo 10)</div>
+                        </div>
                     </div>
-                </div>
 
-                <div style="display: flex; gap: 1rem; align-items: center; margin-top: 1.5rem;">
-                    <button type="submit" class="btn btn-primary">Enviar Solicitud</button>
-                    <a href="${pageContext.request.contextPath}/vistas" class="btn btn-secondary">Cancelar</a>
+                    <div style="display: flex; gap: 1rem; align-items: center; margin-top: 1.5rem;">
+                        <button type="submit" class="btn btn-primary">Enviar Solicitud</button>
+                        <a href="${pageContext.request.contextPath}/vistas" class="btn btn-secondary">Cancelar</a>
+                    </div>
+                </form>
+            <% } else { %>
+                <div class="alert alert-info" style="margin-top: 1rem;">
+                    <strong>Aviso:</strong> No ha seleccionado un hallazgo técnico sobre el cual solicitar retroalimentación. 
+                    Por favor, consulte los hallazgos en la 
+                    <a href="${pageContext.request.contextPath}/auditoria">Evaluación de Repositorio</a> o en la 
+                    <a href="${pageContext.request.contextPath}/evolucion">Evolución de Calidad</a> y presione el botón <strong>Solicitar Feedback</strong> correspondiente.
                 </div>
-            </form>
+                <div style="margin-top: 1.5rem;">
+                    <a href="${pageContext.request.contextPath}/vistas" class="btn btn-secondary">Volver al Menú Principal</a>
+                </div>
+            <% } %>
         </div>
 
         <% if (mensajeExito != null) { %>

@@ -31,6 +31,11 @@ public class RetroalimentacionServiceImpl implements RetroalimentacionService {
         verificarEstadoDeRevisionDelHallazgo(dto.getHallazgoId());
 
         SolicitudRetroalimentacion solicitud = new SolicitudRetroalimentacion(dto);
+        if (solicitud.getHallazgo() == null) {
+            com.gr4.owlaudit.model.Hallazgo h = new com.gr4.owlaudit.model.Hallazgo();
+            h.setId(dto.getHallazgoId());
+            solicitud.setHallazgo(h);
+        }
         solicitudDAO.crearSolicitudDeRetroalimentacion(solicitud);
     }
 

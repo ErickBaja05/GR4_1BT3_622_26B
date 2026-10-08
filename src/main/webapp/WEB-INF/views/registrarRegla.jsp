@@ -1,10 +1,14 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ page import="com.gr4.owlaudit.dto.NuevaReglaDTO" %>
+<%@ page import="com.gr4.owlaudit.model.Regla" %>
 <%@ page import="com.gr4.owlaudit.common.util.HtmlUtil" %>
+<%@ page import="java.util.List" %>
 <%
     String mensajeExito = (String) request.getAttribute("mensajeExito");
     String mensajeError = (String) request.getAttribute("mensajeError");
     NuevaReglaDTO dto = (NuevaReglaDTO) request.getAttribute("reglaDTO");
+    @SuppressWarnings("unchecked")
+    List<Regla> reglasVigentes = (List<Regla>) request.getAttribute("reglasVigentes");
     // Si hubo error se conservan los datos ingresados para que el docente los corrija
     NuevaReglaDTO valores = (mensajeError != null && dto != null) ? dto : new NuevaReglaDTO();
     String motorSel = valores.getTipoMotor();
@@ -93,6 +97,42 @@
                 <p><strong>Nombre:</strong> <%= HtmlUtil.escape(dto.getNombreRepresentativo()) %></p>
                 <p><strong>Parámetro:</strong> <%= HtmlUtil.escape(dto.getParametroExacto()) %></p>
                 <p><strong>Severidad:</strong> <%= HtmlUtil.escape(dto.getNivelSeveridad()) %> | <strong>Puntos:</strong> <%= dto.getPonderacion() %></p>
+            </div>
+        <% } %>
+
+        <% if (reglasVigentes != null && !reglasVigentes.isEmpty()) { %>
+            <div class="card" style="margin-top: 1.5rem;">
+                <h2 class="card-title" style="font-size: 1.25rem;">Catálogo de Reglas Técnicas Vigentes</h2>
+                <p class="card-subtitle">Políticas de evaluación activas configuradas para la materia.</p>
+                <div class="table-responsive">
+                    <table class="table" style="width: 100%; border-collapse: collapse; margin-top: 1rem;">
+                        <thead>
+                            <tr style="border-bottom: 2px solid var(--border-color); text-align: left;">
+                                <th style="padding: 0.5rem;">ID</th>
+                                <th style="padding: 0.5rem;">Nombre Representativo</th>
+                                <th style="padding: 0.5rem;">Motor</th>
+                                <th style="padding: 0.5rem;">Parámetro Exacto</th>
+                                <th style="padding: 0.5rem;">Severidad</th>
+                                <th style="padding: 0.5rem; text-align: right;">Puntos</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% for (Regla r : reglasVigentes) { %>
+                                <tr style="border-bottom: 1px solid var(--border-color);">
+                                    <td style="padding: 0.5rem;"><strong>#<%= r.getId() %></strong></td>
+                                    <td style="padding: 0.5rem;"><%= HtmlUtil.escape(r.getNombreRepresentativo()) %></td>
+                                    <td style="padding: 0.5rem;"><%= r.getTipoMotor() != null ? r.getTipoMotor().name() : "—" %></td>
+                                    <td style="padding: 0.5rem;"><code><%= HtmlUtil.escape(r.getParametroExacto()) %></code></td>
+                                    <td style="padding: 0.5rem;">
+                                        <% String s = r.getNivelSeveridad() != null ? r.getNivelSeveridad().name() : "BAJA"; %>
+                                        <span class="badge badge-<%= s.toLowerCase() %>"><%= s %></span>
+                                    </td>
+                                    <td style="padding: 0.5rem; text-align: right;"><strong><%= r.getPonderacion() %> pts</strong></td>
+                                </tr>
+                            <% } %>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         <% } %>
     </main>

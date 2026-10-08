@@ -1,6 +1,8 @@
 package com.gr4.owlaudit.servlet;
 
 import com.gr4.owlaudit.common.exception.ExcepcionNegocio;
+import com.gr4.owlaudit.dao.ProyectoDAO;
+import com.gr4.owlaudit.dao.ProyectoDAOImpl;
 import com.gr4.owlaudit.dto.EvolucionDTO;
 import com.gr4.owlaudit.dto.EvolucionFinalDTO;
 import com.gr4.owlaudit.dto.ResumenHistorialDTO;
@@ -23,19 +25,31 @@ public class EvolucionServlet extends HttpServlet {
     private static final String VISTA = "/WEB-INF/views/consultarEvolucion.jsp";
 
     private final EvolucionService evolucionService;
+    private final ProyectoDAO proyectoDAO;
 
     public EvolucionServlet() {
-        this(new EvolucionServiceImpl());
+        this(new EvolucionServiceImpl(), new ProyectoDAOImpl());
     }
 
     public EvolucionServlet(EvolucionService evolucionService) {
+        this(evolucionService, new ProyectoDAOImpl());
+    }
+
+    public EvolucionServlet(EvolucionService evolucionService, ProyectoDAO proyectoDAO) {
         this.evolucionService = evolucionService;
+        this.proyectoDAO = proyectoDAO;
     }
 
     // 1. Carga del Historial (doGet) según secuencia4.puml
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
+
+        try {
+            request.setAttribute("listaProyectos", proyectoDAO.listarTodos());
+        } catch (Exception e) {
+            System.err.println("[EvolucionServlet] Error al listar proyectos: " + e.getMessage());
+        }
 
         String proyectoIdParam = request.getParameter("proyectoId");
         if (proyectoIdParam != null && !proyectoIdParam.isBlank()) {
@@ -63,6 +77,12 @@ public class EvolucionServlet extends HttpServlet {
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
+
+        try {
+            request.setAttribute("listaProyectos", proyectoDAO.listarTodos());
+        } catch (Exception e) {
+            System.err.println("[EvolucionServlet] Error al listar proyectos: " + e.getMessage());
+        }
 
         request.setCharacterEncoding("UTF-8");
 

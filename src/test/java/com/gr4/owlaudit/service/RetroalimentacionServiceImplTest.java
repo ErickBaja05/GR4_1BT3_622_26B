@@ -67,6 +67,18 @@ class RetroalimentacionServiceImplTest {
             agregarSolicitud(solicitud);
         }
 
+        @Override
+        public java.util.List<SolicitudRetroalimentacion> consultarSolicitudesPendientes() {
+            return solicitudesPorId.values().stream()
+                    .filter(s -> s.getEstado() == EstadoRetroEnum.PENDIENTE)
+                    .toList();
+        }
+
+        @Override
+        public java.util.List<SolicitudRetroalimentacion> buscarPendientes() {
+            return consultarSolicitudesPendientes();
+        }
+
         public boolean fueLlamadoCrear() {
             return crearLlamado;
         }

@@ -27,15 +27,18 @@ public class EvolucionServiceImpl implements EvolucionService {
 
     private final AuditoriaDAO auditoriaDAO;
 
-    // Estado interno utilizado por los métodos privados del Diagrama de Clases
-    private Auditoria auditoriaBase;
-    private Auditoria auditoriaComparada;
-    private EvolucionFinalDTO evolucionFinalDTO;
-    private Regla reglaEnEvaluacion;
-    private boolean cumpleBaseActual;
-    private boolean cumpleComparadaActual;
-    private ResultadoRegla resultadoBaseActual;
-    private ResultadoRegla resultadoComparadaActual;
+    private static class ContextoComparacion {
+        Auditoria auditoriaBase;
+        Auditoria auditoriaComparada;
+        EvolucionFinalDTO evolucionFinalDTO;
+        Regla reglaEnEvaluacion;
+        boolean cumpleBaseActual;
+        boolean cumpleComparadaActual;
+        ResultadoRegla resultadoBaseActual;
+        ResultadoRegla resultadoComparadaActual;
+    }
+
+    private final ThreadLocal<ContextoComparacion> contextoLocal = new ThreadLocal<>();
 
     public EvolucionServiceImpl() {
         this(new AuditoriaDAOImpl());
@@ -74,7 +77,7 @@ public class EvolucionServiceImpl implements EvolucionService {
     }
 
     @Override
-    public synchronized EvolucionFinalDTO indicarDosAuditoriasAComparar(EvolucionDTO dto) {
+    public EvolucionFinalDTO indicarDosAuditoriasAComparar(EvolucionDTO dto) {
         if (dto == null || dto.getBaseId() == null || dto.getComparadaId() == null) {
             throw new ExcepcionNegocio(MENSAJE_CONSULTA_CANCELADA);
         }
@@ -83,85 +86,89 @@ public class EvolucionServiceImpl implements EvolucionService {
             throw new ExcepcionNegocio(MENSAJE_AUDITORIAS_IGUALES);
         }
 
-        // 1. Ordenar auditorías por fecha
-        ordenarAuditoriasPorFecha(dto);
+        ContextoComparacion ctx = new ContextoComparacion();
+        contextoLocal.set(ctx);
+        try {
+            // 1. Ordenar auditorías por fecha
+            ordenarAuditoriasPorFecha(dto);
 
-        // 2. Consultar resultados de reglas
-        List<ResultadoRegla> resultados = auditoriaDAO.consultarResultadosDeReglas(dto.getBaseId(), dto.getComparadaId());
+            // 2. Consultar resultados de reglas
+            List<ResultadoRegla> resultados = auditoriaDAO.consultarResultadosDeReglas(dto.getBaseId(), dto.getComparadaId());
 
-        this.auditoriaBase = null;
-        this.auditoriaComparada = null;
-        Map<Long, ResultadoRegla> resultadosBase = new LinkedHashMap<>();
-        Map<Long, ResultadoRegla> resultadosComparada = new LinkedHashMap<>();
-        Map<Long, Regla> reglasMap = new LinkedHashMap<>();
+            Map<Long, ResultadoRegla> resultadosBase = new LinkedHashMap<>();
+            Map<Long, ResultadoRegla> resultadosComparada = new LinkedHashMap<>();
+            Map<Long, Regla> reglasMap = new LinkedHashMap<>();
 
-        for (ResultadoRegla r : resultados) {
-            if (r.getAuditoria() != null) {
-                if (r.getAuditoria().getId().equals(dto.getBaseId())) {
-                    if (this.auditoriaBase == null) this.auditoriaBase = r.getAuditoria();
-                    if (r.getRegla() != null) {
-                        resultadosBase.put(r.getRegla().getId(), r);
-                        reglasMap.put(r.getRegla().getId(), r.getRegla());
-                    }
-                } else if (r.getAuditoria().getId().equals(dto.getComparadaId())) {
-                    if (this.auditoriaComparada == null) this.auditoriaComparada = r.getAuditoria();
-                    if (r.getRegla() != null) {
-                        resultadosComparada.put(r.getRegla().getId(), r);
-                        reglasMap.put(r.getRegla().getId(), r.getRegla());
+            for (ResultadoRegla r : resultados) {
+                if (r.getAuditoria() != null) {
+                    if (r.getAuditoria().getId().equals(dto.getBaseId())) {
+                        if (ctx.auditoriaBase == null) ctx.auditoriaBase = r.getAuditoria();
+                        if (r.getRegla() != null) {
+                            resultadosBase.put(r.getRegla().getId(), r);
+                            reglasMap.put(r.getRegla().getId(), r.getRegla());
+                        }
+                    } else if (r.getAuditoria().getId().equals(dto.getComparadaId())) {
+                        if (ctx.auditoriaComparada == null) ctx.auditoriaComparada = r.getAuditoria();
+                        if (r.getRegla() != null) {
+                            resultadosComparada.put(r.getRegla().getId(), r);
+                            reglasMap.put(r.getRegla().getId(), r.getRegla());
+                        }
                     }
                 }
             }
-        }
 
-        if ((this.auditoriaBase == null || this.auditoriaComparada == null) && dto.getProyectoId() != null) {
-            List<Auditoria> historial = auditoriaDAO.consultarHistorialDeAuditorias(dto.getProyectoId());
-            if (historial != null) {
-                for (Auditoria a : historial) {
-                    if (a.getId().equals(dto.getBaseId())) this.auditoriaBase = a;
-                    if (a.getId().equals(dto.getComparadaId())) this.auditoriaComparada = a;
+            if ((ctx.auditoriaBase == null || ctx.auditoriaComparada == null) && dto.getProyectoId() != null) {
+                List<Auditoria> historial = auditoriaDAO.consultarHistorialDeAuditorias(dto.getProyectoId());
+                if (historial != null) {
+                    for (Auditoria a : historial) {
+                        if (a.getId().equals(dto.getBaseId())) ctx.auditoriaBase = a;
+                        if (a.getId().equals(dto.getComparadaId())) ctx.auditoriaComparada = a;
+                    }
                 }
             }
+
+            ctx.evolucionFinalDTO = new EvolucionFinalDTO();
+            if (ctx.auditoriaBase != null) {
+                ctx.evolucionFinalDTO.setBaseId(ctx.auditoriaBase.getId());
+                ctx.evolucionFinalDTO.setFechaHoraBase(ctx.auditoriaBase.getFechaHora());
+                ctx.evolucionFinalDTO.setPuntajeObtenidoBase(ctx.auditoriaBase.getPuntajeObtenido());
+                ctx.evolucionFinalDTO.setPuntajeMaximoBase(ctx.auditoriaBase.getPuntajeMaximo());
+                ctx.evolucionFinalDTO.setPorcentajeBase(ctx.auditoriaBase.getPorcentaje());
+            }
+            if (ctx.auditoriaComparada != null) {
+                ctx.evolucionFinalDTO.setComparadaId(ctx.auditoriaComparada.getId());
+                ctx.evolucionFinalDTO.setFechaHoraComparada(ctx.auditoriaComparada.getFechaHora());
+                ctx.evolucionFinalDTO.setPuntajeObtenidoComparada(ctx.auditoriaComparada.getPuntajeObtenido());
+                ctx.evolucionFinalDTO.setPuntajeMaximoComparada(ctx.auditoriaComparada.getPuntajeMaximo());
+                ctx.evolucionFinalDTO.setPorcentajeComparada(ctx.auditoriaComparada.getPorcentaje());
+            }
+
+            // 3. Calcular variación de puntajes
+            calcularVariacionDePuntajes();
+
+            // 4. Bucle por cada regla para clasificar el estado del hallazgo
+            for (Regla regla : reglasMap.values()) {
+                ctx.reglaEnEvaluacion = regla;
+                ctx.resultadoBaseActual = resultadosBase.get(regla.getId());
+                ctx.resultadoComparadaActual = resultadosComparada.get(regla.getId());
+                ctx.cumpleBaseActual = ctx.resultadoBaseActual != null && ctx.resultadoBaseActual.isCumple();
+                ctx.cumpleComparadaActual = ctx.resultadoComparadaActual != null && ctx.resultadoComparadaActual.isCumple();
+
+                clasificarEstadoDelHallazgo();
+            }
+
+            // 5. Contar hallazgos por estado
+            contarHallazgosPorEstado();
+
+            // 6. Mensaje en caso de no haber hallazgos
+            if (ctx.evolucionFinalDTO.getComparaciones().isEmpty()) {
+                ctx.evolucionFinalDTO.setMensaje(MENSAJE_SIN_HALLAZGOS);
+            }
+
+            return ctx.evolucionFinalDTO;
+        } finally {
+            contextoLocal.remove();
         }
-
-        this.evolucionFinalDTO = new EvolucionFinalDTO();
-        if (this.auditoriaBase != null) {
-            this.evolucionFinalDTO.setBaseId(this.auditoriaBase.getId());
-            this.evolucionFinalDTO.setFechaHoraBase(this.auditoriaBase.getFechaHora());
-            this.evolucionFinalDTO.setPuntajeObtenidoBase(this.auditoriaBase.getPuntajeObtenido());
-            this.evolucionFinalDTO.setPuntajeMaximoBase(this.auditoriaBase.getPuntajeMaximo());
-            this.evolucionFinalDTO.setPorcentajeBase(this.auditoriaBase.getPorcentaje());
-        }
-        if (this.auditoriaComparada != null) {
-            this.evolucionFinalDTO.setComparadaId(this.auditoriaComparada.getId());
-            this.evolucionFinalDTO.setFechaHoraComparada(this.auditoriaComparada.getFechaHora());
-            this.evolucionFinalDTO.setPuntajeObtenidoComparada(this.auditoriaComparada.getPuntajeObtenido());
-            this.evolucionFinalDTO.setPuntajeMaximoComparada(this.auditoriaComparada.getPuntajeMaximo());
-            this.evolucionFinalDTO.setPorcentajeComparada(this.auditoriaComparada.getPorcentaje());
-        }
-
-        // 3. Calcular variación de puntajes
-        calcularVariacionDePuntajes();
-
-        // 4. Bucle por cada regla para clasificar el estado del hallazgo
-        for (Regla regla : reglasMap.values()) {
-            this.reglaEnEvaluacion = regla;
-            this.resultadoBaseActual = resultadosBase.get(regla.getId());
-            this.resultadoComparadaActual = resultadosComparada.get(regla.getId());
-            this.cumpleBaseActual = this.resultadoBaseActual != null && this.resultadoBaseActual.isCumple();
-            this.cumpleComparadaActual = this.resultadoComparadaActual != null && this.resultadoComparadaActual.isCumple();
-
-            clasificarEstadoDelHallazgo();
-        }
-
-        // 5. Contar hallazgos por estado
-        contarHallazgosPorEstado();
-
-        // 6. Mensaje en caso de no haber hallazgos
-        if (this.evolucionFinalDTO.getComparaciones().isEmpty()) {
-            this.evolucionFinalDTO.setMensaje(MENSAJE_SIN_HALLAZGOS);
-        }
-
-        return this.evolucionFinalDTO;
     }
 
     // ========================================================
@@ -188,52 +195,64 @@ public class EvolucionServiceImpl implements EvolucionService {
     }
 
     private void calcularVariacionDePuntajes() {
-        int variacionPuntos = this.evolucionFinalDTO.getPuntajeObtenidoComparada() - this.evolucionFinalDTO.getPuntajeObtenidoBase();
-        double variacionPorcentaje = Math.round((this.evolucionFinalDTO.getPorcentajeComparada() - this.evolucionFinalDTO.getPorcentajeBase()) * 10.0) / 10.0;
-        this.evolucionFinalDTO.setVariacionPuntaje(variacionPuntos);
-        this.evolucionFinalDTO.setVariacionPorcentaje(variacionPorcentaje);
+        ContextoComparacion ctx = contextoLocal.get();
+        if (ctx == null || ctx.evolucionFinalDTO == null) return;
+        int variacionPuntos = ctx.evolucionFinalDTO.getPuntajeObtenidoComparada() - ctx.evolucionFinalDTO.getPuntajeObtenidoBase();
+        double variacionPorcentaje = Math.round((ctx.evolucionFinalDTO.getPorcentajeComparada() - ctx.evolucionFinalDTO.getPorcentajeBase()) * 10.0) / 10.0;
+        ctx.evolucionFinalDTO.setVariacionPuntaje(variacionPuntos);
+        ctx.evolucionFinalDTO.setVariacionPorcentaje(variacionPorcentaje);
     }
 
     private void clasificarEstadoDelHallazgo() {
+        ContextoComparacion ctx = contextoLocal.get();
+        if (ctx == null || ctx.evolucionFinalDTO == null) return;
+
         String estado = null;
-        if (this.cumpleBaseActual) {
-            if (!this.cumpleComparadaActual) {
+        if (ctx.cumpleBaseActual) {
+            if (!ctx.cumpleComparadaActual) {
                 estado = "Nuevo";
             }
         } else {
-            if (this.cumpleComparadaActual) {
+            if (ctx.cumpleComparadaActual) {
                 estado = "Corregido";
             } else {
                 estado = "Persistente";
             }
         }
 
-        if (estado != null && this.reglaEnEvaluacion != null) {
+        if (estado != null && ctx.reglaEnEvaluacion != null) {
             String evidencia = "";
             String recomendacion = "";
-            if (this.resultadoComparadaActual != null && this.resultadoComparadaActual.getHallazgo() != null) {
-                evidencia = this.resultadoComparadaActual.getHallazgo().getEvidencia();
-                recomendacion = this.resultadoComparadaActual.getHallazgo().getRecomendacion();
-            } else if (this.resultadoBaseActual != null && this.resultadoBaseActual.getHallazgo() != null) {
-                evidencia = this.resultadoBaseActual.getHallazgo().getEvidencia();
-                recomendacion = this.resultadoBaseActual.getHallazgo().getRecomendacion();
+            Long hallazgoId = null;
+            if (ctx.resultadoComparadaActual != null && ctx.resultadoComparadaActual.getHallazgo() != null) {
+                evidencia = ctx.resultadoComparadaActual.getHallazgo().getEvidencia();
+                recomendacion = ctx.resultadoComparadaActual.getHallazgo().getRecomendacion();
+                hallazgoId = ctx.resultadoComparadaActual.getHallazgo().getId();
+            } else if (ctx.resultadoBaseActual != null && ctx.resultadoBaseActual.getHallazgo() != null) {
+                evidencia = ctx.resultadoBaseActual.getHallazgo().getEvidencia();
+                recomendacion = ctx.resultadoBaseActual.getHallazgo().getRecomendacion();
+                hallazgoId = ctx.resultadoBaseActual.getHallazgo().getId();
             }
-            this.evolucionFinalDTO.getComparaciones().add(new ComparacionRegla(
-                this.reglaEnEvaluacion.getNombreRepresentativo(),
-                this.reglaEnEvaluacion.getNivelSeveridad(),
+            ctx.evolucionFinalDTO.getComparaciones().add(new ComparacionRegla(
+                ctx.reglaEnEvaluacion.getNombreRepresentativo(),
+                ctx.reglaEnEvaluacion.getNivelSeveridad(),
                 estado,
                 evidencia,
-                recomendacion
+                recomendacion,
+                hallazgoId
             ));
         }
     }
 
     private void contarHallazgosPorEstado() {
+        ContextoComparacion ctx = contextoLocal.get();
+        if (ctx == null || ctx.evolucionFinalDTO == null) return;
+
         int nuevos = 0;
         int persistentes = 0;
         int corregidos = 0;
 
-        for (ComparacionRegla item : this.evolucionFinalDTO.getComparaciones()) {
+        for (ComparacionRegla item : ctx.evolucionFinalDTO.getComparaciones()) {
             if ("Nuevo".equalsIgnoreCase(item.getEstado())) {
                 nuevos++;
             } else if ("Persistente".equalsIgnoreCase(item.getEstado())) {
@@ -243,8 +262,8 @@ public class EvolucionServiceImpl implements EvolucionService {
             }
         }
 
-        this.evolucionFinalDTO.setTotalNuevos(nuevos);
-        this.evolucionFinalDTO.setTotalPersistentes(persistentes);
-        this.evolucionFinalDTO.setTotalCorregidos(corregidos);
+        ctx.evolucionFinalDTO.setTotalNuevos(nuevos);
+        ctx.evolucionFinalDTO.setTotalPersistentes(persistentes);
+        ctx.evolucionFinalDTO.setTotalCorregidos(corregidos);
     }
 }

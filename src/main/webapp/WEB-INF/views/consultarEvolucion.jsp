@@ -4,13 +4,17 @@
 <%@ page import="com.gr4.owlaudit.dto.AuditoriaResumenDTO" %>
 <%@ page import="com.gr4.owlaudit.dto.EvolucionFinalDTO" %>
 <%@ page import="com.gr4.owlaudit.dto.EvolucionFinalDTO.ComparacionRegla" %>
+<%@ page import="com.gr4.owlaudit.model.Proyecto" %>
 <%@ page import="com.gr4.owlaudit.common.util.HtmlUtil" %>
+<%@ page import="java.util.List" %>
 <%
     String mensajeExito = (String) request.getAttribute("mensajeExito");
     String mensajeError = (String) request.getAttribute("mensajeError");
     EvolucionDTO evolucionDTO = (EvolucionDTO) request.getAttribute("evolucionDTO");
     ResumenHistorialDTO resumenHistorial = (ResumenHistorialDTO) request.getAttribute("resumenHistorialDTO");
     EvolucionFinalDTO evolucionFinal = (EvolucionFinalDTO) request.getAttribute("evolucionFinalDTO");
+    @SuppressWarnings("unchecked")
+    List<Proyecto> listaProyectos = (List<Proyecto>) request.getAttribute("listaProyectos");
 
     Long proyectoIdActual = evolucionDTO != null && evolucionDTO.getProyectoId() != null ? evolucionDTO.getProyectoId() : null;
     Long baseIdActual = evolucionDTO != null ? evolucionDTO.getBaseId() : null;
@@ -46,10 +50,21 @@
             <!-- Paso 1: Selección del Proyecto -->
             <form action="${pageContext.request.contextPath}/evolucion" method="GET" style="display: flex; gap: 1rem; align-items: flex-end; margin-bottom: 0.5rem;">
                 <div class="form-group" style="flex: 1; margin-bottom: 0;">
-                    <label for="proyectoId" class="form-label">ID del Proyecto Académico</label>
-                    <input type="number" id="proyectoId" name="proyectoId" class="form-control" 
-                           placeholder="Ingrese el identificador del proyecto"
-                           value="<%= proyectoIdActual != null ? proyectoIdActual : "" %>" min="1" required>
+                    <label for="proyectoId" class="form-label">Proyecto Académico</label>
+                    <% if (listaProyectos != null && !listaProyectos.isEmpty()) { %>
+                        <select id="proyectoId" name="proyectoId" class="form-control" onchange="this.form.submit()" required>
+                            <option value="">-- Seleccione un Proyecto Registrado --</option>
+                            <% for (Proyecto p : listaProyectos) { %>
+                                <option value="<%= p.getId() %>" <%= (proyectoIdActual != null && proyectoIdActual.equals(p.getId())) ? "selected" : "" %>>
+                                    #<%= p.getId() %> &middot; <%= HtmlUtil.escape(p.getNombre()) %> (<%= HtmlUtil.escape(p.getUrlGithub()) %>)
+                                </option>
+                            <% } %>
+                        </select>
+                    <% } else { %>
+                        <input type="number" id="proyectoId" name="proyectoId" class="form-control" 
+                               placeholder="Ingrese el identificador del proyecto"
+                               value="<%= proyectoIdActual != null ? proyectoIdActual : "" %>" min="1" required>
+                    <% } %>
                 </div>
                 <button type="submit" class="btn btn-secondary">Cargar Historial</button>
             </form>
@@ -205,6 +220,7 @@
                                     <th>Estado de Evolución</th>
                                     <th>Evidencia</th>
                                     <th>Recomendación</th>
+                                    <th style="text-align: center;">Acción</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -230,6 +246,16 @@
                                         </td>
                                         <td><%= HtmlUtil.escape(r.getEvidencia() != null && !r.getEvidencia().isBlank() ? r.getEvidencia() : "—") %></td>
                                         <td><%= HtmlUtil.escape(r.getRecomendacion() != null && !r.getRecomendacion().isBlank() ? r.getRecomendacion() : "—") %></td>
+                                        <td style="text-align: center;">
+                                            <% if (r.getHallazgoId() != null && ("Nuevo".equalsIgnoreCase(r.getEstado()) || "Persistente".equalsIgnoreCase(r.getEstado()))) { %>
+                                                <a href="${pageContext.request.contextPath}/retroalimentacion?accion=solicitar&hallazgoId=<%= r.getHallazgoId() %>" 
+                                                   class="btn btn-sm btn-primary">
+                                                    Solicitar Feedback
+                                                </a>
+                                            <% } else { %>
+                                                <span style="color: var(--text-muted);">—</span>
+                                            <% } %>
+                                        </td>
                                     </tr>
                                 <% } %>
                             </tbody>

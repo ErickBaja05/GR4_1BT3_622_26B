@@ -32,6 +32,12 @@ public class SolicitudDAOImpl implements SolicitudDAO {
         Transaction tx = null;
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
             tx = session.beginTransaction();
+            if (solicitud.getHallazgo() != null && solicitud.getHallazgo().getId() != null) {
+                com.gr4.owlaudit.model.Hallazgo h = session.get(com.gr4.owlaudit.model.Hallazgo.class, solicitud.getHallazgo().getId());
+                if (h != null) {
+                    solicitud.setHallazgo(h);
+                }
+            }
             session.persist(solicitud);
             tx.commit();
         } catch (Exception e) {
@@ -76,4 +82,51 @@ public class SolicitudDAOImpl implements SolicitudDAO {
             throw new RuntimeException("Error al actualizar la solicitud de retroalimentación: " + e.getMessage(), e);
         }
     }
+
+    @Override
+    public java.util.List<SolicitudRetroalimentacion> consultarSolicitudesPendientes() {
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            return session.createQuery(
+                "SELECT DISTINCT s FROM SolicitudRetroalimentacion s " +
+                "LEFT JOIN FETCH s.hallazgo h " +
+                "LEFT JOIN FETCH h.resultadoRegla r " +
+                "LEFT JOIN FETCH r.regla " +
+                "LEFT JOIN FETCH r.auditoria a " +
+                "LEFT JOIN FETCH a.proyecto " +
+                "WHERE s.estado = :estado " +
+                "ORDER BY s.id DESC",
+                SolicitudRetroalimentacion.class
+            )
+            .setParameter("estado", com.gr4.owlaudit.model.EstadoRetroEnum.PENDIENTE)
+            .getResultList();
+        } catch (Exception e) {
+            throw new RuntimeException("Error al consultar solicitudes pendientes: " + e.getMessage(), e);
+        }
+    }
+
+    @Override
+    public java.util.List<SolicitudRetroalimentacion> buscarPendientes() {
+        return consultarSolicitudesPendientes();
+    }
+
+    @Override
+    public com.gr4.owlaudit.model.Hallazgo buscarHallazgoPorId(Long hallazgoId) {
+        if (hallazgoId == null) return null;
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            return session.createQuery(
+                "SELECT h FROM Hallazgo h " +
+                "LEFT JOIN FETCH h.resultadoRegla r " +
+                "LEFT JOIN FETCH r.regla " +
+                "LEFT JOIN FETCH r.auditoria a " +
+                "LEFT JOIN FETCH a.proyecto " +
+                "WHERE h.id = :id",
+                com.gr4.owlaudit.model.Hallazgo.class
+            )
+            .setParameter("id", hallazgoId)
+            .uniqueResult();
+        } catch (Exception e) {
+            throw new RuntimeException("Error al buscar hallazgo por ID: " + e.getMessage(), e);
+        }
+    }
 }
+

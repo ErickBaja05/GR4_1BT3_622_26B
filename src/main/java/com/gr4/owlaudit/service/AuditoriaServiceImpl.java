@@ -24,17 +24,25 @@ public class AuditoriaServiceImpl implements AuditoriaService {
     private final AuditoriaDAO auditoriaDAO;
     private final GitHubClient gitHubClient;
     private final EvaluadorReglaFactory evaluadorFactory;
+    private final com.gr4.owlaudit.dao.ProyectoDAO proyectoDAO;
 
     public AuditoriaServiceImpl() {
-        this(new ReglaDAOImpl(), new AuditoriaDAOImpl(), new GitHubClient(), new EvaluadorReglaFactory());
+        this(new ReglaDAOImpl(), new AuditoriaDAOImpl(), new GitHubClient(), new EvaluadorReglaFactory(), new com.gr4.owlaudit.dao.ProyectoDAOImpl());
     }
 
     public AuditoriaServiceImpl(ReglaDAO reglaDAO, AuditoriaDAO auditoriaDAO,
             GitHubClient gitHubClient, EvaluadorReglaFactory evaluadorFactory) {
+        this(reglaDAO, auditoriaDAO, gitHubClient, evaluadorFactory, new com.gr4.owlaudit.dao.ProyectoDAOImpl());
+    }
+
+    public AuditoriaServiceImpl(ReglaDAO reglaDAO, AuditoriaDAO auditoriaDAO,
+            GitHubClient gitHubClient, EvaluadorReglaFactory evaluadorFactory,
+            com.gr4.owlaudit.dao.ProyectoDAO proyectoDAO) {
         this.reglaDAO = reglaDAO;
         this.auditoriaDAO = auditoriaDAO;
         this.gitHubClient = gitHubClient;
         this.evaluadorFactory = evaluadorFactory;
+        this.proyectoDAO = proyectoDAO;
     }
 
     @Override
@@ -68,6 +76,15 @@ public class AuditoriaServiceImpl implements AuditoriaService {
 
         // 3. Evaluar cada regla y registrar su resultado (y hallazgo si no cumple)
         Auditoria auditoria = new Auditoria();
+        if (dto != null && dto.getProyectoId() != null && proyectoDAO != null) {
+            com.gr4.owlaudit.model.Proyecto p = proyectoDAO.buscarPorId(dto.getProyectoId());
+            if (p == null) {
+                p = new com.gr4.owlaudit.model.Proyecto();
+                p.setId(dto.getProyectoId());
+            }
+            auditoria.setProyecto(p);
+        }
+
         for (Regla regla : reglas) {
             if (evaluarCumplimientoDeRegla(regla, rutas)) {
                 auditoria.asignarPonderacionCompleta(regla);
@@ -80,8 +97,22 @@ public class AuditoriaServiceImpl implements AuditoriaService {
         calcularPuntajesDeLaAuditoria(auditoria);
         auditoriaDAO.registrarAuditoriaEnElHistorial(auditoria);
 
+        List<ResultadoDTO.DetalleResultadoDTO> detalles = new java.util.ArrayList<>();
+        for (ResultadoRegla r : auditoria.getResultados()) {
+            detalles.add(new ResultadoDTO.DetalleResultadoDTO(
+                r.getRegla().getNombreRepresentativo(),
+                r.isCumple(),
+                r.getPuntosObtenidos(),
+                r.getRegla().getPonderacion(),
+                r.getRegla().getNivelSeveridad(),
+                r.getHallazgo() != null ? r.getHallazgo().getId() : null,
+                r.getHallazgo() != null ? r.getHallazgo().getEvidencia() : null,
+                r.getHallazgo() != null ? r.getHallazgo().getRecomendacion() : null
+            ));
+        }
+
         return new ResultadoDTO(auditoria.getPuntajeObtenido(), auditoria.getPuntajeMaximo(),
-                auditoria.getPorcentaje());
+                auditoria.getPorcentaje(), detalles);
     }
 
     private boolean evaluarCumplimientoDeRegla(Regla regla, List<String> rutas) {

@@ -7,9 +7,14 @@ import java.util.List;
 import java.util.Map;
 
 import com.gr4.owlaudit.common.exception.ExcepcionNegocio;
+import com.gr4.owlaudit.dao.SolicitudDAO;
+import com.gr4.owlaudit.dao.SolicitudDAOImpl;
 import com.gr4.owlaudit.dto.SolicitudDTO;
 import com.gr4.owlaudit.dto.UsuarioDTO;
+import com.gr4.owlaudit.model.Hallazgo;
+import com.gr4.owlaudit.model.ResultadoRegla;
 import com.gr4.owlaudit.model.RolEnum;
+import com.gr4.owlaudit.model.SolicitudRetroalimentacion;
 import com.gr4.owlaudit.service.RetroalimentacionService;
 import com.gr4.owlaudit.service.RetroalimentacionServiceImpl;
 
@@ -33,13 +38,19 @@ public class RetroalimentacionServlet extends HttpServlet {
     private static final String VISTA_ATENDER = "/WEB-INF/views/atenderRetroalimentacion.jsp";
 
     private final RetroalimentacionService retroalimentacionService;
+    private final SolicitudDAO solicitudDAO;
 
     public RetroalimentacionServlet() {
-        this(new RetroalimentacionServiceImpl());
+        this(new RetroalimentacionServiceImpl(), new SolicitudDAOImpl());
     }
 
     public RetroalimentacionServlet(RetroalimentacionService retroalimentacionService) {
+        this(retroalimentacionService, new SolicitudDAOImpl());
+    }
+
+    public RetroalimentacionServlet(RetroalimentacionService retroalimentacionService, SolicitudDAO solicitudDAO) {
         this.retroalimentacionService = retroalimentacionService;
+        this.solicitudDAO = solicitudDAO;
     }
 
     @Override
@@ -198,28 +209,41 @@ public class RetroalimentacionServlet extends HttpServlet {
     private void prepararVistaSolicitar(HttpServletRequest request) {
         String hallazgoIdParam = request.getParameter("hallazgoId");
         Long hallazgoId = parseLongOrNull(hallazgoIdParam);
-        if (hallazgoId == null) {
-            hallazgoId = 202L; // Hallazgo demo: Restricción de ejecutables
-        }
 
         SolicitudDTO dtoActual = (SolicitudDTO) request.getAttribute("solicitudDTO");
-        if (dtoActual == null) {
-            SolicitudDTO demo = new SolicitudDTO();
-            demo.setHallazgoId(hallazgoId);
-            request.setAttribute("solicitudDTO", demo);
+        if (dtoActual != null && dtoActual.getHallazgoId() != null) {
+            hallazgoId = dtoActual.getHallazgoId();
         }
 
-        if (request.getAttribute("nombreProyecto") == null) {
-            request.setAttribute("nombreProyecto", "Sistema de Gestión Académica - GR4");
-        }
-        if (request.getAttribute("reglaNombre") == null) {
-            request.setAttribute("reglaNombre", "Restricción de ejecutables y binarios (.exe, .jar)");
-        }
-        if (request.getAttribute("severidad") == null) {
-            request.setAttribute("severidad", "ALTA");
-        }
-        if (request.getAttribute("evidencia") == null) {
-            request.setAttribute("evidencia", "Se detectó el archivo 'dist/app.jar' en el repositorio.");
+        if (hallazgoId != null) {
+            if (dtoActual == null) {
+                SolicitudDTO nuevo = new SolicitudDTO();
+                nuevo.setHallazgoId(hallazgoId);
+                request.setAttribute("solicitudDTO", nuevo);
+            }
+
+            try {
+                Hallazgo h = solicitudDAO.buscarHallazgoPorId(hallazgoId);
+                if (h != null) {
+                    if (h.getResultadoRegla() != null) {
+                        ResultadoRegla rr = h.getResultadoRegla();
+                        if (rr.getRegla() != null && request.getAttribute("reglaNombre") == null) {
+                            request.setAttribute("reglaNombre", rr.getRegla().getNombreRepresentativo());
+                        }
+                        if (rr.getAuditoria() != null && rr.getAuditoria().getProyecto() != null && request.getAttribute("nombreProyecto") == null) {
+                            request.setAttribute("nombreProyecto", rr.getAuditoria().getProyecto().getNombre());
+                        }
+                    }
+                    if (h.getNivelSeveridad() != null && request.getAttribute("severidad") == null) {
+                        request.setAttribute("severidad", h.getNivelSeveridad().name());
+                    }
+                    if (h.getEvidencia() != null && request.getAttribute("evidencia") == null) {
+                        request.setAttribute("evidencia", h.getEvidencia());
+                    }
+                }
+            } catch (Exception e) {
+                System.err.println("[RetroalimentacionServlet] Error al cargar hallazgo real " + hallazgoId + ": " + e.getMessage());
+            }
         }
     }
 
@@ -234,32 +258,57 @@ public class RetroalimentacionServlet extends HttpServlet {
             request.setAttribute("solicitudDTO", seleccionado);
         }
 
+        List<SolicitudRetroalimentacion> lista = null;
+        try {
+            lista = solicitudDAO.consultarSolicitudesPendientes();
+        } catch (Exception e) {
+            System.err.println("[RetroalimentacionServlet] Error al consultar pendientes: " + e.getMessage());
+        }
+
         List<Map<String, Object>> pendientes = new ArrayList<>();
+        if (lista != null) {
+            for (SolicitudRetroalimentacion s : lista) {
+                Map<String, Object> map = new HashMap<>();
+                map.put("solicitudId", s.getId());
+                map.put("justificacion", s.getJustificacion() != null ? s.getJustificacion() : "");
+                map.put("estado", s.getEstado() != null ? s.getEstado().name() : "PENDIENTE");
+                map.put("fechaHora", "");
 
-        Map<String, Object> s1 = new HashMap<>();
-        s1.put("solicitudId", 501L);
-        s1.put("hallazgoId", 202L);
-        s1.put("nombreProyecto", "Sistema de Gestión Académica - GR4");
-        s1.put("reglaNombre", "Restricción de ejecutables y binarios (.exe, .jar)");
-        s1.put("severidad", "ALTA");
-        s1.put("evidencia", "Archivo 'dist/app.jar' en el repositorio.");
-        s1.put("justificacion", "El archivo JAR detectado corresponde a una dependencia requerida para ejecutar la base de datos embebida en pruebas locales.");
-        s1.put("estado", "PENDIENTE");
-        s1.put("fechaHora", "2026-10-02 11:20:00");
+                if (s.getHallazgo() != null) {
+                    map.put("hallazgoId", s.getHallazgo().getId());
+                    map.put("severidad", s.getHallazgo().getNivelSeveridad() != null ? s.getHallazgo().getNivelSeveridad().name() : "MEDIA");
+                    map.put("evidencia", s.getHallazgo().getEvidencia() != null ? s.getHallazgo().getEvidencia() : "");
 
-        Map<String, Object> s2 = new HashMap<>();
-        s2.put("solicitudId", 502L);
-        s2.put("hallazgoId", 203L);
-        s2.put("nombreProyecto", "Portal de Reservas - GR2");
-        s2.put("reglaNombre", "Estructura estándar de carpetas /src/main/java");
-        s2.put("severidad", "MEDIA");
-        s2.put("evidencia", "No existe la ruta 'src/main/java'.");
-        s2.put("justificacion", "Se movieron los paquetes bajo 'src/main/kotlin' debido a una migración parcial y no se detectó el paquete java estándar.");
-        s2.put("estado", "PENDIENTE");
-        s2.put("fechaHora", "2026-10-03 09:45:00");
-
-        pendientes.add(s1);
-        pendientes.add(s2);
+                    if (s.getHallazgo().getResultadoRegla() != null) {
+                        ResultadoRegla rr = s.getHallazgo().getResultadoRegla();
+                        if (rr.getRegla() != null) {
+                            map.put("reglaNombre", rr.getRegla().getNombreRepresentativo());
+                        }
+                        if (rr.getAuditoria() != null) {
+                            if (rr.getAuditoria().getFechaHora() != null) {
+                                map.put("fechaHora", rr.getAuditoria().getFechaHora().toString());
+                            }
+                            if (rr.getAuditoria().getProyecto() != null) {
+                                map.put("nombreProyecto", rr.getAuditoria().getProyecto().getNombre());
+                            }
+                        }
+                    }
+                }
+                if (map.get("nombreProyecto") == null) {
+                    map.put("nombreProyecto", "Proyecto Académico");
+                }
+                if (map.get("reglaNombre") == null) {
+                    map.put("reglaNombre", "Regla de Evaluación");
+                }
+                if (map.get("severidad") == null) {
+                    map.put("severidad", "MEDIA");
+                }
+                if (map.get("evidencia") == null) {
+                    map.put("evidencia", "—");
+                }
+                pendientes.add(map);
+            }
+        }
 
         request.setAttribute("solicitudesPendientes", pendientes);
     }

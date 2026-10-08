@@ -42,6 +42,11 @@ public class SolicitudRetroalimentacion {
         this.justificacion = dto != null ? dto.getJustificacion() : null;
         this.orientacionTecnica = dto != null ? dto.getOrientacion() : null;
         this.estado = EstadoRetroEnum.PENDIENTE;
+        if (dto != null && dto.getHallazgoId() != null) {
+            Hallazgo h = new Hallazgo();
+            h.setId(dto.getHallazgoId());
+            this.hallazgo = h;
+        }
     }
 
     public Long getId() {
