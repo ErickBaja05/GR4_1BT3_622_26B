@@ -300,8 +300,8 @@ public class RetroalimentacionServlet extends HttpServlet {
             Long proyectoId = parseLongOrNull(proyectoIdStr);
             request.setAttribute("proyectoIdFiltro", proyectoId);
 
-            // Invocación al método extraído (Extract Method)
-            List<Map<String, Object>> hallazgosDisponibles = obtenerHallazgosDisponibles(proyectoId);
+            // Invocación al método movido al servicio (Move Method)
+            List<Map<String, Object>> hallazgosDisponibles = retroalimentacionService.obtenerHallazgosDisponibles(proyectoId);
             request.setAttribute("hallazgosDisponibles", hallazgosDisponibles);
 
             // Cargar solicitudes previas para consulta del estudiante (cierre del corte vertical)
@@ -313,55 +313,6 @@ public class RetroalimentacionServlet extends HttpServlet {
         }
     }
 
-    /**
-     * Extrae y ensambla la lista de hallazgos no conformes disponibles para solicitar retroalimentación.
-     * (Método extraído mediante refactorización Extract Method).
-     *
-     * @param proyectoId Identificador del proyecto para filtrar, o null si se consultan todas las auditorías.
-     * @return Lista de mapas con la información representativa de cada hallazgo disponible.
-     */
-    private List<Map<String, Object>> obtenerHallazgosDisponibles(Long proyectoId) {
-        List<Auditoria> auditorias;
-        if (proyectoId != null) {
-            auditorias = auditoriaDAO.consultarHistorialDeAuditorias(proyectoId);
-        } else {
-            auditorias = auditoriaDAO.consultarTodas();
-        }
-
-        List<Map<String, Object>> hallazgosDisponibles = new ArrayList<>();
-        if (auditorias != null) {
-            for (Auditoria aud : auditorias) {
-                if (aud.getResultados() != null) {
-                    for (ResultadoRegla rr : aud.getResultados()) {
-                        if (!rr.isCumple() && rr.getHallazgo() != null) {
-                            Hallazgo h = rr.getHallazgo();
-                            Map<String, Object> map = new HashMap<>();
-                            map.put("hallazgoId", h.getId());
-                            map.put("auditoriaId", aud.getId());
-                            map.put("fechaHora", aud.getFechaHora() != null ? aud.getFechaHora().toString().replace('T', ' ') : "");
-                            map.put("proyectoNombre", aud.getProyecto() != null ? aud.getProyecto().getNombre() : "Proyecto Académico");
-                            map.put("reglaNombre", rr.getRegla() != null ? rr.getRegla().getNombreRepresentativo() : "Regla de Evaluación");
-                            map.put("severidad", h.getNivelSeveridad() != null ? h.getNivelSeveridad().name() : "MEDIA");
-                            map.put("evidencia", h.getEvidencia() != null ? h.getEvidencia() : "");
-                            map.put("recomendacion", h.getRecomendacion() != null ? h.getRecomendacion() : "");
-
-                            SolicitudRetroalimentacion sol = solicitudDAO.buscarPorHallazgoId(h.getId());
-                            if (sol != null) {
-                                map.put("tieneSolicitud", true);
-                                map.put("estadoSolicitud", sol.getEstado() != null ? sol.getEstado().name() : "PENDIENTE");
-                                map.put("solicitudId", sol.getId());
-                            } else {
-                                map.put("tieneSolicitud", false);
-                                map.put("estadoSolicitud", "SIN_SOLICITUD");
-                            }
-                            hallazgosDisponibles.add(map);
-                        }
-                    }
-                }
-            }
-        }
-        return hallazgosDisponibles;
-    }
 
     private void prepararVistaAtender(HttpServletRequest request) {
         String solicitudIdParam = request.getParameter("solicitudId");
