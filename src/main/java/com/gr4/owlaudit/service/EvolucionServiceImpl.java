@@ -32,8 +32,6 @@ public class EvolucionServiceImpl implements EvolucionService {
         Auditoria auditoriaComparada;
         EvolucionFinalDTO evolucionFinalDTO;
         Regla reglaEnEvaluacion;
-        boolean cumpleBaseActual;
-        boolean cumpleComparadaActual;
         ResultadoRegla resultadoBaseActual;
         ResultadoRegla resultadoComparadaActual;
     }
@@ -151,8 +149,6 @@ public class EvolucionServiceImpl implements EvolucionService {
                 ctx.reglaEnEvaluacion = regla;
                 ctx.resultadoBaseActual = resultadosBase.get(regla.getId());
                 ctx.resultadoComparadaActual = resultadosComparada.get(regla.getId());
-                ctx.cumpleBaseActual = ctx.resultadoBaseActual != null && ctx.resultadoBaseActual.isCumple();
-                ctx.cumpleComparadaActual = ctx.resultadoComparadaActual != null && ctx.resultadoComparadaActual.isCumple();
 
                 clasificarEstadoDelHallazgo();
             }
@@ -208,12 +204,12 @@ public class EvolucionServiceImpl implements EvolucionService {
         if (ctx == null || ctx.evolucionFinalDTO == null) return;
 
         String estado = null;
-        if (ctx.cumpleBaseActual) {
-            if (!ctx.cumpleComparadaActual) {
+        if (cumpleBaseActual()) {
+            if (!cumpleComparadaActual()) {
                 estado = "Nuevo";
             }
         } else {
-            if (ctx.cumpleComparadaActual) {
+            if (cumpleComparadaActual()) {
                 estado = "Corregido";
             } else {
                 estado = "Persistente";
@@ -265,5 +261,15 @@ public class EvolucionServiceImpl implements EvolucionService {
         ctx.evolucionFinalDTO.setTotalNuevos(nuevos);
         ctx.evolucionFinalDTO.setTotalPersistentes(persistentes);
         ctx.evolucionFinalDTO.setTotalCorregidos(corregidos);
+    }
+
+    private boolean cumpleBaseActual() {
+        ContextoComparacion ctx = contextoLocal.get();
+        return ctx != null && ctx.resultadoBaseActual != null && ctx.resultadoBaseActual.isCumple();
+    }
+
+    private boolean cumpleComparadaActual() {
+        ContextoComparacion ctx = contextoLocal.get();
+        return ctx != null && ctx.resultadoComparadaActual != null && ctx.resultadoComparadaActual.isCumple();
     }
 }
