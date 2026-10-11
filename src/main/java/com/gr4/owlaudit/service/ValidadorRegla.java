@@ -6,8 +6,10 @@ import com.gr4.owlaudit.model.NivelSeveridadEnum;
 import com.gr4.owlaudit.model.TipoMotorEnum;
 
 /**
- * Validador encargado de la verificación de sintaxis y formato de reglas técnicas.
- * Extraído de ReglaServiceImpl para cumplir con el Principio de Responsabilidad Única (SRP).
+ * Validador encargado de la verificación de sintaxis y formato de reglas
+ * técnicas.
+ * Extraído de ReglaServiceImpl para cumplir con el Principio de Responsabilidad
+ * Única (SRP).
  */
 public class ValidadorRegla {
 
@@ -33,7 +35,8 @@ public class ValidadorRegla {
     }
 
     /**
-     * Método alternativo de conveniencia que delega en {@link #validarSintaxisYFormato(NuevaReglaDTO)}.
+     * Método alternativo de conveniencia que delega en
+     * {@link #validarSintaxisYFormato(NuevaReglaDTO)}.
      *
      * @param dto Datos de la regla a validar.
      */
@@ -64,7 +67,8 @@ public class ValidadorRegla {
         try {
             return TipoMotorEnum.valueOf(trimmed);
         } catch (IllegalArgumentException e) {
-            throw new ExcepcionNegocio("El tipo de motor '" + trimmed + "' no es válido. Debe ser PRESENCIA_ARCHIVO, RESTRICCION_ARCHIVOS o ESTRUCTURA_CARPETAS.");
+            throw new ExcepcionNegocio("El tipo de motor '" + trimmed
+                    + "' no es válido. Debe ser PRESENCIA_ARCHIVO, RESTRICCION_ARCHIVOS o ESTRUCTURA_CARPETAS.");
         }
     }
 
@@ -97,7 +101,7 @@ public class ValidadorRegla {
         }
 
         // Caracteres prohibidos: :, \, ", <, >, |, ?
-        char[] prohibidos = {':', '\\', '"', '<', '>', '|', '?'};
+        char[] prohibidos = { ':', '\\', '"', '<', '>', '|', '?' };
         for (char c : prohibidos) {
             if (param.indexOf(c) >= 0) {
                 throw new ExcepcionNegocio("El parámetro exacto contiene el carácter prohibido: '" + c + "'.");
@@ -110,7 +114,8 @@ public class ValidadorRegla {
                 throw new ExcepcionNegocio("Para PRESENCIA_ARCHIVO, la ruta no puede empezar ni terminar con '/'.");
             }
             if (param.contains("*")) {
-                throw new ExcepcionNegocio("Para PRESENCIA_ARCHIVO, el parámetro no puede contener el carácter comodín '*'.");
+                throw new ExcepcionNegocio(
+                        "Para PRESENCIA_ARCHIVO, el parámetro no puede contener el carácter comodín '*'.");
             }
             int lastSlash = param.lastIndexOf('/');
             String nombreArchivo = (lastSlash >= 0) ? param.substring(lastSlash + 1) : param;
@@ -122,16 +127,19 @@ public class ValidadorRegla {
                 throw new ExcepcionNegocio("Para ESTRUCTURA_CARPETAS, la ruta no puede empezar ni terminar con '/'.");
             }
             if (param.contains("*")) {
-                throw new ExcepcionNegocio("Para ESTRUCTURA_CARPETAS, el parámetro no puede contener el carácter comodín '*'.");
+                throw new ExcepcionNegocio(
+                        "Para ESTRUCTURA_CARPETAS, el parámetro no puede contener el carácter comodín '*'.");
             }
         } else if (tipoMotor == TipoMotorEnum.RESTRICCION_ARCHIVOS) {
             if (param.contains("/")) {
-                throw new ExcepcionNegocio("Para RESTRICCION_ARCHIVOS, el parámetro no puede contener barras separadoras '/'.");
+                throw new ExcepcionNegocio(
+                        "Para RESTRICCION_ARCHIVOS, el parámetro no puede contener barras separadoras '/'.");
             }
             boolean esExtension = param.startsWith(".") || param.startsWith("*.");
             boolean esArchivoExacto = !param.contains("*") && !param.isEmpty();
             if (!esExtension && !esArchivoExacto) {
-                throw new ExcepcionNegocio("Para RESTRICCION_ARCHIVOS, el parámetro debe ser una extensión (.ext, *.ext) o el nombre de un archivo prohibido exacto.");
+                throw new ExcepcionNegocio(
+                        "Para RESTRICCION_ARCHIVOS, el parámetro debe ser una extensión (.ext, *.ext) o el nombre de un archivo prohibido exacto.");
             }
         }
     }
@@ -141,7 +149,8 @@ public class ValidadorRegla {
         try {
             NivelSeveridadEnum.valueOf(trimmed);
         } catch (IllegalArgumentException e) {
-            throw new ExcepcionNegocio("El nivel de severidad '" + trimmed + "' no es válido. Debe ser ALTA, MEDIA o BAJA.");
+            throw new ExcepcionNegocio(
+                    "El nivel de severidad '" + trimmed + "' no es válido. Debe ser ALTA, MEDIA o BAJA.");
         }
     }
 
@@ -151,4 +160,3 @@ public class ValidadorRegla {
         }
     }
 }
-
