@@ -19,6 +19,7 @@ import com.gr4.owlaudit.service.ReglaService;
 import com.gr4.owlaudit.service.ReglaServiceImpl;
 import com.gr4.owlaudit.service.UsuarioService;
 import com.gr4.owlaudit.service.UsuarioServiceImpl;
+import com.gr4.owlaudit.service.ValidadorRegla;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -210,6 +211,18 @@ public class VerificacionBackendTest {
         }
     }
 
+    public static void testRegistrarReglaConValidadorInyectado() {
+        MockReglaDAO dao = new MockReglaDAO();
+        ValidadorRegla validador = new ValidadorRegla();
+        ReglaService service = new ReglaServiceImpl(dao, validador);
+
+        NuevaReglaDTO dto = new NuevaReglaDTO("PRESENCIA_ARCHIVO", "Regla Con Validador Inyectado", "Desc", "README.md", "MEDIA", 2);
+        service.registrarReglaEvaluacionTecnica(dto);
+
+        assertEquals(1, dao.consultarReglasDeEvaluacionVigentes().size(), "Debe haber 1 regla registrada en el DAO.");
+        System.out.println("  [PASS] testRegistrarReglaConValidadorInyectado: Inyección y delegación de ValidadorRegla verificada.");
+    }
+
     public static void testRegistrarProyectoExitoso() {
         MockProyectoDAO dao = new MockProyectoDAO();
         ProyectoService service = new ProyectoServiceImpl(dao);
@@ -266,6 +279,7 @@ public class VerificacionBackendTest {
             VerificacionBackendTest::testRegistrarReglaNombreDuplicado,
             VerificacionBackendTest::testRegistrarReglaPonderacionInvalida,
             VerificacionBackendTest::testRegistrarReglaParametroInvalido,
+            VerificacionBackendTest::testRegistrarReglaConValidadorInyectado,
             VerificacionBackendTest::testRegistrarProyectoExitoso,
             VerificacionBackendTest::testRegistrarProyectoEnlaceInvalido
         };
