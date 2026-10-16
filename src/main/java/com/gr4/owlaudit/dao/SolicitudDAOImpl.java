@@ -155,5 +155,10 @@ public class SolicitudDAOImpl implements SolicitudDAO {
             throw new RuntimeException("Error al consultar todas las solicitudes: " + e.getMessage(), e);
         }
     }
+
+    @Override
+    public SolicitudRetroalimentacion buscarSolicitudPendientePorHallazgo(Long hallazgoId) {
+        return null;
+    }
 }
 
