@@ -193,6 +193,9 @@ public class EvolucionServiceImpl implements EvolucionService {
 
     // Clasificación evolutiva global del repositorio (MEJORA, REGRESION, ESTABLE)
     public EvolucionGlobalEnum clasificarEvolucionGlobal(double variacionPorcentaje) {
+        if (variacionPorcentaje >= 5.0) {
+            return EvolucionGlobalEnum.MEJORA;
+        }
         return EvolucionGlobalEnum.ESTABLE;
     }
 

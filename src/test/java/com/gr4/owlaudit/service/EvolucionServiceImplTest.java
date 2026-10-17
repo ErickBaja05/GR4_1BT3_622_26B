@@ -191,7 +191,7 @@ class EvolucionServiceImplTest {
     }
 
     @Test
-    @DisplayName("Dado una variación mayor a 0% cuando se clasifica entonces el estado es MEJORA")
+    @DisplayName("Dado una variación mayor o igual a 5% cuando se clasifica entonces el estado es MEJORA")
     void given_variation_of_plus_10_percent_when_classify_then_MEJORA() {
         EvolucionGlobalEnum actual = evolucionService.clasificarEvolucionGlobal(10.0);
         assertEquals(EvolucionGlobalEnum.MEJORA, actual);
