@@ -165,6 +165,14 @@
                             Auditoría Comparada <strong>#<%= evolucionFinal.getComparadaId() %></strong> (<%= evolucionFinal.getFechaComparadaFormateada() %>)
                         </p>
                     </div>
+                    <div style="text-align: right;">
+                        <div class="stat-label">Evolución global</div>
+                        <% if (evolucionFinal.getEvolucionGlobal() != null) { %>
+                            <span class="badge <%= evolucionFinal.getEvolucionGlobal().getClaseBadge() %>" style="font-size: 1rem;">
+                                <%= evolucionFinal.getEvolucionGlobal().name() %>
+                            </span>
+                        <% } %>
+                    </div>
                 </div>
 
                 <% if (evolucionFinal.getMensaje() != null) { %>
