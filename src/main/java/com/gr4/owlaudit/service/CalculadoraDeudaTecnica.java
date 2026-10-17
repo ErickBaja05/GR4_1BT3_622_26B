@@ -16,9 +16,9 @@ import java.util.List;
  */
 public class CalculadoraDeudaTecnica {
 
-    private static final int MINUTOS_ALTA  = 120;
-    private static final int MINUTOS_MEDIA =  60;
-    private static final int MINUTOS_BAJA  =  30;
+    private static final int TIEMPO_HALLAZGO_ALTA = 120;
+    private static final int TIEMPO_HALLAZGO_MEDIA = 60;
+    private static final int TIEMPO_HALLAZGO_BAJA = 30;
 
     /**
      * Calcula la deuda tecnica estimada acumulando el tiempo de correccion
@@ -30,33 +30,28 @@ public class CalculadoraDeudaTecnica {
      *         por nivel y metodos de formato para la vista.
      */
     public DeudaTecnicaDTO calcular(List<NivelSeveridadEnum> hallazgos) {
-        int totalMinutos  = 0;
-        int cantidadAlta  = 0;
-        int cantidadMedia = 0;
-        int cantidadBaja  = 0;
-
-        if (hallazgos != null) {
-            for (NivelSeveridadEnum nivel : hallazgos) {
-                if (nivel == null) {
-                    continue;
-                }
-                switch (nivel) {
-                    case ALTA -> {
-                        totalMinutos += MINUTOS_ALTA;
-                        cantidadAlta++;
-                    }
-                    case MEDIA -> {
-                        totalMinutos += MINUTOS_MEDIA;
-                        cantidadMedia++;
-                    }
-                    case BAJA -> {
-                        totalMinutos += MINUTOS_BAJA;
-                        cantidadBaja++;
-                    }
-                }
-            }
+        if (hallazgos == null || hallazgos.isEmpty()) {
+            return new DeudaTecnicaDTO(0, 0, 0, 0);
         }
 
+        int cantidadAlta = contarPorSeveridad(hallazgos, NivelSeveridadEnum.ALTA);
+        int cantidadMedia = contarPorSeveridad(hallazgos, NivelSeveridadEnum.MEDIA);
+        int cantidadBaja = contarPorSeveridad(hallazgos, NivelSeveridadEnum.BAJA);
+
+        int totalMinutos = (cantidadAlta * TIEMPO_HALLAZGO_ALTA)
+                + (cantidadMedia * TIEMPO_HALLAZGO_MEDIA)
+                + (cantidadBaja * TIEMPO_HALLAZGO_BAJA);
+
         return new DeudaTecnicaDTO(totalMinutos, cantidadAlta, cantidadMedia, cantidadBaja);
+    }
+
+    /**
+     * Cuenta la cantidad de hallazgos que coinciden con el nivel de severidad especificado
+     * utilizando Java Streams de forma segura ante elementos nulos.
+     */
+    private int contarPorSeveridad(List<NivelSeveridadEnum> hallazgos, NivelSeveridadEnum severidad) {
+        return (int) hallazgos.stream()
+                .filter(nivel -> nivel == severidad)
+                .count();
     }
 }
