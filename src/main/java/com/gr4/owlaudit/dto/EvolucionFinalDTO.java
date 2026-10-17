@@ -1,5 +1,6 @@
 package com.gr4.owlaudit.dto;
 
+import com.gr4.owlaudit.model.EvolucionGlobalEnum;
 import com.gr4.owlaudit.model.NivelSeveridadEnum;
 
 import java.time.LocalDateTime;
@@ -40,8 +41,21 @@ public class EvolucionFinalDTO {
     // Mensaje para escenarios alternativos (p. ej. "No existen hallazgos en las auditorías comparadas")
     private String mensaje;
 
+
+    // Clasificación evolutiva global del repositorio (MEJORA, REGRESION, ESTABLE)
+    private EvolucionGlobalEnum evolucionGlobal;
+
+
     public EvolucionFinalDTO() {
         this.comparaciones = new ArrayList<>();
+    }
+
+    public EvolucionGlobalEnum getEvolucionGlobal() {
+        return evolucionGlobal;
+    }
+
+    public void setEvolucionGlobal(EvolucionGlobalEnum evolucionGlobal) {
+        this.evolucionGlobal = evolucionGlobal;
     }
 
     public Long getBaseId() {
