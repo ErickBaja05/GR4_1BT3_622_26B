@@ -9,6 +9,7 @@ import com.gr4.owlaudit.dto.EvolucionFinalDTO.ComparacionRegla;
 import com.gr4.owlaudit.dto.AuditoriaResumenDTO;
 import com.gr4.owlaudit.dto.ResumenHistorialDTO;
 import com.gr4.owlaudit.model.Auditoria;
+import com.gr4.owlaudit.model.EvolucionGlobalEnum;
 import com.gr4.owlaudit.model.Regla;
 import com.gr4.owlaudit.model.ResultadoRegla;
 
@@ -188,6 +189,10 @@ public class EvolucionServiceImpl implements EvolucionService {
                 }
             }
         }
+    }
+
+    public EvolucionGlobalEnum clasificarEvolucionGlobal(double variacionesPorcentaje) {
+        return null;
     }
 
     private void calcularVariacionDePuntajes() {

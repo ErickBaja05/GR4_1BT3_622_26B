@@ -13,6 +13,7 @@ import com.gr4.owlaudit.model.Proyecto;
 import com.gr4.owlaudit.model.Regla;
 import com.gr4.owlaudit.model.ResultadoRegla;
 import com.gr4.owlaudit.model.TipoMotorEnum;
+import com.gr4.owlaudit.model.EvolucionGlobalEnum;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -34,6 +35,23 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 class EvolucionServiceImplTest {
 
+    /**
+     * Pruebas unitarias para la funcionalidad de de clasificación de la evolución global según la variación porcentual.
+     */
+
+    @Test
+    @DisplayName("Dado una variación de 0% cuando se clasifica entonces el estado es ESTABLE")
+    public void given_variation_of_0_percent_when_classify_then_ESTABLE(){
+        EvolucionServiceImpl s = new EvolucionServiceImpl();
+        EvolucionGlobalEnum expected = EvolucionGlobalEnum.ESTABLE;
+        EvolucionGlobalEnum actual = s.clasificarEvolucionGlobal(0.0);
+        assertEquals(expected, actual);
+    }
+
+
+    /**
+     * Otras pruebas unitarias para CU04: Consultar Evolución de Calidad.
+     */
     static class MockAuditoriaDAO implements AuditoriaDAO {
         private final Map<Long, List<Auditoria>> historialPorProyecto = new HashMap<>();
         private final List<ResultadoRegla> todosLosResultados = new ArrayList<>();
