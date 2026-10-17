@@ -10,14 +10,8 @@ public interface SolicitudDAO {
     SolicitudRetroalimentacion buscarPorId(Long solicitudId);
     void actualizarSolicitud(SolicitudRetroalimentacion solicitud);
     List<SolicitudRetroalimentacion> consultarSolicitudesPendientes();
-    default List<SolicitudRetroalimentacion> buscarPendientes() {
-        return consultarSolicitudesPendientes();
-    }
-    default Hallazgo buscarHallazgoPorId(Long hallazgoId) {
-        return null;
-    }
-    default List<SolicitudRetroalimentacion> consultarTodasLasSolicitudes() {
-        return java.util.Collections.emptyList();
-    }
+    List<SolicitudRetroalimentacion> buscarPendientes();
+    Hallazgo buscarHallazgoPorId(Long hallazgoId);
+    List<SolicitudRetroalimentacion> consultarTodasLasSolicitudes();
+    SolicitudRetroalimentacion buscarSolicitudPendientePorHallazgo(Long hallazgoId);
 }
-
