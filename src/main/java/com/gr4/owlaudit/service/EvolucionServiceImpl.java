@@ -25,6 +25,7 @@ public class EvolucionServiceImpl implements EvolucionService {
     private static final String MENSAJE_CONSULTA_CANCELADA = "Consulta cancelada";
     private static final String MENSAJE_AUDITORIAS_IGUALES = "Debe indicar dos auditorías distintas";
     private static final String MENSAJE_SIN_HALLAZGOS = "No existen hallazgos en las auditorías comparadas";
+    private static final double UMBRAL_ESTABILIDAD = 5.0;
 
     private final AuditoriaDAO auditoriaDAO;
 
@@ -193,10 +194,10 @@ public class EvolucionServiceImpl implements EvolucionService {
 
     // Clasificación evolutiva global del repositorio (MEJORA, REGRESION, ESTABLE)
     public EvolucionGlobalEnum clasificarEvolucionGlobal(double variacionPorcentaje) {
-        if (variacionPorcentaje >= 5.0) {
+        if (variacionPorcentaje >= UMBRAL_ESTABILIDAD) {
             return EvolucionGlobalEnum.MEJORA;
         }
-        if (variacionPorcentaje <= -5.0) {
+        if (variacionPorcentaje <= -UMBRAL_ESTABILIDAD) {
             return EvolucionGlobalEnum.REGRESION;
         }
         return EvolucionGlobalEnum.ESTABLE;

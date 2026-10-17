@@ -225,6 +225,7 @@ class EvolucionServiceImplTest {
         // Variación de puntaje y porcentaje
         assertEquals(0, evolucion.getVariacionPuntaje(), "La variación de puntaje debe ser 0");
         assertEquals(0.0, evolucion.getVariacionPorcentaje(), "La variación de porcentaje debe ser 0.0 %");
+        assertEquals(EvolucionGlobalEnum.ESTABLE, evolucion.getEvolucionGlobal(), "La clasificación global debe ser ESTABLE");
 
         // Clasificación de hallazgos
         // - Archivo README es Nuevo (BAJA)
