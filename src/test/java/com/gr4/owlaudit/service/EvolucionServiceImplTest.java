@@ -35,23 +35,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 class EvolucionServiceImplTest {
 
-    /**
-     * Pruebas unitarias para la funcionalidad de de clasificación de la evolución global según la variación porcentual.
-     */
 
-    @Test
-    @DisplayName("Dado una variación de 0% cuando se clasifica entonces el estado es ESTABLE")
-    public void given_variation_of_0_percent_when_classify_then_ESTABLE(){
-        EvolucionServiceImpl s = new EvolucionServiceImpl();
-        EvolucionGlobalEnum expected = EvolucionGlobalEnum.ESTABLE;
-        EvolucionGlobalEnum actual = s.clasificarEvolucionGlobal(0.0);
-        assertEquals(expected, actual);
-    }
-
-
-    /**
-     * Otras pruebas unitarias para CU04: Consultar Evolución de Calidad.
-     */
     static class MockAuditoriaDAO implements AuditoriaDAO {
         private final Map<Long, List<Auditoria>> historialPorProyecto = new HashMap<>();
         private final List<ResultadoRegla> todosLosResultados = new ArrayList<>();
@@ -93,7 +77,7 @@ class EvolucionServiceImplTest {
     }
 
     private MockAuditoriaDAO mockDao;
-    private EvolucionService evolucionService;
+    private EvolucionServiceImpl evolucionService;
 
     private Regla reglaGitignore;
     private Regla reglaReadme;
@@ -194,6 +178,21 @@ class EvolucionServiceImplTest {
         mockDao.agregarAuditoria(1L, auditoria1);
         mockDao.agregarAuditoria(1L, auditoria2);
     }
+
+    // =========================================================================
+    // Pruebas unitarias para clasificación de evolución global
+    // =========================================================================
+
+    @Test
+    @DisplayName("Dado una variación de 0% cuando se clasifica entonces el estado es ESTABLE")
+    void given_variation_of_0_percent_when_classify_then_ESTABLE() {
+        EvolucionGlobalEnum actual = evolucionService.clasificarEvolucionGlobal(0.0);
+        assertEquals(EvolucionGlobalEnum.ESTABLE, actual);
+    }
+
+    // =========================================================================
+    // Pruebas unitarias para CU04: Consultar Evolución de Calidad
+    // =========================================================================
 
     @Test
     @DisplayName("CP-CU04-01: Comparación exitosa tomando la más antigua como base sin importar el orden")

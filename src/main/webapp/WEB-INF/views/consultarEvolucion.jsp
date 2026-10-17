@@ -165,13 +165,13 @@
                             Auditoría Comparada <strong>#<%= evolucionFinal.getComparadaId() %></strong> (<%= evolucionFinal.getFechaComparadaFormateada() %>)
                         </p>
                     </div>
-                    <% String evolucionGlobal = evolucionFinal.getEvolucionGlobal() != null
-                            ? evolucionFinal.getEvolucionGlobal().name() : "";
-                        String claseEvolucion = "MEJORA".equals(evolucionGlobal) ? "badge-corregido"
-                                : "REGRESION".equals(evolucionGlobal) ? "badge-alta" : "badge-media"; %>
                     <div style="text-align: right;">
                         <div class="stat-label">Evolución global</div>
-                        <span class="badge <%= claseEvolucion %>" style="font-size: 1rem;"><%= evolucionGlobal %></span>
+                        <% if (evolucionFinal.getEvolucionGlobal() != null) { %>
+                            <span class="badge <%= evolucionFinal.getEvolucionGlobal().getClaseBadge() %>" style="font-size: 1rem;">
+                                <%= evolucionFinal.getEvolucionGlobal().name() %>
+                            </span>
+                        <% } %>
                     </div>
                 </div>
 
