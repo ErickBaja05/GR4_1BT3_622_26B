@@ -8,6 +8,7 @@ public class ResultadoDTO {
     private int puntajeObtenido;
     private int puntajeMaximo;
     private double porcentaje;
+    private String dictamen;
     private List<DetalleResultadoDTO> detalles = new ArrayList<>();
 
     public ResultadoDTO() {
@@ -49,6 +50,14 @@ public class ResultadoDTO {
 
     public void setPorcentaje(double porcentaje) {
         this.porcentaje = porcentaje;
+    }
+
+    public String getDictamen() {
+        return dictamen;
+    }
+
+    public void setDictamen(String dictamen) {
+        this.dictamen = dictamen;
     }
 
     public List<DetalleResultadoDTO> getDetalles() {

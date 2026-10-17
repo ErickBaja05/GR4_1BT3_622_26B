@@ -148,4 +148,8 @@ public class Auditoria {
     public void setProyecto(Proyecto proyecto) {
         this.proyecto = proyecto;
     }
+
+    public String determinarDictamen() {
+        return null;
+    }
 }
