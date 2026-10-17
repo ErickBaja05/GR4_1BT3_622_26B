@@ -150,6 +150,16 @@ public class Auditoria {
     }
 
     public String determinarDictamen() {
-        return null;
+        if (this.porcentaje < 70.0) {
+            return "NO APROBADA";
+        }
+        if (this.resultados != null) {
+            for (ResultadoRegla r : this.resultados) {
+                if (r.getHallazgo() != null && r.getHallazgo().getNivelSeveridad() == NivelSeveridadEnum.ALTA) {
+                    return "NO APROBADA";
+                }
+            }
+        }
+        return "APROBADA";
     }
 }

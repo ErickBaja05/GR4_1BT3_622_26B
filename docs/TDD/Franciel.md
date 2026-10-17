@@ -113,22 +113,71 @@ public class DictamenSeveridadTest {
 org.opentest4j.AssertionFailedError: La auditoría debe resultar NO APROBADA si contiene al menos un hallazgo de severidad ALTA ==> 
 Expected :NO APROBADA
 Actual   :null
-	at org.junit.jupiter.api.Assertions.assertEquals(Assertions.java:1156)
-	at com.gr4.owlaudit.service.DictamenSeveridadTest.dictamenFinal_fallaPorSeveridadAlta_aPesarDeSuperarUmbralPuntaje(DictamenSeveridadTest.java:84)
+```
+
+---
+
+## 🟢 FASE 2: VERDE (Código Mínimo para Pasar la Prueba)
+
+### 1. Solución implementada
+Se implementó el código indispensable para satisfacer la nueva regla de seguridad:
+- En la entidad de dominio `Auditoria`, se implementó la lógica en el método `determinarDictamen()`:
+  1. Si `porcentaje < 70.0`, el dictamen es `"NO APROBADA"`.
+  2. Si existe al menos un `Hallazgo` en los resultados con severidad `NivelSeveridadEnum.ALTA`, el dictamen es `"NO APROBADA"`.
+  3. En caso contrario, el dictamen es `"APROBADA"`.
+- En el servicio `AuditoriaServiceImpl`, durante la ejecución de la auditoría (`confirmarEjecucionDeAuditoria`), se asigna el dictamen calculado al `ResultadoDTO` retornado.
+
+### 2. Archivos modificados en `src/main/java`
+1. **`src/main/java/com/gr4/owlaudit/model/Auditoria.java`**:
+   ```java
+   public String determinarDictamen() {
+       if (this.porcentaje < 70.0) {
+           return "NO APROBADA";
+       }
+       if (this.resultados != null) {
+           for (ResultadoRegla r : this.resultados) {
+               if (r.getHallazgo() != null && r.getHallazgo().getNivelSeveridad() == NivelSeveridadEnum.ALTA) {
+                   return "NO APROBADA";
+               }
+           }
+       }
+       return "APROBADA";
+   }
+   ```
+2. **`src/main/java/com/gr4/owlaudit/service/AuditoriaServiceImpl.java`**:
+   ```java
+   ResultadoDTO resultadoDTO = new ResultadoDTO(auditoria.getPuntajeObtenido(), auditoria.getPuntajeMaximo(),
+           auditoria.getPorcentaje(), detalles);
+   resultadoDTO.setDictamen(auditoria.determinarDictamen());
+   return resultadoDTO;
+   ```
+
+### 3. Ejecución y resultado (Barra Verde)
+- **Comando:** `mvn test -Dtest=DictamenSeveridadTest`
+- **Resultado obtenido:**
+```text
+[INFO] -------------------------------------------------------
+[INFO]  T E S T S
+[INFO] -------------------------------------------------------
+[INFO] Running com.gr4.owlaudit.service.DictamenSeveridadTest
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.810 s -- in com.gr4.owlaudit.service.DictamenSeveridadTest
 [INFO] 
 [INFO] Results:
 [INFO] 
-[ERROR] Failures: 
-[ERROR]   DictamenSeveridadTest.dictamenFinal_fallaPorSeveridadAlta_aPesarDeSuperarUmbralPuntaje:84 
-          La auditoría debe resultar NO APROBADA si contiene al menos un hallazgo de severidad ALTA ==> expected: <NO APROBADA> but was: <null>
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0
 [INFO] 
-[ERROR] Tests run: 1, Failures: 1, Errors: 0, Skipped: 0
 [INFO] ------------------------------------------------------------------------
-[INFO] BUILD FAILURE
+[INFO] BUILD SUCCESS
 [INFO] ------------------------------------------------------------------------
 ```
-
-### 5. Análisis del fallo
-- El código compila al 100% gracias a que se incluyó la firma base vacía en `ResultadoDTO` (`getDictamen()` devuelve `null`) y en `Auditoria` (`determinarDictamen()` devuelve `null`).
-- No existe lógica de negocio implementada en esta fase.
-- La prueba corre en JUnit y falla con **Barra Roja** por aserción incumplida (`expected: <NO APROBADA> but was: <null>`), cumpliendo estrictamente con el ciclo Red-Green-Refactor.
+- **Prueba de regresión completa (`mvn test`):**
+```text
+[INFO] Results:
+[INFO] 
+[INFO] Tests run: 46, Failures: 0, Errors: 0, Skipped: 0
+[INFO] 
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+```
+- **Conclusión:** La prueba unitaria pasa exitosamente (Barra Verde) y el 100% de las pruebas preexistentes del sistema continúan funcionando sin regresiones.
