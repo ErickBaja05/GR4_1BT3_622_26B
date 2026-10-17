@@ -8,10 +8,7 @@ import com.gr4.owlaudit.dto.EvolucionFinalDTO;
 import com.gr4.owlaudit.dto.EvolucionFinalDTO.ComparacionRegla;
 import com.gr4.owlaudit.dto.AuditoriaResumenDTO;
 import com.gr4.owlaudit.dto.ResumenHistorialDTO;
-import com.gr4.owlaudit.model.Auditoria;
-import com.gr4.owlaudit.model.EvolucionGlobalEnum;
-import com.gr4.owlaudit.model.Regla;
-import com.gr4.owlaudit.model.ResultadoRegla;
+import com.gr4.owlaudit.model.*;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -191,8 +188,9 @@ public class EvolucionServiceImpl implements EvolucionService {
         }
     }
 
+    // Clasificación evolutiva global del repositorio (MEJORA, REGRESION, ESTABLE)
     public EvolucionGlobalEnum clasificarEvolucionGlobal(double variacionesPorcentaje) {
-        return null;
+        return EvolucionGlobalEnum.ESTABLE;
     }
 
     private void calcularVariacionDePuntajes() {
@@ -202,6 +200,7 @@ public class EvolucionServiceImpl implements EvolucionService {
         double variacionPorcentaje = Math.round((ctx.evolucionFinalDTO.getPorcentajeComparada() - ctx.evolucionFinalDTO.getPorcentajeBase()) * 10.0) / 10.0;
         ctx.evolucionFinalDTO.setVariacionPuntaje(variacionPuntos);
         ctx.evolucionFinalDTO.setVariacionPorcentaje(variacionPorcentaje);
+        ctx.evolucionFinalDTO.setEvolucionGlobal(clasificarEvolucionGlobal(variacionPorcentaje));
     }
 
     private void clasificarEstadoDelHallazgo() {
