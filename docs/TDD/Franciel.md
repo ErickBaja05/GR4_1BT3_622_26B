@@ -126,51 +126,82 @@ Se implementó el código indispensable para satisfacer la nueva regla de seguri
   2. Si existe al menos un `Hallazgo` en los resultados con severidad `NivelSeveridadEnum.ALTA`, el dictamen es `"NO APROBADA"`.
   3. En caso contrario, el dictamen es `"APROBADA"`.
 - En el servicio `AuditoriaServiceImpl`, durante la ejecución de la auditoría (`confirmarEjecucionDeAuditoria`), se asigna el dictamen calculado al `ResultadoDTO` retornado.
+- En la vista JSP (`evaluarRepositorio.jsp`), se visualiza el dictamen final con insignias de color.
 
-### 2. Archivos modificados en `src/main/java`
-1. **`src/main/java/com/gr4/owlaudit/model/Auditoria.java`**:
-   ```java
-   public String determinarDictamen() {
-       if (this.porcentaje < 70.0) {
-           return "NO APROBADA";
-       }
-       if (this.resultados != null) {
-           for (ResultadoRegla r : this.resultados) {
-               if (r.getHallazgo() != null && r.getHallazgo().getNivelSeveridad() == NivelSeveridadEnum.ALTA) {
-                   return "NO APROBADA";
-               }
-           }
-       }
-       return "APROBADA";
-   }
-   ```
-2. **`src/main/java/com/gr4/owlaudit/service/AuditoriaServiceImpl.java`**:
-   ```java
-   ResultadoDTO resultadoDTO = new ResultadoDTO(auditoria.getPuntajeObtenido(), auditoria.getPuntajeMaximo(),
-           auditoria.getPorcentaje(), detalles);
-   resultadoDTO.setDictamen(auditoria.determinarDictamen());
-   return resultadoDTO;
-   ```
-
-### 3. Ejecución y resultado (Barra Verde)
+### 2. Ejecución y resultado (Barra Verde)
 - **Comando:** `mvn test -Dtest=DictamenSeveridadTest`
 - **Resultado obtenido:**
 ```text
-[INFO] -------------------------------------------------------
-[INFO]  T E S T S
-[INFO] -------------------------------------------------------
 [INFO] Running com.gr4.owlaudit.service.DictamenSeveridadTest
 [INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.810 s -- in com.gr4.owlaudit.service.DictamenSeveridadTest
-[INFO] 
 [INFO] Results:
-[INFO] 
 [INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0
-[INFO] 
-[INFO] ------------------------------------------------------------------------
 [INFO] BUILD SUCCESS
-[INFO] ------------------------------------------------------------------------
 ```
-- **Prueba de regresión completa (`mvn test`):**
+
+---
+
+## 🔵 FASE 3: REFACTOR (Optimización y Buenas Prácticas)
+
+### 1. Diagnóstico de Olores de Código Identificados
+1. **Magic Literals / Numbers:** Uso de números mágicos (`70.0`) y cadenas duplicadas (`"APROBADA"`, `"NO APROBADA"`) dispersas en el código.
+2. **Método con Múltiples Responsabilidades / Bucle imperativo anidado:** Verificación manual de la lista con múltiples niveles de anidamiento condicional (`for` e `if`).
+
+### 2. Patrones de Refactorización Aplicados (Catálogo Martin Fowler)
+1. **Replace Magic Literal with Symbolic Constant:**
+   Se crearon constantes autodescriptivas en `Auditoria.java`:
+   - `UMBRAL_MINIMO_APROBACION = 70.0`
+   - `DICTAMEN_APROBADA = "APROBADA"`
+   - `DICTAMEN_NO_APROBADA = "NO APROBADA"`
+2. **Extract Method + Substitute Algorithm (Java Stream API):**
+   Se extrajo la lógica de búsqueda de severidad ALTA a un método privado `tieneHallazgosDeSeveridadAlta()`, reemplazando el bucle imperativo por operaciones declarativas y seguras ante nulos (`map`, `filter`, `anyMatch`).
+
+### 3. Código Antes vs. Código Después
+
+#### 🔴 ANTES (Fase Verde - Código Mínimo):
+```java
+public String determinarDictamen() {
+    if (this.porcentaje < 70.0) {
+        return "NO APROBADA";
+    }
+    if (this.resultados != null) {
+        for (ResultadoRegla r : this.resultados) {
+            if (r.getHallazgo() != null && r.getHallazgo().getNivelSeveridad() == NivelSeveridadEnum.ALTA) {
+                return "NO APROBADA";
+            }
+        }
+    }
+    return "APROBADA";
+}
+```
+
+#### 🔵 DESPUÉS (Fase Refactor - Clean Code & Streams):
+```java
+public static final double UMBRAL_MINIMO_APROBACION = 70.0;
+public static final String DICTAMEN_APROBADA = "APROBADA";
+public static final String DICTAMEN_NO_APROBADA = "NO APROBADA";
+
+public String determinarDictamen() {
+    if (this.porcentaje < UMBRAL_MINIMO_APROBACION || tieneHallazgosDeSeveridadAlta()) {
+        return DICTAMEN_NO_APROBADA;
+    }
+    return DICTAMEN_APROBADA;
+}
+
+private boolean tieneHallazgosDeSeveridadAlta() {
+    if (this.resultados == null) {
+        return false;
+    }
+    return this.resultados.stream()
+            .map(ResultadoRegla::getHallazgo)
+            .filter(Objects::nonNull)
+            .anyMatch(hallazgo -> hallazgo.getNivelSeveridad() == NivelSeveridadEnum.ALTA);
+}
+```
+
+### 4. Verificación de No Regresión (Barra Verde Continua)
+- **Comando:** `mvn test`
+- **Resultado:**
 ```text
 [INFO] Results:
 [INFO] 
@@ -180,4 +211,4 @@ Se implementó el código indispensable para satisfacer la nueva regla de seguri
 [INFO] BUILD SUCCESS
 [INFO] ------------------------------------------------------------------------
 ```
-- **Conclusión:** La prueba unitaria pasa exitosamente (Barra Verde) y el 100% de las pruebas preexistentes del sistema continúan funcionando sin regresiones.
+Todas las 46 pruebas unitarias y de integración pasan con éxito, garantizando que la refactorización preservó el 100% del comportamiento externo del sistema.

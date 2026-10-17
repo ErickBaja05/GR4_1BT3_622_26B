@@ -13,6 +13,7 @@ import jakarta.persistence.Table;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 @Entity
 @Table(name = "auditorias")
@@ -149,17 +150,24 @@ public class Auditoria {
         this.proyecto = proyecto;
     }
 
+    public static final double UMBRAL_MINIMO_APROBACION = 70.0;
+    public static final String DICTAMEN_APROBADA = "APROBADA";
+    public static final String DICTAMEN_NO_APROBADA = "NO APROBADA";
+
     public String determinarDictamen() {
-        if (this.porcentaje < 70.0) {
-            return "NO APROBADA";
+        if (this.porcentaje < UMBRAL_MINIMO_APROBACION || tieneHallazgosDeSeveridadAlta()) {
+            return DICTAMEN_NO_APROBADA;
         }
-        if (this.resultados != null) {
-            for (ResultadoRegla r : this.resultados) {
-                if (r.getHallazgo() != null && r.getHallazgo().getNivelSeveridad() == NivelSeveridadEnum.ALTA) {
-                    return "NO APROBADA";
-                }
-            }
+        return DICTAMEN_APROBADA;
+    }
+
+    private boolean tieneHallazgosDeSeveridadAlta() {
+        if (this.resultados == null) {
+            return false;
         }
-        return "APROBADA";
+        return this.resultados.stream()
+                .map(ResultadoRegla::getHallazgo)
+                .filter(Objects::nonNull)
+                .anyMatch(hallazgo -> hallazgo.getNivelSeveridad() == NivelSeveridadEnum.ALTA);
     }
 }
