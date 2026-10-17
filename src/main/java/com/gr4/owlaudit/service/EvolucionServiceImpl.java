@@ -9,6 +9,7 @@ import com.gr4.owlaudit.dto.EvolucionFinalDTO.ComparacionRegla;
 import com.gr4.owlaudit.dto.AuditoriaResumenDTO;
 import com.gr4.owlaudit.dto.ResumenHistorialDTO;
 import com.gr4.owlaudit.model.Auditoria;
+import com.gr4.owlaudit.model.EvolucionGlobalEnum;
 import com.gr4.owlaudit.model.Regla;
 import com.gr4.owlaudit.model.ResultadoRegla;
 
@@ -24,6 +25,7 @@ public class EvolucionServiceImpl implements EvolucionService {
     private static final String MENSAJE_CONSULTA_CANCELADA = "Consulta cancelada";
     private static final String MENSAJE_AUDITORIAS_IGUALES = "Debe indicar dos auditorías distintas";
     private static final String MENSAJE_SIN_HALLAZGOS = "No existen hallazgos en las auditorías comparadas";
+    private static final double UMBRAL_ESTABILIDAD = 5.0;
 
     private final AuditoriaDAO auditoriaDAO;
 
@@ -190,6 +192,17 @@ public class EvolucionServiceImpl implements EvolucionService {
         }
     }
 
+    // Clasificación evolutiva global del repositorio (MEJORA, REGRESION, ESTABLE)
+    public EvolucionGlobalEnum clasificarEvolucionGlobal(double variacionPorcentaje) {
+        if (variacionPorcentaje >= UMBRAL_ESTABILIDAD) {
+            return EvolucionGlobalEnum.MEJORA;
+        }
+        if (variacionPorcentaje <= -UMBRAL_ESTABILIDAD) {
+            return EvolucionGlobalEnum.REGRESION;
+        }
+        return EvolucionGlobalEnum.ESTABLE;
+    }
+
     private void calcularVariacionDePuntajes() {
         ContextoComparacion ctx = contextoLocal.get();
         if (ctx == null || ctx.evolucionFinalDTO == null) return;
@@ -197,6 +210,7 @@ public class EvolucionServiceImpl implements EvolucionService {
         double variacionPorcentaje = Math.round((ctx.evolucionFinalDTO.getPorcentajeComparada() - ctx.evolucionFinalDTO.getPorcentajeBase()) * 10.0) / 10.0;
         ctx.evolucionFinalDTO.setVariacionPuntaje(variacionPuntos);
         ctx.evolucionFinalDTO.setVariacionPorcentaje(variacionPorcentaje);
+        ctx.evolucionFinalDTO.setEvolucionGlobal(clasificarEvolucionGlobal(variacionPorcentaje));
     }
 
     private void clasificarEstadoDelHallazgo() {

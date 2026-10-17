@@ -13,6 +13,7 @@ import com.gr4.owlaudit.model.Proyecto;
 import com.gr4.owlaudit.model.Regla;
 import com.gr4.owlaudit.model.ResultadoRegla;
 import com.gr4.owlaudit.model.TipoMotorEnum;
+import com.gr4.owlaudit.model.EvolucionGlobalEnum;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -33,6 +34,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * Basado en secuencia4.puml, cu04-consultarEvolucionCalidad.md y el caso de prueba CP-CU04-01.
  */
 class EvolucionServiceImplTest {
+
 
     static class MockAuditoriaDAO implements AuditoriaDAO {
         private final Map<Long, List<Auditoria>> historialPorProyecto = new HashMap<>();
@@ -75,7 +77,7 @@ class EvolucionServiceImplTest {
     }
 
     private MockAuditoriaDAO mockDao;
-    private EvolucionService evolucionService;
+    private EvolucionServiceImpl evolucionService;
 
     private Regla reglaGitignore;
     private Regla reglaReadme;
@@ -177,6 +179,35 @@ class EvolucionServiceImplTest {
         mockDao.agregarAuditoria(1L, auditoria2);
     }
 
+    // =========================================================================
+    // Pruebas unitarias para clasificación de evolución global
+    // =========================================================================
+
+    @Test
+    @DisplayName("Dado una variación de 0% cuando se clasifica entonces el estado es ESTABLE")
+    void given_variation_of_0_percent_when_classify_then_ESTABLE() {
+        EvolucionGlobalEnum actual = evolucionService.clasificarEvolucionGlobal(0.0);
+        assertEquals(EvolucionGlobalEnum.ESTABLE, actual);
+    }
+
+    @Test
+    @DisplayName("Dado una variación mayor o igual a 5% cuando se clasifica entonces el estado es MEJORA")
+    void given_variation_of_plus_10_percent_when_classify_then_MEJORA() {
+        EvolucionGlobalEnum actual = evolucionService.clasificarEvolucionGlobal(10.0);
+        assertEquals(EvolucionGlobalEnum.MEJORA, actual);
+    }
+
+    @Test
+    @DisplayName("Dado una variación menor o igual a -5% cuando se clasifica entonces el estado es REGRESION")
+    void given_variation_of_minus_10_percent_when_classify_then_REGRESION() {
+        EvolucionGlobalEnum actual = evolucionService.clasificarEvolucionGlobal(-10.0);
+        assertEquals(EvolucionGlobalEnum.REGRESION, actual);
+    }
+
+    // =========================================================================
+    // Pruebas unitarias para CU04: Consultar Evolución de Calidad
+    // =========================================================================
+
     @Test
     @DisplayName("CP-CU04-01: Comparación exitosa tomando la más antigua como base sin importar el orden")
     void testCasoDePruebaPrincipalCP_CU04_01() {
@@ -194,6 +225,7 @@ class EvolucionServiceImplTest {
         // Variación de puntaje y porcentaje
         assertEquals(0, evolucion.getVariacionPuntaje(), "La variación de puntaje debe ser 0");
         assertEquals(0.0, evolucion.getVariacionPorcentaje(), "La variación de porcentaje debe ser 0.0 %");
+        assertEquals(EvolucionGlobalEnum.ESTABLE, evolucion.getEvolucionGlobal(), "La clasificación global debe ser ESTABLE");
 
         // Clasificación de hallazgos
         // - Archivo README es Nuevo (BAJA)

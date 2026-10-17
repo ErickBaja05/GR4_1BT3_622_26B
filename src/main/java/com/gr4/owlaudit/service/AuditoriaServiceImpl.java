@@ -111,8 +111,10 @@ public class AuditoriaServiceImpl implements AuditoriaService {
             ));
         }
 
-        return new ResultadoDTO(auditoria.getPuntajeObtenido(), auditoria.getPuntajeMaximo(),
+        ResultadoDTO resultadoDTO = new ResultadoDTO(auditoria.getPuntajeObtenido(), auditoria.getPuntajeMaximo(),
                 auditoria.getPorcentaje(), detalles);
+        resultadoDTO.setDictamen(auditoria.determinarDictamen());
+        return resultadoDTO;
     }
 
     private boolean evaluarCumplimientoDeRegla(Regla regla, List<String> rutas) {
