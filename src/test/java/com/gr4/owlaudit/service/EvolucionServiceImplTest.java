@@ -197,6 +197,13 @@ class EvolucionServiceImplTest {
         assertEquals(EvolucionGlobalEnum.MEJORA, actual);
     }
 
+    @Test
+    @DisplayName("Dado una variación menor o igual a -5% cuando se clasifica entonces el estado es REGRESION")
+    void given_variation_of_minus_10_percent_when_classify_then_REGRESION() {
+        EvolucionGlobalEnum actual = evolucionService.clasificarEvolucionGlobal(-10.0);
+        assertEquals(EvolucionGlobalEnum.REGRESION, actual);
+    }
+
     // =========================================================================
     // Pruebas unitarias para CU04: Consultar Evolución de Calidad
     // =========================================================================
