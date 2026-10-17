@@ -112,6 +112,14 @@
                 <p style="font-size: 1.1rem; color: #15803D;">
                     <strong>Cumplimiento de Calidad:</strong> <%= resultado.getPorcentaje() %>%
                 </p>
+                <p style="font-size: 1.1rem; margin-top: 0.5rem; margin-bottom: 0.5rem;">
+                    <strong>Dictamen Final:</strong>
+                    <% if ("APROBADA".equals(resultado.getDictamen())) { %>
+                        <span class="badge badge-corregido" style="font-size: 0.95rem; padding: 0.25rem 0.65rem;">✓ APROBADA</span>
+                    <% } else { %>
+                        <span class="badge badge-persistente" style="font-size: 0.95rem; padding: 0.25rem 0.65rem;">✗ NO APROBADA</span>
+                    <% } %>
+                </p>
 
                 <% if (resultado.getDetalles() != null && !resultado.getDetalles().isEmpty()) { %>
                     <h3 style="margin-top: 1.5rem; margin-bottom: 0.75rem; color: var(--bg-primary);">📋 Desglose de Reglas Evaluadas y Hallazgos</h3>
