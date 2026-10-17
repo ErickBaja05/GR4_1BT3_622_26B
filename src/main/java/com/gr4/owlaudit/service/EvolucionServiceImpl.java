@@ -196,6 +196,9 @@ public class EvolucionServiceImpl implements EvolucionService {
         if (variacionPorcentaje >= 5.0) {
             return EvolucionGlobalEnum.MEJORA;
         }
+        if (variacionPorcentaje <= -5.0) {
+            return EvolucionGlobalEnum.REGRESION;
+        }
         return EvolucionGlobalEnum.ESTABLE;
     }
 
