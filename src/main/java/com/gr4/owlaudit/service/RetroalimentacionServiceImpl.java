@@ -114,14 +114,21 @@ public class RetroalimentacionServiceImpl implements RetroalimentacionService {
                             map.put("evidencia", h.getEvidencia() != null ? h.getEvidencia() : "");
                             map.put("recomendacion", h.getRecomendacion() != null ? h.getRecomendacion() : "");
 
-                            SolicitudRetroalimentacion sol = solicitudDAO.buscarPorHallazgoId(h.getId());
-                            if (sol != null) {
+                            SolicitudRetroalimentacion pendiente = solicitudDAO.buscarSolicitudPendientePorHallazgo(h.getId());
+                            if (pendiente != null) {
                                 map.put("tieneSolicitud", true);
-                                map.put("estadoSolicitud", sol.getEstado() != null ? sol.getEstado().name() : "PENDIENTE");
-                                map.put("solicitudId", sol.getId());
+                                map.put("estadoSolicitud", "PENDIENTE");
+                                map.put("solicitudId", pendiente.getId());
                             } else {
-                                map.put("tieneSolicitud", false);
-                                map.put("estadoSolicitud", "SIN_SOLICITUD");
+                                SolicitudRetroalimentacion previa = solicitudDAO.buscarPorHallazgoId(h.getId());
+                                if (previa != null && previa.getEstado() == EstadoRetroEnum.ATENDIDA) {
+                                    map.put("tieneSolicitud", true);
+                                    map.put("estadoSolicitud", "ATENDIDA");
+                                    map.put("solicitudId", previa.getId());
+                                } else {
+                                    map.put("tieneSolicitud", false);
+                                    map.put("estadoSolicitud", "SIN_SOLICITUD");
+                                }
                             }
                             hallazgosDisponibles.add(map);
                         }
@@ -137,8 +144,8 @@ public class RetroalimentacionServiceImpl implements RetroalimentacionService {
     // ========================================================
 
     private void verificarEstadoDeRevisionDelHallazgo(Long hallazgoId) {
-        SolicitudRetroalimentacion existente = solicitudDAO.buscarPorHallazgoId(hallazgoId);
-        if (existente != null) {
+        SolicitudRetroalimentacion pendiente = solicitudDAO.buscarSolicitudPendientePorHallazgo(hallazgoId);
+        if (pendiente != null) {
             throw new ExcepcionNegocio(MENSAJE_HALLAZGO_EN_REVISION);
         }
     }

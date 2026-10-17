@@ -282,7 +282,10 @@ public class RetroalimentacionServlet extends HttpServlet {
                         request.setAttribute("recomendacion", h.getRecomendacion());
                     }
                 }
-                SolicitudRetroalimentacion existente = solicitudDAO.buscarPorHallazgoId(hallazgoId);
+                SolicitudRetroalimentacion existente = solicitudDAO.buscarSolicitudPendientePorHallazgo(hallazgoId);
+                if (existente == null) {
+                    existente = solicitudDAO.buscarPorHallazgoId(hallazgoId);
+                }
                 if (existente != null) {
                     request.setAttribute("solicitudExistente", existente);
                 }

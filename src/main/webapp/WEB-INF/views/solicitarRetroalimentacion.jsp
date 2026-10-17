@@ -161,7 +161,9 @@
                             </p>
                         <% } %>
                     </div>
-                <% } else { %>
+                <% } %>
+
+                <% if (solicitudExistente == null || solicitudExistente.getEstado() == EstadoRetroEnum.ATENDIDA) { %>
                     <!-- Formulario de Justificación Técnica (secuencia5.puml & robustez5.puml bForm) -->
                     <form action="${pageContext.request.contextPath}/retroalimentacion" method="POST" style="margin-top: 1.25rem;">
                         <input type="hidden" name="accion" value="solicitar">
@@ -169,9 +171,17 @@
                         <% if (reglaNombre != null) { %><input type="hidden" name="reglaNombre" value="<%= HtmlUtil.escape(reglaNombre) %>"><% } %>
                         <% if (severidad != null) { %><input type="hidden" name="severidad" value="<%= HtmlUtil.escape(severidad) %>"><% } %>
 
+                        <% if (solicitudExistente != null && solicitudExistente.getEstado() == EstadoRetroEnum.ATENDIDA) { %>
+                            <div class="alert alert-info" style="margin-bottom: 1rem;">
+                                <strong>💡 Re-consulta de Retroalimentación:</strong> ¿Tiene dudas sobre la orientación técnica recibida? Ingrese una nueva consulta para continuar el seguimiento de este hallazgo.
+                            </div>
+                        <% } %>
+
                         <div class="form-group">
                             <label for="justificacion" class="form-label">
-                                Justificación Técnica o Consulta sobre el Hallazgo <span style="color: #DC2626;">*</span>
+                                <%= (solicitudExistente != null && solicitudExistente.getEstado() == EstadoRetroEnum.ATENDIDA) 
+                                        ? "Nueva Justificación Técnica o Re-consulta sobre el Hallazgo" 
+                                        : "Justificación Técnica o Consulta sobre el Hallazgo" %> <span style="color: #DC2626;">*</span>
                             </label>
                             <div class="textarea-wrapper">
                                 <textarea id="justificacion" name="justificacion" class="form-control" rows="5" 
@@ -182,7 +192,9 @@
                         </div>
 
                         <div style="display: flex; gap: 1rem; align-items: center; margin-top: 1.5rem;">
-                            <button type="submit" class="btn btn-primary">📤 Enviar Solicitud</button>
+                            <button type="submit" class="btn btn-primary">
+                                <%= (solicitudExistente != null && solicitudExistente.getEstado() == EstadoRetroEnum.ATENDIDA) ? "📤 Enviar Re-consulta" : "📤 Enviar Solicitud" %>
+                            </button>
                             <button type="submit" name="cancelar" value="true" class="btn btn-secondary" formnovalidate>Cancelar</button>
                         </div>
                     </form>
@@ -263,10 +275,15 @@
                                                        class="btn btn-sm btn-primary">
                                                         Solicitar Feedback
                                                     </a>
+                                                <% } else if ("ATENDIDA".equalsIgnoreCase(estSol)) { %>
+                                                    <a href="${pageContext.request.contextPath}/retroalimentacion?accion=solicitar&hallazgoId=<%= hMap.get("hallazgoId") %><%= proyectoIdFiltro != null ? "&proyectoId=" + proyectoIdFiltro : "" %>" 
+                                                       class="btn btn-sm btn-primary" style="background-color: #059669; border-color: #059669;">
+                                                        💬 Re-consultar Feedback
+                                                    </a>
                                                 <% } else { %>
                                                     <a href="${pageContext.request.contextPath}/retroalimentacion?accion=solicitar&hallazgoId=<%= hMap.get("hallazgoId") %><%= proyectoIdFiltro != null ? "&proyectoId=" + proyectoIdFiltro : "" %>" 
                                                        class="btn btn-sm btn-secondary">
-                                                        Ver Estado
+                                                        ⏳ En Revisión
                                                     </a>
                                                 <% } %>
                                             </td>
