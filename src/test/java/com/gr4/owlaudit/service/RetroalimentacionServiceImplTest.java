@@ -84,6 +84,30 @@ class RetroalimentacionServiceImplTest {
     }
 
     // ========================================================
+    // PRUEBAS UNITARIAS DE TDD
+    // ========================================================
+
+    @Test
+    @DisplayName("CU05: Permite re-consulta si la solicitud previa está atendida")
+    void given_solicitudAtendida_when_reconsulta_then_ok() {
+        // GIVEN (Dado): Un hallazgo (ID 401) cuya solicitud previa ya fue respondida (ATENDIDA)
+        Long hallazgoId = 401L;
+        solicitudR4.marcarSolicitudComoAtendida();
+        solicitudR4.setOrientacionTecnica("Orientación técnica previa emitida por el docente.");
+
+        when(solicitudDAO.buscarPorHallazgoId(hallazgoId)).thenReturn(solicitudR4);
+
+        // WHEN & THEN (Cuando y Entonces): El estudiante formula una re-consulta
+        SolicitudDTO reconsultaDto = new SolicitudDTO(hallazgoId, "¿Cómo configuro el archivo .env.example en producción?");
+
+        // REGLA: No debe lanzar excepción; debe permitir abrir el nuevo ciclo de feedback
+        assertDoesNotThrow(() -> retroService.solicitarRetroalimentacionDeHallazgo(reconsultaDto),
+                "Debe permitir una nueva solicitud de retroalimentación si la anterior ya fue ATENDIDA");
+
+        verify(solicitudDAO).crearSolicitudDeRetroalimentacion(any(SolicitudRetroalimentacion.class));
+    }
+
+    // ========================================================
     // PRUEBAS EXISTENTES DEL SISTEMA (CU05 & CU06)
     // ========================================================
 
