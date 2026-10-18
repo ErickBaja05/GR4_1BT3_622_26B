@@ -2,7 +2,6 @@ package com.gr4.owlaudit.reglas.strategy;
 
 import com.gr4.owlaudit.model.TipoMotorEnum;
 
-/** Devuelve el evaluador (Strategy) que corresponde a cada tipo de motor. */
 public class EvaluadorReglaFactory {
 
     public EvaluadorReglaStrategy obtenerEvaluador(TipoMotorEnum tipo) {
@@ -13,6 +12,8 @@ public class EvaluadorReglaFactory {
                 return new EvaluadorRestriccionArchivos();
             case ESTRUCTURA_CARPETAS:
                 return new EvaluadorEstructuraCarpetas();
+            case CONVENCION_COMMITS:
+                return new EvaluadorConvencionCommits();
             default:
                 throw new IllegalArgumentException("Tipo de motor no soportado: " + tipo);
         }
