@@ -30,6 +30,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -83,15 +84,15 @@ class RetroalimentacionServiceImplTest {
     }
 
     // ========================================================
-    // MÉTODOS AUXILIARES DE PRUEBA
+    // MÉTODOS AUXILIARES DE PRUEBA (Refactoring de Pruebas - Martin Fowler)
     // ========================================================
 
-    private void dadoHallazgoSinSolicitudPendiente(Long hallazgoId) {
-        when(solicitudDAO.buscarSolicitudPendientePorHallazgo(hallazgoId)).thenReturn(null);
+    private void dadoHallazgoSinSolicitud(Long hallazgoId) {
+        when(solicitudDAO.buscarPorHallazgoId(hallazgoId)).thenReturn(null);
     }
 
-    private void dadoHallazgoConSolicitudPendiente(Long hallazgoId, SolicitudRetroalimentacion pendiente) {
-        when(solicitudDAO.buscarSolicitudPendientePorHallazgo(hallazgoId)).thenReturn(pendiente);
+    private void dadoHallazgoConSolicitud(Long hallazgoId, SolicitudRetroalimentacion solicitud) {
+        when(solicitudDAO.buscarPorHallazgoId(hallazgoId)).thenReturn(solicitud);
     }
 
     private void assertHallazgoEnRevision(SolicitudDTO dto) {
@@ -111,7 +112,7 @@ class RetroalimentacionServiceImplTest {
         Long hallazgoId = 401L;
         solicitudR4.marcarSolicitudComoAtendida();
         solicitudR4.setOrientacionTecnica("Orientación técnica previa emitida por el docente.");
-        dadoHallazgoSinSolicitudPendiente(hallazgoId);
+        dadoHallazgoConSolicitud(hallazgoId, solicitudR4);
 
         // WHEN: El estudiante formula una re-consulta
         SolicitudDTO reconsultaDto = new SolicitudDTO(hallazgoId, "¿Cómo configuro el archivo .env.example en producción?");
@@ -119,6 +120,7 @@ class RetroalimentacionServiceImplTest {
         // THEN: No debe lanzar excepción y debe abrir un nuevo ciclo de feedback
         assertDoesNotThrow(() -> retroService.solicitarRetroalimentacionDeHallazgo(reconsultaDto),
                 "Debe permitir una nueva solicitud de retroalimentación si la anterior ya fue ATENDIDA");
+
         verify(solicitudDAO).crearSolicitudDeRetroalimentacion(any(SolicitudRetroalimentacion.class));
     }
 
@@ -205,12 +207,12 @@ class RetroalimentacionServiceImplTest {
     @DisplayName("CU05: Solicitar retroalimentación de hallazgo")
     void testSolicitarRetroalimentacionDeHallazgo() {
         SolicitudDTO nuevoDto = new SolicitudDTO(501L, "Tengo dudas sobre cómo organizar las carpetas en src");
-        dadoHallazgoSinSolicitudPendiente(501L);
+        dadoHallazgoSinSolicitud(501L);
 
         retroService.solicitarRetroalimentacionDeHallazgo(nuevoDto);
         verify(solicitudDAO).crearSolicitudDeRetroalimentacion(any(SolicitudRetroalimentacion.class));
 
-        dadoHallazgoConSolicitudPendiente(401L, solicitudR4);
+        dadoHallazgoConSolicitud(401L, solicitudR4);
         assertHallazgoEnRevision(new SolicitudDTO(401L, "Otra consulta sobre el mismo hallazgo"));
     }
 
@@ -218,7 +220,7 @@ class RetroalimentacionServiceImplTest {
     @DisplayName("CU05 - CP-CU05-01: Solicitud exitosa para el hallazgo de una auditoría")
     void testSolicitudExitosaCP_CU05_01() {
         SolicitudDTO dto = new SolicitudDTO(801L, "La función requiere múltiples estructuras condicionales para el control de errores de entrada");
-        dadoHallazgoSinSolicitudPendiente(801L);
+        dadoHallazgoSinSolicitud(801L);
 
         retroService.solicitarRetroalimentacionDeHallazgo(dto);
 
@@ -233,7 +235,7 @@ class RetroalimentacionServiceImplTest {
     @Test
     @DisplayName("CU05 - Escenario Alternativo 1: Hallazgo ya en proceso de revisión")
     void testSolicitudHallazgoYaEnRevision() {
-        dadoHallazgoConSolicitudPendiente(401L, solicitudR4);
+        dadoHallazgoConSolicitud(401L, solicitudR4);
         assertHallazgoEnRevision(new SolicitudDTO(401L, "Otra consulta sobre el mismo hallazgo R4"));
     }
 

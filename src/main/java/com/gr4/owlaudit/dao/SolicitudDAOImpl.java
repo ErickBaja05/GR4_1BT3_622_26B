@@ -1,7 +1,6 @@
 package com.gr4.owlaudit.dao;
 
 import com.gr4.owlaudit.common.config.HibernateUtil;
-import com.gr4.owlaudit.model.EstadoRetroEnum;
 import com.gr4.owlaudit.model.Hallazgo;
 import com.gr4.owlaudit.model.SolicitudRetroalimentacion;
 import org.hibernate.Session;
@@ -147,26 +146,6 @@ public class SolicitudDAOImpl implements SolicitudDAO {
             ).getResultList();
         } catch (Exception e) {
             throw new RuntimeException("Error al consultar todas las solicitudes: " + e.getMessage(), e);
-        }
-    }
-
-    @Override
-    public SolicitudRetroalimentacion buscarSolicitudPendientePorHallazgo(Long hallazgoId) {
-        if (hallazgoId == null) {
-            return null;
-        }
-        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
-            return session.createQuery(
-                "SELECT s FROM SolicitudRetroalimentacion s " +
-                FETCH_DETALLE_SOLICITUD +
-                "WHERE s.hallazgo.id = :hallazgoId AND s.estado = :estado",
-                SolicitudRetroalimentacion.class
-            )
-            .setParameter("hallazgoId", hallazgoId)
-            .setParameter("estado", EstadoRetroEnum.PENDIENTE)
-            .uniqueResult();
-        } catch (Exception e) {
-            throw new RuntimeException("Error al buscar solicitud pendiente por hallazgo: " + e.getMessage(), e);
         }
     }
 }

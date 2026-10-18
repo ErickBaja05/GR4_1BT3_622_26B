@@ -13,5 +13,4 @@ public interface SolicitudDAO {
     List<SolicitudRetroalimentacion> buscarPendientes();
     Hallazgo buscarHallazgoPorId(Long hallazgoId);
     List<SolicitudRetroalimentacion> consultarTodasLasSolicitudes();
-    SolicitudRetroalimentacion buscarSolicitudPendientePorHallazgo(Long hallazgoId);
 }

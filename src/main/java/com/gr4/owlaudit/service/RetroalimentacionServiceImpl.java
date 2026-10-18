@@ -39,7 +39,7 @@ public class RetroalimentacionServiceImpl implements RetroalimentacionService {
     }
 
     @Override
-    public void solicitarRetroalimentacionDeHallazgo(SolicitudDTO dto) {
+    public synchronized void solicitarRetroalimentacionDeHallazgo(SolicitudDTO dto) {
         if (dto == null || dto.getHallazgoId() == null || dto.getHallazgoId() <= 0) {
             throw new ExcepcionNegocio("El identificador del hallazgo no es válido.");
         }
@@ -90,9 +90,12 @@ public class RetroalimentacionServiceImpl implements RetroalimentacionService {
      */
     @Override
     public List<Map<String, Object>> obtenerHallazgosDisponibles(Long proyectoId) {
-        List<Auditoria> auditorias = (proyectoId != null)
-                ? auditoriaDAO.consultarHistorialDeAuditorias(proyectoId)
-                : auditoriaDAO.consultarTodas();
+        List<Auditoria> auditorias;
+        if (proyectoId != null) {
+            auditorias = auditoriaDAO.consultarHistorialDeAuditorias(proyectoId);
+        } else {
+            auditorias = auditoriaDAO.consultarTodas();
+        }
 
         List<Map<String, Object>> hallazgosDisponibles = new ArrayList<>();
         if (auditorias != null) {
@@ -100,7 +103,7 @@ public class RetroalimentacionServiceImpl implements RetroalimentacionService {
                 if (aud.getResultados() != null) {
                     for (ResultadoRegla rr : aud.getResultados()) {
                         if (!rr.isCumple() && rr.getHallazgo() != null) {
-                            hallazgosDisponibles.add(mapearHallazgoDisponible(aud, rr, rr.getHallazgo()));
+                            hallazgosDisponibles.add(extraerInfoHallazgo(rr.getHallazgo(), aud, rr));
                         }
                     }
                 }
@@ -109,7 +112,7 @@ public class RetroalimentacionServiceImpl implements RetroalimentacionService {
         return hallazgosDisponibles;
     }
 
-    private Map<String, Object> mapearHallazgoDisponible(Auditoria aud, ResultadoRegla rr, Hallazgo h) {
+    private Map<String, Object> extraerInfoHallazgo(Hallazgo h, Auditoria aud, ResultadoRegla rr) {
         Map<String, Object> map = new HashMap<>();
         map.put("hallazgoId", h.getId());
         map.put("auditoriaId", aud.getId());
@@ -125,19 +128,15 @@ public class RetroalimentacionServiceImpl implements RetroalimentacionService {
     }
 
     private void adjuntarEstadoSolicitud(Long hallazgoId, Map<String, Object> map) {
-        SolicitudRetroalimentacion pendiente = solicitudDAO.buscarSolicitudPendientePorHallazgo(hallazgoId);
-        if (pendiente != null) {
+        SolicitudRetroalimentacion sol = solicitudDAO.buscarPorHallazgoId(hallazgoId);
+        if (sol != null && sol.getEstado() == EstadoRetroEnum.PENDIENTE) {
             map.put("tieneSolicitud", true);
             map.put("estadoSolicitud", "PENDIENTE");
-            map.put("solicitudId", pendiente.getId());
-            return;
-        }
-
-        SolicitudRetroalimentacion previa = solicitudDAO.buscarPorHallazgoId(hallazgoId);
-        if (previa != null && previa.getEstado() == EstadoRetroEnum.ATENDIDA) {
+            map.put("solicitudId", sol.getId());
+        } else if (sol != null && sol.getEstado() == EstadoRetroEnum.ATENDIDA) {
             map.put("tieneSolicitud", true);
             map.put("estadoSolicitud", "ATENDIDA");
-            map.put("solicitudId", previa.getId());
+            map.put("solicitudId", sol.getId());
         } else {
             map.put("tieneSolicitud", false);
             map.put("estadoSolicitud", "SIN_SOLICITUD");
@@ -149,8 +148,8 @@ public class RetroalimentacionServiceImpl implements RetroalimentacionService {
     // ========================================================
 
     private void verificarEstadoDeRevisionDelHallazgo(Long hallazgoId) {
-        SolicitudRetroalimentacion pendiente = solicitudDAO.buscarSolicitudPendientePorHallazgo(hallazgoId);
-        if (pendiente != null) {
+        SolicitudRetroalimentacion existente = solicitudDAO.buscarPorHallazgoId(hallazgoId);
+        if (existente != null && existente.getEstado() == EstadoRetroEnum.PENDIENTE) {
             throw new ExcepcionNegocio(MENSAJE_HALLAZGO_EN_REVISION);
         }
     }

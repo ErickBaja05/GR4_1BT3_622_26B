@@ -165,7 +165,8 @@
 
                 <% if (solicitudExistente == null || solicitudExistente.getEstado() == EstadoRetroEnum.ATENDIDA) { %>
                     <!-- Formulario de Justificación Técnica (secuencia5.puml & robustez5.puml bForm) -->
-                    <form action="${pageContext.request.contextPath}/retroalimentacion" method="POST" style="margin-top: 1.25rem;">
+                    <form action="${pageContext.request.contextPath}/retroalimentacion" method="POST" style="margin-top: 1.25rem;"
+                          onsubmit="var btn=this.querySelector('button[type=submit]'); if(this.submitted) return false; this.submitted=true; if(btn){btn.disabled=true; btn.innerText='Enviando...';}">
                         <input type="hidden" name="accion" value="solicitar">
                         <input type="hidden" name="hallazgoId" value="<%= hallazgoId %>">
                         <% if (reglaNombre != null) { %><input type="hidden" name="reglaNombre" value="<%= HtmlUtil.escape(reglaNombre) %>"><% } %>
