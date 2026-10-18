@@ -9,7 +9,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
-import jakarta.persistence.OneToOne;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 
 @Entity
@@ -30,8 +30,8 @@ public class SolicitudRetroalimentacion {
     @Column(name = "estado", nullable = false, length = 20)
     private EstadoRetroEnum estado;
 
-    @OneToOne
-    @JoinColumn(name = "hallazgo_id", nullable = false, unique = true)
+    @ManyToOne
+    @JoinColumn(name = "hallazgo_id", nullable = false)
     private Hallazgo hallazgo;
 
     public SolicitudRetroalimentacion() {

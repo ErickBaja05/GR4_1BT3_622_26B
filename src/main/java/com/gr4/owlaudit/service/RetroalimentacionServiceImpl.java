@@ -90,12 +90,9 @@ public class RetroalimentacionServiceImpl implements RetroalimentacionService {
      */
     @Override
     public List<Map<String, Object>> obtenerHallazgosDisponibles(Long proyectoId) {
-        List<Auditoria> auditorias;
-        if (proyectoId != null) {
-            auditorias = auditoriaDAO.consultarHistorialDeAuditorias(proyectoId);
-        } else {
-            auditorias = auditoriaDAO.consultarTodas();
-        }
+        List<Auditoria> auditorias = (proyectoId != null)
+                ? auditoriaDAO.consultarHistorialDeAuditorias(proyectoId)
+                : auditoriaDAO.consultarTodas();
 
         List<Map<String, Object>> hallazgosDisponibles = new ArrayList<>();
         if (auditorias != null) {
@@ -103,27 +100,7 @@ public class RetroalimentacionServiceImpl implements RetroalimentacionService {
                 if (aud.getResultados() != null) {
                     for (ResultadoRegla rr : aud.getResultados()) {
                         if (!rr.isCumple() && rr.getHallazgo() != null) {
-                            Hallazgo h = rr.getHallazgo();
-                            Map<String, Object> map = new HashMap<>();
-                            map.put("hallazgoId", h.getId());
-                            map.put("auditoriaId", aud.getId());
-                            map.put("fechaHora", aud.getFechaHora() != null ? aud.getFechaHora().toString().replace('T', ' ') : "");
-                            map.put("proyectoNombre", aud.getProyecto() != null ? aud.getProyecto().getNombre() : "Proyecto Académico");
-                            map.put("reglaNombre", rr.getRegla() != null ? rr.getRegla().getNombreRepresentativo() : "Regla de Evaluación");
-                            map.put("severidad", h.getNivelSeveridad() != null ? h.getNivelSeveridad().name() : "MEDIA");
-                            map.put("evidencia", h.getEvidencia() != null ? h.getEvidencia() : "");
-                            map.put("recomendacion", h.getRecomendacion() != null ? h.getRecomendacion() : "");
-
-                            SolicitudRetroalimentacion sol = solicitudDAO.buscarPorHallazgoId(h.getId());
-                            if (sol != null) {
-                                map.put("tieneSolicitud", true);
-                                map.put("estadoSolicitud", sol.getEstado() != null ? sol.getEstado().name() : "PENDIENTE");
-                                map.put("solicitudId", sol.getId());
-                            } else {
-                                map.put("tieneSolicitud", false);
-                                map.put("estadoSolicitud", "SIN_SOLICITUD");
-                            }
-                            hallazgosDisponibles.add(map);
+                            hallazgosDisponibles.add(mapearHallazgoDisponible(aud, rr, rr.getHallazgo()));
                         }
                     }
                 }
@@ -132,13 +109,48 @@ public class RetroalimentacionServiceImpl implements RetroalimentacionService {
         return hallazgosDisponibles;
     }
 
+    private Map<String, Object> mapearHallazgoDisponible(Auditoria aud, ResultadoRegla rr, Hallazgo h) {
+        Map<String, Object> map = new HashMap<>();
+        map.put("hallazgoId", h.getId());
+        map.put("auditoriaId", aud.getId());
+        map.put("fechaHora", aud.getFechaHora() != null ? aud.getFechaHora().toString().replace('T', ' ') : "");
+        map.put("proyectoNombre", aud.getProyecto() != null ? aud.getProyecto().getNombre() : "Proyecto Académico");
+        map.put("reglaNombre", rr.getRegla() != null ? rr.getRegla().getNombreRepresentativo() : "Regla de Evaluación");
+        map.put("severidad", h.getNivelSeveridad() != null ? h.getNivelSeveridad().name() : "MEDIA");
+        map.put("evidencia", h.getEvidencia() != null ? h.getEvidencia() : "");
+        map.put("recomendacion", h.getRecomendacion() != null ? h.getRecomendacion() : "");
+
+        adjuntarEstadoSolicitud(h.getId(), map);
+        return map;
+    }
+
+    private void adjuntarEstadoSolicitud(Long hallazgoId, Map<String, Object> map) {
+        SolicitudRetroalimentacion pendiente = solicitudDAO.buscarSolicitudPendientePorHallazgo(hallazgoId);
+        if (pendiente != null) {
+            map.put("tieneSolicitud", true);
+            map.put("estadoSolicitud", "PENDIENTE");
+            map.put("solicitudId", pendiente.getId());
+            return;
+        }
+
+        SolicitudRetroalimentacion previa = solicitudDAO.buscarPorHallazgoId(hallazgoId);
+        if (previa != null && previa.getEstado() == EstadoRetroEnum.ATENDIDA) {
+            map.put("tieneSolicitud", true);
+            map.put("estadoSolicitud", "ATENDIDA");
+            map.put("solicitudId", previa.getId());
+        } else {
+            map.put("tieneSolicitud", false);
+            map.put("estadoSolicitud", "SIN_SOLICITUD");
+        }
+    }
+
     // ========================================================
     // MÉTODOS PRIVADOS DEL DIAGRAMA DE CLASES
     // ========================================================
 
     private void verificarEstadoDeRevisionDelHallazgo(Long hallazgoId) {
-        SolicitudRetroalimentacion existente = solicitudDAO.buscarPorHallazgoId(hallazgoId);
-        if (existente != null) {
+        SolicitudRetroalimentacion pendiente = solicitudDAO.buscarSolicitudPendientePorHallazgo(hallazgoId);
+        if (pendiente != null) {
             throw new ExcepcionNegocio(MENSAJE_HALLAZGO_EN_REVISION);
         }
     }

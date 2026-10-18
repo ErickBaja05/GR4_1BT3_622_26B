@@ -8,8 +8,12 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "hallazgos")
@@ -84,14 +88,14 @@ public class Hallazgo {
         this.resultadoRegla = resultadoRegla;
     }
 
-    @OneToOne(mappedBy = "hallazgo")
-    private SolicitudRetroalimentacion solicitudRetroalimentacion;
+    @OneToMany(mappedBy = "hallazgo")
+    private List<SolicitudRetroalimentacion> solicitudesRetroalimentacion = new ArrayList<>();
 
-    public SolicitudRetroalimentacion getSolicitudRetroalimentacion() {
-        return solicitudRetroalimentacion;
+    public List<SolicitudRetroalimentacion> getSolicitudesRetroalimentacion() {
+        return solicitudesRetroalimentacion;
     }
 
-    public void setSolicitudRetroalimentacion(SolicitudRetroalimentacion solicitudRetroalimentacion) {
-        this.solicitudRetroalimentacion = solicitudRetroalimentacion;
+    public void setSolicitudesRetroalimentacion(List<SolicitudRetroalimentacion> solicitudesRetroalimentacion) {
+        this.solicitudesRetroalimentacion = solicitudesRetroalimentacion;
     }
 }
