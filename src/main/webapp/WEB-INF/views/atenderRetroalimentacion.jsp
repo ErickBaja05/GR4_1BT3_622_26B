@@ -123,7 +123,8 @@
                         <p><strong>💬 Justificación recibida:</strong> <%= HtmlUtil.escape(selJustificacion) %></p>
                     </div>
 
-                    <form action="${pageContext.request.contextPath}/retroalimentacion" method="POST">
+                    <form action="${pageContext.request.contextPath}/retroalimentacion" method="POST"
+                          onsubmit="var btn=this.querySelector('button[type=submit]'); if(this.submitted) return false; this.submitted=true; if(btn){btn.disabled=true; btn.innerText='Registrando...';}">
                         <input type="hidden" name="accion" value="atender">
                         <input type="hidden" name="solicitudId" value="<%= selId %>">
 

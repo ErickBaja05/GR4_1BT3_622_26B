@@ -84,14 +84,14 @@ public class Hallazgo {
         this.resultadoRegla = resultadoRegla;
     }
 
-    @OneToOne(mappedBy = "hallazgo")
-    private SolicitudRetroalimentacion solicitudRetroalimentacion;
+    @jakarta.persistence.OneToMany(mappedBy = "hallazgo")
+    private java.util.List<SolicitudRetroalimentacion> solicitudesRetroalimentacion = new java.util.ArrayList<>();
 
-    public SolicitudRetroalimentacion getSolicitudRetroalimentacion() {
-        return solicitudRetroalimentacion;
+    public java.util.List<SolicitudRetroalimentacion> getSolicitudesRetroalimentacion() {
+        return solicitudesRetroalimentacion;
     }
 
-    public void setSolicitudRetroalimentacion(SolicitudRetroalimentacion solicitudRetroalimentacion) {
-        this.solicitudRetroalimentacion = solicitudRetroalimentacion;
+    public void setSolicitudesRetroalimentacion(java.util.List<SolicitudRetroalimentacion> solicitudesRetroalimentacion) {
+        this.solicitudesRetroalimentacion = solicitudesRetroalimentacion;
     }
 }

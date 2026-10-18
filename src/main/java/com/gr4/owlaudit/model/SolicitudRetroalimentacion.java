@@ -30,8 +30,8 @@ public class SolicitudRetroalimentacion {
     @Column(name = "estado", nullable = false, length = 20)
     private EstadoRetroEnum estado;
 
-    @OneToOne
-    @JoinColumn(name = "hallazgo_id", nullable = false, unique = true)
+    @jakarta.persistence.ManyToOne
+    @JoinColumn(name = "hallazgo_id", nullable = false)
     private Hallazgo hallazgo;
 
     public SolicitudRetroalimentacion() {
