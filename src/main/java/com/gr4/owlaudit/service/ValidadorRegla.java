@@ -11,6 +11,12 @@ import java.util.regex.PatternSyntaxException;
 
 public class ValidadorRegla {
 
+    private static final int PONDERACION_MINIMA = 1;
+    private static final int PONDERACION_MAXIMA = 100;
+    private static final char[] CARACTERES_PROHIBIDOS_RUTA = { ':', '\\', '"', '<', '>', '|', '?' };
+    private static final List<String> PREFIJOS_CONVENTIONAL_COMMITS = List.of(
+            "feat", "fix", "docs", "style", "refactor", "test", "chore");
+
     public void validarSintaxisYFormato(NuevaReglaDTO dto) {
         if (dto == null) {
             throw new ExcepcionNegocio("Los datos de la regla no pueden ser nulos.");
@@ -80,32 +86,39 @@ public class ValidadorRegla {
             throw new ExcepcionNegocio("El parámetro exacto debe tener entre 1 y 100 caracteres.");
         }
 
-        // Si es CONVENCION_COMMITS, validamos sintaxis de expresión regular y prefijos
-        // de commits
         if (tipoMotor == TipoMotorEnum.CONVENCION_COMMITS) {
-            if (!param.contains(":")) {
-                throw new ExcepcionNegocio("Para CONVENCION_COMMITS, el patrón debe incluir el separador ':'.");
-            }
-            String prefijosParte = param.substring(0, param.indexOf(":"));
-            if (prefijosParte.matches(".*\\d+.*")) {
-                throw new ExcepcionNegocio("Los prefijos de commit no pueden contener números.");
-            }
-            List<String> prefijosValidos = List.of("feat", "fix", "docs", "style", "refactor", "test", "chore");
-            boolean tienePrefijo = prefijosValidos.stream()
-                    .anyMatch(p -> Pattern.compile("\\b" + p + "\\b").matcher(prefijosParte).find());
-            if (!tienePrefijo) {
-                throw new ExcepcionNegocio(
-                        "El patrón debe incluir al menos un prefijo válido (feat, fix, docs, style, refactor, test, chore).");
-            }
-            try {
-                Pattern.compile(param);
-            } catch (PatternSyntaxException e) {
-                throw new ExcepcionNegocio("El parámetro exacto no es una expresión regular válida.");
-            }
+            validarParametroConvencionCommits(param);
             return;
         }
 
-        // Validaciones para motores basados en rutas/archivos
+        validarCaracteresYRutasDeArchivos(param, tipoMotor);
+    }
+
+    private void validarParametroConvencionCommits(String param) {
+        if (!param.contains(":")) {
+            throw new ExcepcionNegocio("Para CONVENCION_COMMITS, el patrón debe incluir el separador ':'.");
+        }
+
+        String seccionPrefijos = param.substring(0, param.indexOf(":"));
+        if (seccionPrefijos.matches(".*\\d+.*")) {
+            throw new ExcepcionNegocio("Los prefijos de commit no pueden contener números.");
+        }
+
+        boolean contienePrefijoSemantico = PREFIJOS_CONVENTIONAL_COMMITS.stream()
+                .anyMatch(prefijo -> Pattern.compile("\\b" + prefijo + "\\b").matcher(seccionPrefijos).find());
+        if (!contienePrefijoSemantico) {
+            throw new ExcepcionNegocio(
+                    "El patrón debe incluir al menos un prefijo válido (feat, fix, docs, style, refactor, test, chore).");
+        }
+
+        try {
+            Pattern.compile(param);
+        } catch (PatternSyntaxException e) {
+            throw new ExcepcionNegocio("El parámetro exacto no es una expresión regular válida.");
+        }
+    }
+
+    private void validarCaracteresYRutasDeArchivos(String param, TipoMotorEnum tipoMotor) {
         if (param.contains("..")) {
             throw new ExcepcionNegocio("El parámetro exacto no puede contener secuencias de navegación '..'.");
         }
@@ -113,8 +126,7 @@ public class ValidadorRegla {
             throw new ExcepcionNegocio("El parámetro exacto no puede contener barras dobles '//'.");
         }
 
-        char[] prohibidos = { ':', '\\', '"', '<', '>', '|', '?' };
-        for (char c : prohibidos) {
+        for (char c : CARACTERES_PROHIBIDOS_RUTA) {
             if (param.indexOf(c) >= 0) {
                 throw new ExcepcionNegocio("El parámetro exacto contiene el carácter prohibido: '" + c + "'.");
             }
@@ -166,8 +178,9 @@ public class ValidadorRegla {
     }
 
     private void validarPonderacion(int ponderacion) {
-        if (ponderacion <= 0 || ponderacion > 100) {
-            throw new ExcepcionNegocio("La ponderación debe ser un número entero entre 1 y 100.");
+        if (ponderacion < PONDERACION_MINIMA || ponderacion > PONDERACION_MAXIMA) {
+            throw new ExcepcionNegocio("La ponderación debe ser un número entero entre "
+                    + PONDERACION_MINIMA + " y " + PONDERACION_MAXIMA + ".");
         }
     }
 }
