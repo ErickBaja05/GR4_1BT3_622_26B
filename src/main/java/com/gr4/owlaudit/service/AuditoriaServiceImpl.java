@@ -27,7 +27,8 @@ public class AuditoriaServiceImpl implements AuditoriaService {
     private final com.gr4.owlaudit.dao.ProyectoDAO proyectoDAO;
 
     public AuditoriaServiceImpl() {
-        this(new ReglaDAOImpl(), new AuditoriaDAOImpl(), new GitHubClient(), new EvaluadorReglaFactory(), new com.gr4.owlaudit.dao.ProyectoDAOImpl());
+        this(new ReglaDAOImpl(), new AuditoriaDAOImpl(), new GitHubClient(), new EvaluadorReglaFactory(),
+                new com.gr4.owlaudit.dao.ProyectoDAOImpl());
     }
 
     public AuditoriaServiceImpl(ReglaDAO reglaDAO, AuditoriaDAO auditoriaDAO,
@@ -85,8 +86,17 @@ public class AuditoriaServiceImpl implements AuditoriaService {
             auditoria.setProyecto(p);
         }
 
+        List<String> mensajesCommits = null;
         for (Regla regla : reglas) {
-            if (evaluarCumplimientoDeRegla(regla, rutas)) {
+            List<String> elementosAEvaluar = rutas;
+            if (regla.getTipoMotor() == com.gr4.owlaudit.model.TipoMotorEnum.CONVENCION_COMMITS) {
+                if (mensajesCommits == null) {
+                    mensajesCommits = gitHubClient.obtenerMensajesDeCommits(dto == null ? null : dto.getUrl(), 10);
+                }
+                elementosAEvaluar = mensajesCommits;
+            }
+
+            if (evaluarCumplimientoDeRegla(regla, elementosAEvaluar)) {
                 auditoria.asignarPonderacionCompleta(regla);
             } else {
                 auditoria.registrarHallazgoDeIncumplimiento(regla);
@@ -100,15 +110,14 @@ public class AuditoriaServiceImpl implements AuditoriaService {
         List<ResultadoDTO.DetalleResultadoDTO> detalles = new java.util.ArrayList<>();
         for (ResultadoRegla r : auditoria.getResultados()) {
             detalles.add(new ResultadoDTO.DetalleResultadoDTO(
-                r.getRegla().getNombreRepresentativo(),
-                r.isCumple(),
-                r.getPuntosObtenidos(),
-                r.getRegla().getPonderacion(),
-                r.getRegla().getNivelSeveridad(),
-                r.getHallazgo() != null ? r.getHallazgo().getId() : null,
-                r.getHallazgo() != null ? r.getHallazgo().getEvidencia() : null,
-                r.getHallazgo() != null ? r.getHallazgo().getRecomendacion() : null
-            ));
+                    r.getRegla().getNombreRepresentativo(),
+                    r.isCumple(),
+                    r.getPuntosObtenidos(),
+                    r.getRegla().getPonderacion(),
+                    r.getRegla().getNivelSeveridad(),
+                    r.getHallazgo() != null ? r.getHallazgo().getId() : null,
+                    r.getHallazgo() != null ? r.getHallazgo().getEvidencia() : null,
+                    r.getHallazgo() != null ? r.getHallazgo().getRecomendacion() : null));
         }
 
         ResultadoDTO resultadoDTO = new ResultadoDTO(auditoria.getPuntajeObtenido(), auditoria.getPuntajeMaximo(),

@@ -99,6 +99,56 @@ public class GitHubClient {
     }
 
     public List<String> obtenerMensajesDeCommits(String url, int limite) {
-        return new ArrayList<>(); // Stub vacío para Fase Roja
+        if (url == null) {
+            throw new ExcepcionNegocio(MENSAJE_NO_ACCESIBLE);
+        }
+        Matcher matcher = PATRON_URL.matcher(url.trim());
+        if (!matcher.matches()) {
+            throw new ExcepcionNegocio(MENSAJE_NO_ACCESIBLE);
+        }
+        String owner = matcher.group(1);
+        String repo = matcher.group(2);
+
+        HttpRequest.Builder builder = HttpRequest.newBuilder()
+                .uri(URI.create("https://api.github.com/repos/" + owner + "/" + repo + "/commits?per_page=" + limite))
+                .timeout(Duration.ofSeconds(20))
+                .header("Accept", "application/vnd.github+json")
+                .header("User-Agent", "OwlAuditApp")
+                .GET();
+
+        String token = System.getenv("GITHUB_TOKEN");
+        if (token != null && !token.isBlank()) {
+            builder.header("Authorization", "Bearer " + token);
+        }
+
+        HttpResponse<String> respuesta;
+        try {
+            respuesta = httpClient.send(builder.build(), HttpResponse.BodyHandlers.ofString());
+        } catch (IOException e) {
+            throw new ExcepcionNegocio(MENSAJE_NO_ACCESIBLE, e);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new ExcepcionNegocio(MENSAJE_NO_ACCESIBLE, e);
+        }
+
+        if (respuesta.statusCode() != 200) {
+            throw new ExcepcionNegocio(MENSAJE_NO_ACCESIBLE);
+        }
+
+        try {
+            JsonNode raiz = objectMapper.readTree(respuesta.body());
+            List<String> mensajes = new ArrayList<>();
+            if (raiz.isArray()) {
+                for (JsonNode nodoCommit : raiz) {
+                    String mensaje = nodoCommit.path("commit").path("message").asText("");
+                    if (!mensaje.isBlank()) {
+                        mensajes.add(mensaje);
+                    }
+                }
+            }
+            return mensajes;
+        } catch (IOException e) {
+            throw new ExcepcionNegocio(MENSAJE_NO_ACCESIBLE, e);
+        }
     }
 }
