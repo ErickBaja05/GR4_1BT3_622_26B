@@ -4,41 +4,47 @@ import com.gr4.owlaudit.client.GitHubClient;
 import com.gr4.owlaudit.common.exception.ExcepcionNegocio;
 import com.gr4.owlaudit.dao.AuditoriaDAO;
 import com.gr4.owlaudit.dao.AuditoriaDAOImpl;
+import com.gr4.owlaudit.dao.ProyectoDAO;
+import com.gr4.owlaudit.dao.ProyectoDAOImpl;
 import com.gr4.owlaudit.dao.ReglaDAO;
 import com.gr4.owlaudit.dao.ReglaDAOImpl;
 import com.gr4.owlaudit.dto.AuditoriaDTO;
 import com.gr4.owlaudit.dto.ResultadoDTO;
 import com.gr4.owlaudit.dto.ResumenDTO;
 import com.gr4.owlaudit.model.Auditoria;
+import com.gr4.owlaudit.model.Proyecto;
 import com.gr4.owlaudit.model.Regla;
 import com.gr4.owlaudit.model.ResultadoRegla;
+import com.gr4.owlaudit.model.TipoMotorEnum;
 import com.gr4.owlaudit.reglas.strategy.EvaluadorReglaFactory;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class AuditoriaServiceImpl implements AuditoriaService {
 
     private static final String MENSAJE_SIN_REGLAS = "No existen reglas de evaluación activas para auditar el proyecto";
+    private static final int LIMITE_COMMITS = 10;
 
     private final ReglaDAO reglaDAO;
     private final AuditoriaDAO auditoriaDAO;
     private final GitHubClient gitHubClient;
     private final EvaluadorReglaFactory evaluadorFactory;
-    private final com.gr4.owlaudit.dao.ProyectoDAO proyectoDAO;
+    private final ProyectoDAO proyectoDAO;
 
     public AuditoriaServiceImpl() {
-        this(new ReglaDAOImpl(), new AuditoriaDAOImpl(), new GitHubClient(), new EvaluadorReglaFactory(),
-                new com.gr4.owlaudit.dao.ProyectoDAOImpl());
+        this(new ReglaDAOImpl(), new AuditoriaDAOImpl(), new GitHubClient(),
+                new EvaluadorReglaFactory(), new ProyectoDAOImpl());
     }
 
     public AuditoriaServiceImpl(ReglaDAO reglaDAO, AuditoriaDAO auditoriaDAO,
             GitHubClient gitHubClient, EvaluadorReglaFactory evaluadorFactory) {
-        this(reglaDAO, auditoriaDAO, gitHubClient, evaluadorFactory, new com.gr4.owlaudit.dao.ProyectoDAOImpl());
+        this(reglaDAO, auditoriaDAO, gitHubClient, evaluadorFactory, new ProyectoDAOImpl());
     }
 
     public AuditoriaServiceImpl(ReglaDAO reglaDAO, AuditoriaDAO auditoriaDAO,
             GitHubClient gitHubClient, EvaluadorReglaFactory evaluadorFactory,
-            com.gr4.owlaudit.dao.ProyectoDAO proyectoDAO) {
+            ProyectoDAO proyectoDAO) {
         this.reglaDAO = reglaDAO;
         this.auditoriaDAO = auditoriaDAO;
         this.gitHubClient = gitHubClient;
@@ -48,97 +54,130 @@ public class AuditoriaServiceImpl implements AuditoriaService {
 
     @Override
     public ResumenDTO solicitarPreviaDeAuditoria(AuditoriaDTO dto) {
-        // 1. Verificar que existan reglas activas (escenario alternativo 1)
-        List<Regla> reglas = reglaDAO.consultarReglasDeEvaluacionVigentes();
-        if (reglas.isEmpty()) {
-            throw new ExcepcionNegocio(MENSAJE_SIN_REGLAS);
-        }
+        List<Regla> reglas = obtenerReglasVigentes();
+        int puntajeMaximo = reglas.stream()
+                .mapToInt(Regla::getPonderacion)
+                .sum();
 
-        // 2. Calcular el puntaje máximo como la suma de las ponderaciones
-        int puntajeMaximo = 0;
-        for (Regla regla : reglas) {
-            puntajeMaximo += regla.getPonderacion();
-        }
         return new ResumenDTO(puntajeMaximo);
     }
 
     @Override
     public ResultadoDTO confirmarEjecucionDeAuditoria(AuditoriaDTO dto) {
-        // 1. Obtener la estructura del repositorio (escenario alternativo 3 si no es
-        // accesible)
-        List<String> rutas = gitHubClient.obtenerEstructuraDelRepositorio(dto == null ? null : dto.getUrl());
+        String urlRepositorio = dto == null ? null : dto.getUrl();
+        List<String> rutas = gitHubClient.obtenerEstructuraDelRepositorio(urlRepositorio);
+        List<Regla> reglas = obtenerReglasVigentes();
 
-        // 2. Volver a consultar las reglas vigentes al momento de ejecutar
-        // TODO DECISION D6: falta este mensaje en la fase 2 de secuencia3.puml
+        Auditoria auditoria = crearAuditoria(dto);
+        evaluarReglas(auditoria, reglas, rutas, urlRepositorio);
+
+        calcularPuntajesDeLaAuditoria(auditoria);
+        auditoriaDAO.registrarAuditoriaEnElHistorial(auditoria);
+
+        return crearResultadoDTO(auditoria);
+    }
+
+    private List<Regla> obtenerReglasVigentes() {
         List<Regla> reglas = reglaDAO.consultarReglasDeEvaluacionVigentes();
         if (reglas.isEmpty()) {
             throw new ExcepcionNegocio(MENSAJE_SIN_REGLAS);
         }
+        return reglas;
+    }
 
-        // 3. Evaluar cada regla y registrar su resultado (y hallazgo si no cumple)
+    private Auditoria crearAuditoria(AuditoriaDTO dto) {
         Auditoria auditoria = new Auditoria();
-        if (dto != null && dto.getProyectoId() != null && proyectoDAO != null) {
-            com.gr4.owlaudit.model.Proyecto p = proyectoDAO.buscarPorId(dto.getProyectoId());
-            if (p == null) {
-                p = new com.gr4.owlaudit.model.Proyecto();
-                p.setId(dto.getProyectoId());
-            }
-            auditoria.setProyecto(p);
+
+        if (dto == null || dto.getProyectoId() == null || proyectoDAO == null) {
+            return auditoria;
         }
 
+        Proyecto proyecto = proyectoDAO.buscarPorId(dto.getProyectoId());
+        if (proyecto == null) {
+            proyecto = new Proyecto();
+            proyecto.setId(dto.getProyectoId());
+        }
+
+        auditoria.setProyecto(proyecto);
+        return auditoria;
+    }
+
+    private void evaluarReglas(Auditoria auditoria, List<Regla> reglas,
+            List<String> rutas, String urlRepositorio) {
         List<String> mensajesCommits = null;
+
         for (Regla regla : reglas) {
             List<String> elementosAEvaluar = rutas;
-            if (regla.getTipoMotor() == com.gr4.owlaudit.model.TipoMotorEnum.CONVENCION_COMMITS) {
+
+            if (regla.getTipoMotor() == TipoMotorEnum.CONVENCION_COMMITS) {
                 if (mensajesCommits == null) {
-                    mensajesCommits = gitHubClient.obtenerMensajesDeCommits(dto == null ? null : dto.getUrl(), 10);
+                    mensajesCommits = gitHubClient.obtenerMensajesDeCommits(
+                            urlRepositorio, LIMITE_COMMITS);
                 }
                 elementosAEvaluar = mensajesCommits;
             }
 
-            if (evaluarCumplimientoDeRegla(regla, elementosAEvaluar)) {
-                auditoria.asignarPonderacionCompleta(regla);
-            } else {
-                auditoria.registrarHallazgoDeIncumplimiento(regla);
-            }
+            registrarResultadoDeRegla(auditoria, regla, elementosAEvaluar);
         }
+    }
 
-        // 4. Calcular puntajes y registrar la auditoría en el historial
-        calcularPuntajesDeLaAuditoria(auditoria);
-        auditoriaDAO.registrarAuditoriaEnElHistorial(auditoria);
-
-        List<ResultadoDTO.DetalleResultadoDTO> detalles = new java.util.ArrayList<>();
-        for (ResultadoRegla r : auditoria.getResultados()) {
-            detalles.add(new ResultadoDTO.DetalleResultadoDTO(
-                    r.getRegla().getNombreRepresentativo(),
-                    r.isCumple(),
-                    r.getPuntosObtenidos(),
-                    r.getRegla().getPonderacion(),
-                    r.getRegla().getNivelSeveridad(),
-                    r.getHallazgo() != null ? r.getHallazgo().getId() : null,
-                    r.getHallazgo() != null ? r.getHallazgo().getEvidencia() : null,
-                    r.getHallazgo() != null ? r.getHallazgo().getRecomendacion() : null));
+    private void registrarResultadoDeRegla(Auditoria auditoria, Regla regla,
+            List<String> elementosAEvaluar) {
+        if (evaluarCumplimientoDeRegla(regla, elementosAEvaluar)) {
+            auditoria.asignarPonderacionCompleta(regla);
+        } else {
+            auditoria.registrarHallazgoDeIncumplimiento(regla);
         }
+    }
 
-        ResultadoDTO resultadoDTO = new ResultadoDTO(auditoria.getPuntajeObtenido(), auditoria.getPuntajeMaximo(),
-                auditoria.getPorcentaje(), detalles);
+    private boolean evaluarCumplimientoDeRegla(Regla regla, List<String> elementosAEvaluar) {
+        return evaluadorFactory.obtenerEvaluador(regla.getTipoMotor())
+                .evaluar(regla.getParametroExacto(), elementosAEvaluar);
+    }
+
+    private ResultadoDTO crearResultadoDTO(Auditoria auditoria) {
+        List<ResultadoDTO.DetalleResultadoDTO> detalles = crearDetallesResultado(auditoria);
+
+        ResultadoDTO resultadoDTO = new ResultadoDTO(
+                auditoria.getPuntajeObtenido(),
+                auditoria.getPuntajeMaximo(),
+                auditoria.getPorcentaje(),
+                detalles);
         resultadoDTO.setDictamen(auditoria.determinarDictamen());
+
         return resultadoDTO;
     }
 
-    private boolean evaluarCumplimientoDeRegla(Regla regla, List<String> rutas) {
-        return evaluadorFactory.obtenerEvaluador(regla.getTipoMotor())
-                .evaluar(regla.getParametroExacto(), rutas);
+    private List<ResultadoDTO.DetalleResultadoDTO> crearDetallesResultado(Auditoria auditoria) {
+        List<ResultadoDTO.DetalleResultadoDTO> detalles = new ArrayList<>();
+
+        for (ResultadoRegla resultado : auditoria.getResultados()) {
+            detalles.add(new ResultadoDTO.DetalleResultadoDTO(
+                    resultado.getRegla().getNombreRepresentativo(),
+                    resultado.isCumple(),
+                    resultado.getPuntosObtenidos(),
+                    resultado.getRegla().getPonderacion(),
+                    resultado.getRegla().getNivelSeveridad(),
+                    resultado.getHallazgo() != null ? resultado.getHallazgo().getId() : null,
+                    resultado.getHallazgo() != null ? resultado.getHallazgo().getEvidencia() : null,
+                    resultado.getHallazgo() != null ? resultado.getHallazgo().getRecomendacion() : null));
+        }
+
+        return detalles;
     }
 
     private void calcularPuntajesDeLaAuditoria(Auditoria auditoria) {
         int puntajeObtenido = 0;
         int puntajeMaximo = 0;
+
         for (ResultadoRegla resultado : auditoria.getResultados()) {
             puntajeObtenido += resultado.getPuntosObtenidos();
             puntajeMaximo += resultado.getRegla().getPonderacion();
         }
-        double porcentaje = puntajeMaximo == 0 ? 0.0 : Math.round(puntajeObtenido * 1000.0 / puntajeMaximo) / 10.0;
+
+        double porcentaje = puntajeMaximo == 0
+                ? 0.0
+                : Math.round(puntajeObtenido * 1000.0 / puntajeMaximo) / 10.0;
 
         auditoria.setPuntajeObtenido(puntajeObtenido);
         auditoria.setPuntajeMaximo(puntajeMaximo);
