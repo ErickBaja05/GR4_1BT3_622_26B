@@ -11,6 +11,8 @@
     AuditoriaDTO auditoriaDTO = (AuditoriaDTO) request.getAttribute("auditoriaDTO");
     ResumenDTO resumen = (ResumenDTO) request.getAttribute("resumenDTO");
     ResultadoDTO resultado = (ResultadoDTO) request.getAttribute("resultadoDTO");
+    com.gr4.owlaudit.dto.DeudaTecnicaDTO deudaTecnica =
+        (com.gr4.owlaudit.dto.DeudaTecnicaDTO) request.getAttribute("deudaTecnica");
     @SuppressWarnings("unchecked")
     List<Proyecto> proyectos = (List<Proyecto>) request.getAttribute("proyectos");
     String urlActual = auditoriaDTO != null && auditoriaDTO.getUrl() != null ? auditoriaDTO.getUrl() : "";
@@ -47,7 +49,7 @@
                         <label for="proyectoId" class="form-label">Proyecto Registrado a Auditar</label>
                         <select id="proyectoId" name="proyectoId" class="form-control" onchange="actualizarUrlDesdeSelect(this)" required>
                             <option value="">-- Seleccione un proyecto registrado --</option>
-                            <% for (Proyecto p : proyectos) { 
+                            <% for (Proyecto p : proyectos) {
                                    boolean esSel = proyectoIdActual != null && proyectoIdActual.equals(p.getId());
                                    if (!esSel && urlActual != null && urlActual.equals(p.getUrlGithub())) {
                                        esSel = true;
@@ -62,8 +64,8 @@
 
                     <div class="form-group">
                         <label for="url" class="form-label">URL del Repositorio de GitHub</label>
-                        <input type="url" id="url" name="url" class="form-control" 
-                               placeholder="https://github.com/usuario/repositorio" 
+                        <input type="url" id="url" name="url" class="form-control"
+                               placeholder="https://github.com/usuario/repositorio"
                                value="<%= HtmlUtil.escape(urlActual) %>" required readonly>
                     </div>
 
@@ -174,6 +176,75 @@
                     </div>
                 <% } %>
 
+                <%-- ===== BLOQUE: Deuda Tecnica Estimada ===== --%>
+                <% if (deudaTecnica != null) { %>
+                <div style="margin-top: 2rem; padding: 1.5rem; background-color: #ffffff; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);">
+
+                    <h3 style="color: #1e293b; margin-bottom: 1.25rem; font-size: 1.15rem; font-weight: 700; display: flex; align-items: center; gap: 0.5rem;">
+                        &#128336; Deuda T&eacute;cnica Estimada
+                    </h3>
+
+                    <div style="display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 1.25rem;">
+                        <%-- ALTA --%>
+                        <div style="flex: 1; min-width: 140px; background-color: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 1rem; text-align: center;">
+                            <div style="font-size: 1.6rem; font-weight: 700; color: #dc2626;">
+                                <%= deudaTecnica.getCantidadAlta() %>
+                            </div>
+                            <div style="color: #991b1b; font-size: 0.8rem; font-weight: 600; margin-top: 0.25rem;">
+                                Hallazgos ALTA
+                            </div>
+                            <div style="color: #ef4444; font-size: 0.75rem; margin-top: 0.4rem;">
+                                <%= deudaTecnica.getCantidadAlta() * 120 %> min
+                            </div>
+                        </div>
+
+                        <%-- MEDIA --%>
+                        <div style="flex: 1; min-width: 140px; background-color: #fff7ed; border: 1px solid #fed7aa; border-radius: 8px; padding: 1rem; text-align: center;">
+                            <div style="font-size: 1.6rem; font-weight: 700; color: #ea580c;">
+                                <%= deudaTecnica.getCantidadMedia() %>
+                            </div>
+                            <div style="color: #9a3412; font-size: 0.8rem; font-weight: 600; margin-top: 0.25rem;">
+                                Hallazgos MEDIA
+                            </div>
+                            <div style="color: #f97316; font-size: 0.75rem; margin-top: 0.4rem;">
+                                <%= deudaTecnica.getCantidadMedia() * 60 %> min
+                            </div>
+                        </div>
+
+                        <%-- BAJA --%>
+                        <div style="flex: 1; min-width: 140px; background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 1rem; text-align: center;">
+                            <div style="font-size: 1.6rem; font-weight: 700; color: #475569;">
+                                <%= deudaTecnica.getCantidadBaja() %>
+                            </div>
+                            <div style="color: #334155; font-size: 0.8rem; font-weight: 600; margin-top: 0.25rem;">
+                                Hallazgos BAJA
+                            </div>
+                            <div style="color: #64748b; font-size: 0.75rem; margin-top: 0.4rem;">
+                                <%= deudaTecnica.getCantidadBaja() * 30 %> min
+                            </div>
+                        </div>
+
+                        <%-- Total --%>
+                        <div style="flex: 1; min-width: 160px; background-color: #f0f9ff; border: 2px solid #0284c7; border-radius: 8px; padding: 1rem; text-align: center;">
+                            <div style="font-size: 1.8rem; font-weight: 800; color: #0284c7;">
+                                <%= deudaTecnica.getTiempoFormateado() %>
+                            </div>
+                            <div style="color: #0369a1; font-size: 0.85rem; font-weight: 600; margin-top: 0.25rem;">
+                                Tiempo total estimado
+                            </div>
+                            <div style="color: #0ea5e9; font-size: 0.75rem; margin-top: 0.4rem;">
+                                <%= deudaTecnica.getTotalMinutos() %> minutos
+                            </div>
+                        </div>
+                    </div>
+
+                    <p style="color: #64748b; font-size: 0.82rem; margin: 0; border-top: 1px solid #f1f5f9; padding-top: 0.75rem;">
+                        &#9432; El tiempo estimado considera: ALTA = 120 min, MEDIA = 60 min, BAJA = 30 min por hallazgo.
+                    </p>
+                </div>
+                <% } %>
+                <%-- ===== FIN: Deuda Tecnica Estimada ===== --%>
+
                 <div style="margin-top: 1.25rem;">
                     <a href="${pageContext.request.contextPath}/auditoria" class="btn btn-secondary">Nueva Auditoría</a>
                 </div>
@@ -191,7 +262,7 @@
                 urlInput.value = '';
             }
         }
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             const selectElement = document.getElementById('proyectoId');
             if (selectElement && !document.getElementById('url').value) {
                 actualizarUrlDesdeSelect(selectElement);

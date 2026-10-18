@@ -1,13 +1,18 @@
 package com.gr4.owlaudit.servlet;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 import com.gr4.owlaudit.common.exception.ExcepcionNegocio;
 import com.gr4.owlaudit.dto.AuditoriaDTO;
+import com.gr4.owlaudit.dto.DeudaTecnicaDTO;
 import com.gr4.owlaudit.dto.ResultadoDTO;
 import com.gr4.owlaudit.dto.ResumenDTO;
+import com.gr4.owlaudit.model.NivelSeveridadEnum;
 import com.gr4.owlaudit.service.AuditoriaService;
 import com.gr4.owlaudit.service.AuditoriaServiceImpl;
+import com.gr4.owlaudit.service.CalculadoraDeudaTecnica;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -18,7 +23,6 @@ import jakarta.servlet.http.HttpServletResponse;
 import com.gr4.owlaudit.dao.ProyectoDAO;
 import com.gr4.owlaudit.dao.ProyectoDAOImpl;
 import com.gr4.owlaudit.model.Proyecto;
-import java.util.List;
 
 /**
  * CU03 - Ejecutar auditoría de calidad del repositorio (roles ESTUDIANTE y DOCENTE).
@@ -30,14 +34,21 @@ public class AuditoriaServlet extends HttpServlet {
 
     private final AuditoriaService auditoriaService;
     private final ProyectoDAO proyectoDAO;
+    private final CalculadoraDeudaTecnica calculadoraDeudaTecnica;
 
     public AuditoriaServlet() {
-        this(new AuditoriaServiceImpl(), new ProyectoDAOImpl());
+        this(new AuditoriaServiceImpl(), new ProyectoDAOImpl(), new CalculadoraDeudaTecnica());
     }
 
     public AuditoriaServlet(AuditoriaService auditoriaService, ProyectoDAO proyectoDAO) {
+        this(auditoriaService, proyectoDAO, new CalculadoraDeudaTecnica());
+    }
+
+    public AuditoriaServlet(AuditoriaService auditoriaService, ProyectoDAO proyectoDAO,
+                            CalculadoraDeudaTecnica calculadoraDeudaTecnica) {
         this.auditoriaService = auditoriaService;
         this.proyectoDAO = proyectoDAO;
+        this.calculadoraDeudaTecnica = calculadoraDeudaTecnica;
     }
 
     // 1. Previa de Auditoría (doGet) según secuencia3.puml
@@ -137,6 +148,21 @@ public class AuditoriaServlet extends HttpServlet {
             ResultadoDTO resultadoDTO = auditoriaService.confirmarEjecucionDeAuditoria(dto);
             request.setAttribute("resultadoDTO", resultadoDTO);
             request.setAttribute("mensajeExito", "Auditoría ejecutada y registrada en el historial correctamente.");
+
+            // --- Calcular Deuda Técnica Estimada ---
+            // Se consideran únicamente los detalles que incumplieron (hallazgos reales)
+            List<NivelSeveridadEnum> severidades = new ArrayList<>();
+            if (resultadoDTO.getDetalles() != null) {
+                for (ResultadoDTO.DetalleResultadoDTO detalle : resultadoDTO.getDetalles()) {
+                    if (!detalle.isCumple() && detalle.getNivelSeveridad() != null) {
+                        severidades.add(detalle.getNivelSeveridad());
+                    }
+                }
+            }
+            DeudaTecnicaDTO deudaTecnica = calculadoraDeudaTecnica.calcular(severidades);
+            request.setAttribute("deudaTecnica", deudaTecnica);
+            // --- Fin Deuda Técnica ---
+
         } catch (ExcepcionNegocio e) {
             request.setAttribute("mensajeError", e.getMessage());
         } catch (RuntimeException e) {
