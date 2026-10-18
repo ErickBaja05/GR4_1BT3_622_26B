@@ -103,37 +103,44 @@ public class RetroalimentacionServiceImpl implements RetroalimentacionService {
                 if (aud.getResultados() != null) {
                     for (ResultadoRegla rr : aud.getResultados()) {
                         if (!rr.isCumple() && rr.getHallazgo() != null) {
-                            Hallazgo h = rr.getHallazgo();
-                            Map<String, Object> map = new HashMap<>();
-                            map.put("hallazgoId", h.getId());
-                            map.put("auditoriaId", aud.getId());
-                            map.put("fechaHora", aud.getFechaHora() != null ? aud.getFechaHora().toString().replace('T', ' ') : "");
-                            map.put("proyectoNombre", aud.getProyecto() != null ? aud.getProyecto().getNombre() : "Proyecto Académico");
-                            map.put("reglaNombre", rr.getRegla() != null ? rr.getRegla().getNombreRepresentativo() : "Regla de Evaluación");
-                            map.put("severidad", h.getNivelSeveridad() != null ? h.getNivelSeveridad().name() : "MEDIA");
-                            map.put("evidencia", h.getEvidencia() != null ? h.getEvidencia() : "");
-                            map.put("recomendacion", h.getRecomendacion() != null ? h.getRecomendacion() : "");
-
-                            SolicitudRetroalimentacion sol = solicitudDAO.buscarPorHallazgoId(h.getId());
-                            if (sol != null && sol.getEstado() == EstadoRetroEnum.PENDIENTE) {
-                                map.put("tieneSolicitud", true);
-                                map.put("estadoSolicitud", "PENDIENTE");
-                                map.put("solicitudId", sol.getId());
-                            } else if (sol != null && sol.getEstado() == EstadoRetroEnum.ATENDIDA) {
-                                map.put("tieneSolicitud", true);
-                                map.put("estadoSolicitud", "ATENDIDA");
-                                map.put("solicitudId", sol.getId());
-                            } else {
-                                map.put("tieneSolicitud", false);
-                                map.put("estadoSolicitud", "SIN_SOLICITUD");
-                            }
-                            hallazgosDisponibles.add(map);
+                            hallazgosDisponibles.add(extraerInfoHallazgo(rr.getHallazgo(), aud, rr));
                         }
                     }
                 }
             }
         }
         return hallazgosDisponibles;
+    }
+
+    private Map<String, Object> extraerInfoHallazgo(Hallazgo h, Auditoria aud, ResultadoRegla rr) {
+        Map<String, Object> map = new HashMap<>();
+        map.put("hallazgoId", h.getId());
+        map.put("auditoriaId", aud.getId());
+        map.put("fechaHora", aud.getFechaHora() != null ? aud.getFechaHora().toString().replace('T', ' ') : "");
+        map.put("proyectoNombre", aud.getProyecto() != null ? aud.getProyecto().getNombre() : "Proyecto Académico");
+        map.put("reglaNombre", rr.getRegla() != null ? rr.getRegla().getNombreRepresentativo() : "Regla de Evaluación");
+        map.put("severidad", h.getNivelSeveridad() != null ? h.getNivelSeveridad().name() : "MEDIA");
+        map.put("evidencia", h.getEvidencia() != null ? h.getEvidencia() : "");
+        map.put("recomendacion", h.getRecomendacion() != null ? h.getRecomendacion() : "");
+
+        adjuntarEstadoSolicitud(h.getId(), map);
+        return map;
+    }
+
+    private void adjuntarEstadoSolicitud(Long hallazgoId, Map<String, Object> map) {
+        SolicitudRetroalimentacion sol = solicitudDAO.buscarPorHallazgoId(hallazgoId);
+        if (sol != null && sol.getEstado() == EstadoRetroEnum.PENDIENTE) {
+            map.put("tieneSolicitud", true);
+            map.put("estadoSolicitud", "PENDIENTE");
+            map.put("solicitudId", sol.getId());
+        } else if (sol != null && sol.getEstado() == EstadoRetroEnum.ATENDIDA) {
+            map.put("tieneSolicitud", true);
+            map.put("estadoSolicitud", "ATENDIDA");
+            map.put("solicitudId", sol.getId());
+        } else {
+            map.put("tieneSolicitud", false);
+            map.put("estadoSolicitud", "SIN_SOLICITUD");
+        }
     }
 
     // ========================================================

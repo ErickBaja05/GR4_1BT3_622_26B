@@ -9,16 +9,19 @@ import java.util.List;
 
 public class SolicitudDAOImpl implements SolicitudDAO {
 
+    private static final String FETCH_DETALLE_SOLICITUD =
+        "LEFT JOIN FETCH s.hallazgo h " +
+        "LEFT JOIN FETCH h.resultadoRegla r " +
+        "LEFT JOIN FETCH r.regla " +
+        "LEFT JOIN FETCH r.auditoria a " +
+        "LEFT JOIN FETCH a.proyecto ";
+
     @Override
     public SolicitudRetroalimentacion buscarPorHallazgoId(Long hallazgoId) {
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
             return session.createQuery(
                 "SELECT s FROM SolicitudRetroalimentacion s " +
-                "LEFT JOIN FETCH s.hallazgo h " +
-                "LEFT JOIN FETCH h.resultadoRegla r " +
-                "LEFT JOIN FETCH r.regla " +
-                "LEFT JOIN FETCH r.auditoria a " +
-                "LEFT JOIN FETCH a.proyecto " +
+                FETCH_DETALLE_SOLICITUD +
                 "WHERE s.hallazgo.id = :hallazgoId " +
                 "ORDER BY s.id DESC",
                 SolicitudRetroalimentacion.class
@@ -64,11 +67,7 @@ public class SolicitudDAOImpl implements SolicitudDAO {
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
             return session.createQuery(
                 "SELECT s FROM SolicitudRetroalimentacion s " +
-                "LEFT JOIN FETCH s.hallazgo h " +
-                "LEFT JOIN FETCH h.resultadoRegla r " +
-                "LEFT JOIN FETCH r.regla " +
-                "LEFT JOIN FETCH r.auditoria a " +
-                "LEFT JOIN FETCH a.proyecto " +
+                FETCH_DETALLE_SOLICITUD +
                 "WHERE s.id = :solicitudId",
                 SolicitudRetroalimentacion.class
             )
@@ -99,11 +98,7 @@ public class SolicitudDAOImpl implements SolicitudDAO {
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
             return session.createQuery(
                 "SELECT DISTINCT s FROM SolicitudRetroalimentacion s " +
-                "LEFT JOIN FETCH s.hallazgo h " +
-                "LEFT JOIN FETCH h.resultadoRegla r " +
-                "LEFT JOIN FETCH r.regla " +
-                "LEFT JOIN FETCH r.auditoria a " +
-                "LEFT JOIN FETCH a.proyecto " +
+                FETCH_DETALLE_SOLICITUD +
                 "WHERE s.estado = :estado " +
                 "ORDER BY s.id DESC",
                 SolicitudRetroalimentacion.class
@@ -145,11 +140,7 @@ public class SolicitudDAOImpl implements SolicitudDAO {
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
             return session.createQuery(
                 "SELECT DISTINCT s FROM SolicitudRetroalimentacion s " +
-                "LEFT JOIN FETCH s.hallazgo h " +
-                "LEFT JOIN FETCH h.resultadoRegla r " +
-                "LEFT JOIN FETCH r.regla " +
-                "LEFT JOIN FETCH r.auditoria a " +
-                "LEFT JOIN FETCH a.proyecto " +
+                FETCH_DETALLE_SOLICITUD +
                 "ORDER BY s.id DESC",
                 SolicitudRetroalimentacion.class
             ).getResultList();

@@ -84,23 +84,40 @@ class RetroalimentacionServiceImplTest {
     }
 
     // ========================================================
+    // MÉTODOS AUXILIARES DE PRUEBA (Refactoring de Pruebas - Martin Fowler)
+    // ========================================================
+
+    private void dadoHallazgoSinSolicitud(Long hallazgoId) {
+        when(solicitudDAO.buscarPorHallazgoId(hallazgoId)).thenReturn(null);
+    }
+
+    private void dadoHallazgoConSolicitud(Long hallazgoId, SolicitudRetroalimentacion solicitud) {
+        when(solicitudDAO.buscarPorHallazgoId(hallazgoId)).thenReturn(solicitud);
+    }
+
+    private void assertHallazgoEnRevision(SolicitudDTO dto) {
+        ExcepcionNegocio ex = assertThrows(ExcepcionNegocio.class, () ->
+                retroService.solicitarRetroalimentacionDeHallazgo(dto));
+        assertEquals("Hallazgo en revisión", ex.getMessage());
+    }
+
+    // ========================================================
     // PRUEBAS UNITARIAS DE TDD
     // ========================================================
 
     @Test
     @DisplayName("CU05: Permite re-consulta si la solicitud previa está atendida")
     void given_solicitudAtendida_when_reconsulta_then_ok() {
-        // GIVEN (Dado): Un hallazgo (ID 401) cuya solicitud previa ya fue respondida (ATENDIDA)
+        // GIVEN: Un hallazgo (ID 401) cuya solicitud previa ya fue respondida (ATENDIDA)
         Long hallazgoId = 401L;
         solicitudR4.marcarSolicitudComoAtendida();
         solicitudR4.setOrientacionTecnica("Orientación técnica previa emitida por el docente.");
+        dadoHallazgoConSolicitud(hallazgoId, solicitudR4);
 
-        when(solicitudDAO.buscarPorHallazgoId(hallazgoId)).thenReturn(solicitudR4);
-
-        // WHEN & THEN (Cuando y Entonces): El estudiante formula una re-consulta
+        // WHEN: El estudiante formula una re-consulta
         SolicitudDTO reconsultaDto = new SolicitudDTO(hallazgoId, "¿Cómo configuro el archivo .env.example en producción?");
 
-        // REGLA: No debe lanzar excepción; debe permitir abrir el nuevo ciclo de feedback
+        // THEN: No debe lanzar excepción y debe abrir un nuevo ciclo de feedback
         assertDoesNotThrow(() -> retroService.solicitarRetroalimentacionDeHallazgo(reconsultaDto),
                 "Debe permitir una nueva solicitud de retroalimentación si la anterior ya fue ATENDIDA");
 
@@ -190,23 +207,20 @@ class RetroalimentacionServiceImplTest {
     @DisplayName("CU05: Solicitar retroalimentación de hallazgo")
     void testSolicitarRetroalimentacionDeHallazgo() {
         SolicitudDTO nuevoDto = new SolicitudDTO(501L, "Tengo dudas sobre cómo organizar las carpetas en src");
-        when(solicitudDAO.buscarPorHallazgoId(501L)).thenReturn(null);
+        dadoHallazgoSinSolicitud(501L);
 
         retroService.solicitarRetroalimentacionDeHallazgo(nuevoDto);
         verify(solicitudDAO).crearSolicitudDeRetroalimentacion(any(SolicitudRetroalimentacion.class));
 
-        when(solicitudDAO.buscarPorHallazgoId(401L)).thenReturn(solicitudR4);
-        SolicitudDTO dtoDuplicado = new SolicitudDTO(401L, "Otra consulta sobre el mismo hallazgo");
-        ExcepcionNegocio ex = assertThrows(ExcepcionNegocio.class, () ->
-                retroService.solicitarRetroalimentacionDeHallazgo(dtoDuplicado));
-        assertEquals("Hallazgo en revisión", ex.getMessage());
+        dadoHallazgoConSolicitud(401L, solicitudR4);
+        assertHallazgoEnRevision(new SolicitudDTO(401L, "Otra consulta sobre el mismo hallazgo"));
     }
 
     @Test
     @DisplayName("CU05 - CP-CU05-01: Solicitud exitosa para el hallazgo de una auditoría")
     void testSolicitudExitosaCP_CU05_01() {
         SolicitudDTO dto = new SolicitudDTO(801L, "La función requiere múltiples estructuras condicionales para el control de errores de entrada");
-        when(solicitudDAO.buscarPorHallazgoId(801L)).thenReturn(null);
+        dadoHallazgoSinSolicitud(801L);
 
         retroService.solicitarRetroalimentacionDeHallazgo(dto);
 
@@ -221,12 +235,8 @@ class RetroalimentacionServiceImplTest {
     @Test
     @DisplayName("CU05 - Escenario Alternativo 1: Hallazgo ya en proceso de revisión")
     void testSolicitudHallazgoYaEnRevision() {
-        when(solicitudDAO.buscarPorHallazgoId(401L)).thenReturn(solicitudR4);
-
-        SolicitudDTO dtoDuplicado = new SolicitudDTO(401L, "Otra consulta sobre el mismo hallazgo R4");
-        ExcepcionNegocio ex = assertThrows(ExcepcionNegocio.class, () ->
-                retroService.solicitarRetroalimentacionDeHallazgo(dtoDuplicado));
-        assertEquals("Hallazgo en revisión", ex.getMessage());
+        dadoHallazgoConSolicitud(401L, solicitudR4);
+        assertHallazgoEnRevision(new SolicitudDTO(401L, "Otra consulta sobre el mismo hallazgo R4"));
     }
 
     @Test
