@@ -5,20 +5,12 @@ import com.gr4.owlaudit.dto.NuevaReglaDTO;
 import com.gr4.owlaudit.model.NivelSeveridadEnum;
 import com.gr4.owlaudit.model.TipoMotorEnum;
 
-/**
- * Validador encargado de la verificación de sintaxis y formato de reglas
- * técnicas.
- * Extraído de ReglaServiceImpl para cumplir con el Principio de Responsabilidad
- * Única (SRP).
- */
+import java.util.List;
+import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
+
 public class ValidadorRegla {
 
-    /**
-     * Valida la sintaxis y formato del DTO de una nueva regla.
-     *
-     * @param dto Datos de la regla a validar.
-     * @throws ExcepcionNegocio Si alguna validación de sintaxis o formato falla.
-     */
     public void validarSintaxisYFormato(NuevaReglaDTO dto) {
         if (dto == null) {
             throw new ExcepcionNegocio("Los datos de la regla no pueden ser nulos.");
@@ -34,12 +26,6 @@ public class ValidadorRegla {
         validarPonderacion(dto.getPonderacion());
     }
 
-    /**
-     * Método alternativo de conveniencia que delega en
-     * {@link #validarSintaxisYFormato(NuevaReglaDTO)}.
-     *
-     * @param dto Datos de la regla a validar.
-     */
     public void validar(NuevaReglaDTO dto) {
         validarSintaxisYFormato(dto);
     }
@@ -68,7 +54,7 @@ public class ValidadorRegla {
             return TipoMotorEnum.valueOf(trimmed);
         } catch (IllegalArgumentException e) {
             throw new ExcepcionNegocio("El tipo de motor '" + trimmed
-                    + "' no es válido. Debe ser PRESENCIA_ARCHIVO, RESTRICCION_ARCHIVOS o ESTRUCTURA_CARPETAS.");
+                    + "' no es válido. Debe ser PRESENCIA_ARCHIVO, RESTRICCION_ARCHIVOS, ESTRUCTURA_CARPETAS o CONVENCION_COMMITS.");
         }
     }
 
@@ -93,6 +79,33 @@ public class ValidadorRegla {
         if (param.length() < 1 || param.length() > 100) {
             throw new ExcepcionNegocio("El parámetro exacto debe tener entre 1 y 100 caracteres.");
         }
+
+        // Si es CONVENCION_COMMITS, validamos sintaxis de expresión regular y prefijos
+        // de commits
+        if (tipoMotor == TipoMotorEnum.CONVENCION_COMMITS) {
+            if (!param.contains(":")) {
+                throw new ExcepcionNegocio("Para CONVENCION_COMMITS, el patrón debe incluir el separador ':'.");
+            }
+            String prefijosParte = param.substring(0, param.indexOf(":"));
+            if (prefijosParte.matches(".*\\d+.*")) {
+                throw new ExcepcionNegocio("Los prefijos de commit no pueden contener números.");
+            }
+            List<String> prefijosValidos = List.of("feat", "fix", "docs", "style", "refactor", "test", "chore");
+            boolean tienePrefijo = prefijosValidos.stream()
+                    .anyMatch(p -> Pattern.compile("\\b" + p + "\\b").matcher(prefijosParte).find());
+            if (!tienePrefijo) {
+                throw new ExcepcionNegocio(
+                        "El patrón debe incluir al menos un prefijo válido (feat, fix, docs, style, refactor, test, chore).");
+            }
+            try {
+                Pattern.compile(param);
+            } catch (PatternSyntaxException e) {
+                throw new ExcepcionNegocio("El parámetro exacto no es una expresión regular válida.");
+            }
+            return;
+        }
+
+        // Validaciones para motores basados en rutas/archivos
         if (param.contains("..")) {
             throw new ExcepcionNegocio("El parámetro exacto no puede contener secuencias de navegación '..'.");
         }
@@ -100,7 +113,6 @@ public class ValidadorRegla {
             throw new ExcepcionNegocio("El parámetro exacto no puede contener barras dobles '//'.");
         }
 
-        // Caracteres prohibidos: :, \, ", <, >, |, ?
         char[] prohibidos = { ':', '\\', '"', '<', '>', '|', '?' };
         for (char c : prohibidos) {
             if (param.indexOf(c) >= 0) {
@@ -108,7 +120,6 @@ public class ValidadorRegla {
             }
         }
 
-        // Reglas específicas según tipoMotor
         if (tipoMotor == TipoMotorEnum.PRESENCIA_ARCHIVO) {
             if (param.startsWith("/") || param.endsWith("/")) {
                 throw new ExcepcionNegocio("Para PRESENCIA_ARCHIVO, la ruta no puede empezar ni terminar con '/'.");
@@ -155,8 +166,8 @@ public class ValidadorRegla {
     }
 
     private void validarPonderacion(int ponderacion) {
-        if (ponderacion <= 0) {
-            throw new ExcepcionNegocio("La ponderación debe ser un número entero estrictamente mayor a cero.");
+        if (ponderacion <= 0 || ponderacion > 100) {
+            throw new ExcepcionNegocio("La ponderación debe ser un número entero entre 1 y 100.");
         }
     }
 }
