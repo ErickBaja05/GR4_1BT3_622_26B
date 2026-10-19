@@ -17,21 +17,13 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * [FASE ROJA - TDD] Pruebas unitarias para CalculadoraDeudaTecnica.
  *
  * Reglas de negocio:
- *   - Hallazgo ALTA  --> 120 minutos (2 horas)
- *   - Hallazgo MEDIA -->  60 minutos (1 hora)
- *   - Hallazgo BAJA  -->  30 minutos
- *
- * ESTAS PRUEBAS DEBEN FALLAR al ejecutar 'mvn test' porque las clases
- * CalculadoraDeudaTecnica y DeudaTecnicaDTO aun no existen en src/main.
- *
- * Commit esperado: TEST: agrega prueba fallida para funcionalidad_calculadora_deuda_tecnica
+ * - Hallazgo ALTA  --> 120 minutos (2 horas)
+ * - Hallazgo MEDIA -->  60 minutos (1 hora)
+ * - Hallazgo BAJA  -->  30 minutos
  */
 @DisplayName("CU-DEUDA: Calculadora de Deuda Tecnica Estimada")
 class CalculadoraDeudaTecnicaTest {
 
-    // =========================================================
-    // SUT (System Under Test) -- aun no existe en src/main --> RED
-    // =========================================================
     private CalculadoraDeudaTecnica calculadora;
 
     @BeforeEach
@@ -44,7 +36,7 @@ class CalculadoraDeudaTecnicaTest {
     // =========================================================
     @Test
     @DisplayName("TC-01 | Lista vacia -> deuda total de 0 minutos")
-    void calcularConListaVacia() {
+    void givenListaVacia_whenCalcular_thenReturnDeudaCero() {
         DeudaTecnicaDTO resultado = calculadora.calcular(Collections.emptyList());
 
         assertNotNull(resultado, "El DTO no debe ser nulo aunque no haya hallazgos.");
@@ -63,7 +55,7 @@ class CalculadoraDeudaTecnicaTest {
     // =========================================================
     @Test
     @DisplayName("TC-02 | 1 hallazgo ALTA -> 120 minutos (2h 0min)")
-    void calcularConUnHallazgoAlta() {
+    void givenUnHallazgoAlta_whenCalcular_thenReturn120Minutos() {
         List<NivelSeveridadEnum> hallazgos = List.of(NivelSeveridadEnum.ALTA);
 
         DeudaTecnicaDTO resultado = calculadora.calcular(hallazgos);
@@ -81,7 +73,7 @@ class CalculadoraDeudaTecnicaTest {
     // =========================================================
     @Test
     @DisplayName("TC-03 | 1 hallazgo MEDIA -> 60 minutos (1h 0min)")
-    void calcularConUnHallazgoMedia() {
+    void givenUnHallazgoMedia_whenCalcular_thenReturn60Minutos() {
         List<NivelSeveridadEnum> hallazgos = List.of(NivelSeveridadEnum.MEDIA);
 
         DeudaTecnicaDTO resultado = calculadora.calcular(hallazgos);
@@ -99,7 +91,7 @@ class CalculadoraDeudaTecnicaTest {
     // =========================================================
     @Test
     @DisplayName("TC-04 | 1 hallazgo BAJA -> 30 minutos (0h 30min)")
-    void calcularConUnHallazgoBaja() {
+    void givenUnHallazgoBaja_whenCalcular_thenReturn30Minutos() {
         List<NivelSeveridadEnum> hallazgos = List.of(NivelSeveridadEnum.BAJA);
 
         DeudaTecnicaDTO resultado = calculadora.calcular(hallazgos);
@@ -114,11 +106,10 @@ class CalculadoraDeudaTecnicaTest {
 
     // =========================================================
     // TC-05: Mix de hallazgos -- calculo acumulado
-    //   1 ALTA (120) + 2 MEDIA (120) + 3 BAJA (90) = 330 min
     // =========================================================
     @Test
     @DisplayName("TC-05 | Mix: 1 ALTA + 2 MEDIA + 3 BAJA -> 330 minutos (5h 30min)")
-    void calcularConHallazgosMixtos() {
+    void givenHallazgosMixtos_whenCalcular_thenReturn330MinutosYConteosCorrectos() {
         List<NivelSeveridadEnum> hallazgos = List.of(
                 NivelSeveridadEnum.ALTA,
                 NivelSeveridadEnum.MEDIA,
@@ -139,11 +130,10 @@ class CalculadoraDeudaTecnicaTest {
 
     // =========================================================
     // TC-06: Verificar el formato legible de la deuda
-    //   Formato esperado: "Xh Ymin"
     // =========================================================
     @Test
     @DisplayName("TC-06 | Formato de salida legible: '5h 30min' para 330 minutos")
-    void formatoDeudaLegibleParaMixto() {
+    void givenMinutosMixtos_whenGetTiempoFormateado_thenReturnFormatoHorasYMinutos() {
         List<NivelSeveridadEnum> hallazgos = List.of(
                 NivelSeveridadEnum.ALTA,
                 NivelSeveridadEnum.MEDIA,
@@ -164,7 +154,7 @@ class CalculadoraDeudaTecnicaTest {
     // =========================================================
     @Test
     @DisplayName("TC-07 | Formato '2h 0min' para exactamente 120 minutos")
-    void formatoDeudaExactaEnHoras() {
+    void givenTiempoExactoEnHoras_whenGetTiempoFormateado_thenReturnFormatoHorasExactas() {
         List<NivelSeveridadEnum> hallazgos = List.of(NivelSeveridadEnum.ALTA);
 
         DeudaTecnicaDTO resultado = calculadora.calcular(hallazgos);
@@ -178,7 +168,7 @@ class CalculadoraDeudaTecnicaTest {
     // =========================================================
     @Test
     @DisplayName("TC-08 | El resumen textual incluye informacion de los tres niveles")
-    void resumenTextualContieneInfoDeTodosLosNiveles() {
+    void givenHallazgosDeTodosLosNiveles_whenGetResumenTexto_thenReturnResumenCompleto() {
         List<NivelSeveridadEnum> hallazgos = List.of(
                 NivelSeveridadEnum.ALTA,
                 NivelSeveridadEnum.MEDIA,
@@ -204,7 +194,7 @@ class CalculadoraDeudaTecnicaTest {
     // =========================================================
     @Test
     @DisplayName("TC-09 | 5 hallazgos ALTA -> 600 minutos (10h 0min)")
-    void calcularVariosHallazgosAlta() {
+    void givenMultiplesHallazgosAlta_whenCalcular_thenReturn600MinutosYFormatoCorrecto() {
         List<NivelSeveridadEnum> hallazgos = List.of(
                 NivelSeveridadEnum.ALTA,
                 NivelSeveridadEnum.ALTA,
