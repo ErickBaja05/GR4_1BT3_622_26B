@@ -100,6 +100,14 @@ public class VerificacionBackendTest {
         }
 
         @Override
+        public List<Proyecto> listarPorUsuarioId(Long usuarioId) {
+            if (usuarioId == null) return new ArrayList<>();
+            return proyectos.stream()
+                    .filter(p -> p.getUsuario() != null && usuarioId.equals(p.getUsuario().getId()))
+                    .toList();
+        }
+
+        @Override
         public Proyecto buscarPorId(Long id) {
             if (id == null) return null;
             return proyectos.stream().filter(p -> id.equals(p.getId())).findFirst().orElse(null);

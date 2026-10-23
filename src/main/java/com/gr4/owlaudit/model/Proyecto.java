@@ -26,6 +26,10 @@ public class Proyecto {
     @Column(name = "fecha_registro", nullable = false)
     private LocalDateTime fechaRegistro;
 
+    @jakarta.persistence.ManyToOne
+    @jakarta.persistence.JoinColumn(name = "usuario_id")
+    private Usuario usuario;
+
     public Proyecto() {
     }
 
@@ -34,6 +38,11 @@ public class Proyecto {
             this.nombre = dto.getNombre();
             this.urlGithub = dto.getUrlGithub();
             this.fechaRegistro = LocalDateTime.now();
+            if (dto.getUsuarioId() != null) {
+                Usuario u = new Usuario();
+                u.setId(dto.getUsuarioId());
+                this.usuario = u;
+            }
         }
     }
 
@@ -67,5 +76,13 @@ public class Proyecto {
 
     public void setFechaRegistro(LocalDateTime fechaRegistro) {
         this.fechaRegistro = fechaRegistro;
+    }
+
+    public Usuario getUsuario() {
+        return usuario;
+    }
+
+    public void setUsuario(Usuario usuario) {
+        this.usuario = usuario;
     }
 }

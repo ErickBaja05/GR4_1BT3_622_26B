@@ -293,19 +293,32 @@ public class RetroalimentacionServlet extends HttpServlet {
 
         // Cargar proyectos y auditorías para selección (Paso 1 y 2 CU05)
         try {
-            List<Proyecto> listaProyectos = proyectoDAO.listarTodos();
+            UsuarioDTO usuarioSesion = (UsuarioDTO) request.getSession().getAttribute(LoginServlet.ATRIBUTO_USUARIO);
+            List<Proyecto> listaProyectos = (usuarioSesion != null && usuarioSesion.getRol() == RolEnum.ESTUDIANTE)
+                    ? proyectoDAO.listarPorUsuarioId(usuarioSesion.getId())
+                    : proyectoDAO.listarTodos();
             request.setAttribute("proyectosDisponibles", listaProyectos);
 
             String proyectoIdStr = request.getParameter("proyectoId");
             Long proyectoId = parseLongOrNull(proyectoIdStr);
+            if (usuarioSesion != null && usuarioSesion.getRol() == RolEnum.ESTUDIANTE && proyectoId != null) {
+                final Long finalPid = proyectoId;
+                boolean pertenece = listaProyectos != null && listaProyectos.stream().anyMatch(p -> p.getId().equals(finalPid));
+                if (!pertenece) {
+                    proyectoId = null;
+                }
+            }
             request.setAttribute("proyectoIdFiltro", proyectoId);
 
-            // Invocación al método movido al servicio (Move Method)
-            List<Map<String, Object>> hallazgosDisponibles = retroalimentacionService.obtenerHallazgosDisponibles(proyectoId);
+            // Invocación al método del servicio filtrado por usuario si es estudiante
+            List<Map<String, Object>> hallazgosDisponibles = retroalimentacionService.obtenerHallazgosDisponibles(
+                    proyectoId, (usuarioSesion != null && usuarioSesion.getRol() == RolEnum.ESTUDIANTE) ? usuarioSesion.getId() : null);
             request.setAttribute("hallazgosDisponibles", hallazgosDisponibles);
 
             // Cargar solicitudes previas para consulta del estudiante (cierre del corte vertical)
-            List<SolicitudRetroalimentacion> misSolicitudes = solicitudDAO.consultarTodasLasSolicitudes();
+            List<SolicitudRetroalimentacion> misSolicitudes = (usuarioSesion != null && usuarioSesion.getRol() == RolEnum.ESTUDIANTE)
+                    ? solicitudDAO.consultarSolicitudesPorUsuarioId(usuarioSesion.getId())
+                    : solicitudDAO.consultarTodasLasSolicitudes();
             request.setAttribute("misSolicitudes", misSolicitudes);
 
         } catch (Exception e) {

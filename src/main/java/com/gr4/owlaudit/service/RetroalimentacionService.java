@@ -9,4 +9,7 @@ public interface RetroalimentacionService {
     void solicitarRetroalimentacionDeHallazgo(SolicitudDTO dto);
     void registrarOrientacionTecnicaEnLaSolicitud(SolicitudDTO dto);
     List<Map<String, Object>> obtenerHallazgosDisponibles(Long proyectoId);
+    default List<Map<String, Object>> obtenerHallazgosDisponibles(Long proyectoId, Long usuarioId) {
+        return obtenerHallazgosDisponibles(proyectoId);
+    }
 }

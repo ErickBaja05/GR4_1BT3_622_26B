@@ -148,5 +148,25 @@ public class SolicitudDAOImpl implements SolicitudDAO {
             throw new RuntimeException("Error al consultar todas las solicitudes: " + e.getMessage(), e);
         }
     }
+
+    @Override
+    public java.util.List<SolicitudRetroalimentacion> consultarSolicitudesPorUsuarioId(Long usuarioId) {
+        if (usuarioId == null) {
+            return java.util.Collections.emptyList();
+        }
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            return session.createQuery(
+                "SELECT DISTINCT s FROM SolicitudRetroalimentacion s " +
+                FETCH_DETALLE_SOLICITUD +
+                "WHERE a.usuario.id = :usuarioId OR a.proyecto.usuario.id = :usuarioId " +
+                "ORDER BY s.id DESC",
+                SolicitudRetroalimentacion.class
+            )
+            .setParameter("usuarioId", usuarioId)
+            .getResultList();
+        } catch (Exception e) {
+            throw new RuntimeException("Error al consultar solicitudes por usuario: " + e.getMessage(), e);
+        }
+    }
 }
 

@@ -7,5 +7,8 @@ public interface ProyectoDAO {
     void guardarProyectoAcademico(Proyecto proyecto);
     List<Proyecto> listarTodos();
     Proyecto buscarPorId(Long id);
+    default List<Proyecto> listarPorUsuarioId(Long usuarioId) {
+        return java.util.Collections.emptyList();
+    }
 }
 

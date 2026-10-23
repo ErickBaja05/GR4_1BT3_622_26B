@@ -3,6 +3,7 @@ package com.gr4.owlaudit.dto;
 public class AuditoriaDTO {
     private Long proyectoId;
     private String url;
+    private Long usuarioId;
 
     public AuditoriaDTO() {
     }
@@ -14,6 +15,12 @@ public class AuditoriaDTO {
     public AuditoriaDTO(Long proyectoId, String url) {
         this.proyectoId = proyectoId;
         this.url = url;
+    }
+
+    public AuditoriaDTO(Long proyectoId, String url, Long usuarioId) {
+        this.proyectoId = proyectoId;
+        this.url = url;
+        this.usuarioId = usuarioId;
     }
 
     public Long getProyectoId() {
@@ -32,11 +39,20 @@ public class AuditoriaDTO {
         this.url = url;
     }
 
+    public Long getUsuarioId() {
+        return usuarioId;
+    }
+
+    public void setUsuarioId(Long usuarioId) {
+        this.usuarioId = usuarioId;
+    }
+
     @Override
     public String toString() {
         return "AuditoriaDTO{" +
                 "proyectoId=" + proyectoId +
                 ", url='" + url + '\'' +
+                ", usuarioId=" + usuarioId +
                 '}';
     }
 }

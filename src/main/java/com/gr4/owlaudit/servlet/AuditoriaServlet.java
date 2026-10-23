@@ -9,7 +9,9 @@ import com.gr4.owlaudit.dto.AuditoriaDTO;
 import com.gr4.owlaudit.dto.DeudaTecnicaDTO;
 import com.gr4.owlaudit.dto.ResultadoDTO;
 import com.gr4.owlaudit.dto.ResumenDTO;
+import com.gr4.owlaudit.dto.UsuarioDTO;
 import com.gr4.owlaudit.model.NivelSeveridadEnum;
+import com.gr4.owlaudit.model.RolEnum;
 import com.gr4.owlaudit.service.AuditoriaService;
 import com.gr4.owlaudit.service.AuditoriaServiceImpl;
 import com.gr4.owlaudit.service.CalculadoraDeudaTecnica;
@@ -56,7 +58,10 @@ public class AuditoriaServlet extends HttpServlet {
     protected void doGet(HttpServletRequest request, HttpServletResponse response) 
             throws ServletException, IOException {
         
-        List<Proyecto> proyectos = proyectoDAO.listarTodos();
+        UsuarioDTO usuario = (UsuarioDTO) request.getSession().getAttribute(LoginServlet.ATRIBUTO_USUARIO);
+        List<Proyecto> proyectos = (usuario != null && usuario.getRol() == RolEnum.ESTUDIANTE)
+                ? proyectoDAO.listarPorUsuarioId(usuario.getId())
+                : proyectoDAO.listarTodos();
         request.setAttribute("proyectos", proyectos);
 
         String proyectoIdParam = request.getParameter("proyectoId");
@@ -66,6 +71,15 @@ public class AuditoriaServlet extends HttpServlet {
         if (proyectoIdParam != null && !proyectoIdParam.isBlank()) {
             try {
                 proyectoId = Long.parseLong(proyectoIdParam.trim());
+                final Long finalPid = proyectoId;
+                if (usuario != null && usuario.getRol() == RolEnum.ESTUDIANTE) {
+                    boolean pertenece = proyectos != null && proyectos.stream().anyMatch(p -> p.getId().equals(finalPid));
+                    if (!pertenece) {
+                        request.setAttribute("mensajeError", "No tiene permisos para auditar el proyecto seleccionado o no existe.");
+                        request.getRequestDispatcher(VISTA).forward(request, response);
+                        return;
+                    }
+                }
                 if (urlRepo == null || urlRepo.isBlank()) {
                     for (Proyecto p : proyectos) {
                         if (p.getId().equals(proyectoId)) {
@@ -73,7 +87,7 @@ public class AuditoriaServlet extends HttpServlet {
                             break;
                         }
                     }
-                    if (urlRepo == null) {
+                    if (urlRepo == null && (usuario == null || usuario.getRol() != RolEnum.ESTUDIANTE)) {
                         Proyecto p = proyectoDAO.buscarPorId(proyectoId);
                         if (p != null) {
                             urlRepo = p.getUrlGithub();
@@ -94,8 +108,13 @@ public class AuditoriaServlet extends HttpServlet {
                     }
                 }
             }
+            if (usuario != null && usuario.getRol() == RolEnum.ESTUDIANTE && proyectoId == null) {
+                request.setAttribute("mensajeError", "El repositorio no pertenece a sus proyectos registrados.");
+                request.getRequestDispatcher(VISTA).forward(request, response);
+                return;
+            }
 
-            AuditoriaDTO dto = new AuditoriaDTO(proyectoId, urlRepo.trim());
+            AuditoriaDTO dto = new AuditoriaDTO(proyectoId, urlRepo.trim(), usuario != null ? usuario.getId() : null);
             request.setAttribute("auditoriaDTO", dto);
 
             try {
@@ -117,6 +136,7 @@ public class AuditoriaServlet extends HttpServlet {
     protected void doPost(HttpServletRequest request, HttpServletResponse response) 
             throws ServletException, IOException {
         
+        UsuarioDTO usuario = (UsuarioDTO) request.getSession().getAttribute(LoginServlet.ATRIBUTO_USUARIO);
         request.setCharacterEncoding("UTF-8");
         String urlRepo = request.getParameter("urlGithub");
         String proyectoIdParam = request.getParameter("proyectoId");
@@ -129,7 +149,9 @@ public class AuditoriaServlet extends HttpServlet {
             }
         }
 
-        List<Proyecto> proyectos = proyectoDAO.listarTodos();
+        List<Proyecto> proyectos = (usuario != null && usuario.getRol() == RolEnum.ESTUDIANTE)
+                ? proyectoDAO.listarPorUsuarioId(usuario.getId())
+                : proyectoDAO.listarTodos();
         request.setAttribute("proyectos", proyectos);
 
         if (proyectoId == null && urlRepo != null) {
@@ -141,7 +163,17 @@ public class AuditoriaServlet extends HttpServlet {
             }
         }
 
-        AuditoriaDTO dto = new AuditoriaDTO(proyectoId, urlRepo == null ? null : urlRepo.trim());
+        if (usuario != null && usuario.getRol() == RolEnum.ESTUDIANTE) {
+            final Long finalPid = proyectoId;
+            boolean pertenece = finalPid != null && proyectos != null && proyectos.stream().anyMatch(p -> p.getId().equals(finalPid));
+            if (!pertenece) {
+                request.setAttribute("mensajeError", "No tiene permisos para auditar el proyecto seleccionado o no existe.");
+                request.getRequestDispatcher(VISTA).forward(request, response);
+                return;
+            }
+        }
+
+        AuditoriaDTO dto = new AuditoriaDTO(proyectoId, urlRepo == null ? null : urlRepo.trim(), usuario != null ? usuario.getId() : null);
         request.setAttribute("auditoriaDTO", dto);
 
         try {

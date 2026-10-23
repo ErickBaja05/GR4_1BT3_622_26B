@@ -27,6 +27,10 @@ public class Auditoria {
     @JoinColumn(name = "proyecto_id")
     private Proyecto proyecto;
 
+    @ManyToOne
+    @JoinColumn(name = "usuario_id")
+    private Usuario usuario;
+
     @Column(name = "fecha_hora", nullable = false)
     private LocalDateTime fechaHora;
 
@@ -148,6 +152,14 @@ public class Auditoria {
 
     public void setProyecto(Proyecto proyecto) {
         this.proyecto = proyecto;
+    }
+
+    public Usuario getUsuario() {
+        return usuario;
+    }
+
+    public void setUsuario(Usuario usuario) {
+        this.usuario = usuario;
     }
 
     public static final double UMBRAL_MINIMO_APROBACION = 70.0;

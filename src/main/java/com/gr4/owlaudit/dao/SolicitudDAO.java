@@ -13,4 +13,7 @@ public interface SolicitudDAO {
     List<SolicitudRetroalimentacion> buscarPendientes();
     Hallazgo buscarHallazgoPorId(Long hallazgoId);
     List<SolicitudRetroalimentacion> consultarTodasLasSolicitudes();
+    default List<SolicitudRetroalimentacion> consultarSolicitudesPorUsuarioId(Long usuarioId) {
+        return java.util.Collections.emptyList();
+    }
 }

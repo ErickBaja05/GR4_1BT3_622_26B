@@ -34,6 +34,23 @@ public class ProyectoDAOImpl implements ProyectoDAO {
     }
 
     @Override
+    public List<Proyecto> listarPorUsuarioId(Long usuarioId) {
+        if (usuarioId == null) {
+            return java.util.Collections.emptyList();
+        }
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            return session.createQuery(
+                "SELECT p FROM Proyecto p WHERE p.usuario.id = :usuarioId ORDER BY p.id ASC", 
+                Proyecto.class
+            )
+            .setParameter("usuarioId", usuarioId)
+            .list();
+        } catch (Exception e) {
+            throw new RuntimeException("Error al listar proyectos académicos por usuario: " + e.getMessage(), e);
+        }
+    }
+
+    @Override
     public Proyecto buscarPorId(Long id) {
         if (id == null) {
             return null;
