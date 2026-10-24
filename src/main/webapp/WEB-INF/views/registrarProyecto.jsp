@@ -61,8 +61,10 @@
                 <h3 style="margin-bottom: 0.5rem;">📁 Proyecto registrado</h3>
                 <p><strong>Nombre:</strong> <%= HtmlUtil.escape(dto.getNombre()) %></p>
                 <p><strong>URL GitHub:</strong> <%= HtmlUtil.escape(dto.getUrlGithub()) %></p>
-                <% if (proyectoRegistrado != null && proyectoRegistrado.getId() != null) { %>
-                    <p><strong>ID Asignado:</strong> <%= proyectoRegistrado.getId() %></p>
+                <% if (proyectoRegistrado != null && proyectoRegistrado.getId() != null) { 
+                       long idAsignado = (proyectoRegistrado.getIdEstudiante() != null) ? proyectoRegistrado.getIdEstudiante() : (proyectos != null ? proyectos.size() : 1L);
+                %>
+                    <p><strong>ID Asignado:</strong> <%= idAsignado %></p>
                     <div style="margin-top: 1rem;">
                         <a class="btn btn-secondary" href="${pageContext.request.contextPath}/auditoria?proyectoId=<%= proyectoRegistrado.getId() %>">Auditar este repositorio</a>
                     </div>
@@ -88,9 +90,13 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <% for (Proyecto p : proyectos) { %>
+                        <% 
+                           int idxProyecto = 1;
+                           for (Proyecto p : proyectos) { 
+                               long idMostrado = (p.getIdEstudiante() != null) ? p.getIdEstudiante() : (long) idxProyecto;
+                        %>
                             <tr style="border-bottom: 1px solid var(--border-color);">
-                                <td style="padding: 0.5rem;"><strong><%= p.getId() %></strong></td>
+                                <td style="padding: 0.5rem;"><strong><%= idMostrado %></strong></td>
                                 <td style="padding: 0.5rem;"><%= HtmlUtil.escape(p.getNombre()) %></td>
                                 <td style="padding: 0.5rem;">
                                     <a href="<%= HtmlUtil.escape(p.getUrlGithub()) %>" target="_blank" rel="noopener noreferrer">
@@ -101,7 +107,10 @@
                                     <a class="btn btn-sm btn-secondary" href="${pageContext.request.contextPath}/auditoria?proyectoId=<%= p.getId() %>">Auditar</a>
                                 </td>
                             </tr>
-                        <% } %>
+                        <% 
+                               idxProyecto++;
+                           } 
+                        %>
                     </tbody>
                 </table>
             </div>

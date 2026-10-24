@@ -43,6 +43,12 @@ public class ProyectoServiceImpl implements ProyectoService {
             Usuario u = new Usuario();
             u.setId(dto.getUsuarioId());
             proyecto.setUsuario(u);
+
+            java.util.List<Proyecto> existentes = proyectoDAO.listarPorUsuarioId(dto.getUsuarioId());
+            long proximoId = (existentes != null ? existentes.size() : 0) + 1L;
+            proyecto.setIdEstudiante(proximoId);
+        } else {
+            proyecto.setIdEstudiante(1L);
         }
         proyectoDAO.guardarProyectoAcademico(proyecto);
     }

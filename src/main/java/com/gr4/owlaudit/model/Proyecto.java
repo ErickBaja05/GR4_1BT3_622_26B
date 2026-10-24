@@ -30,6 +30,9 @@ public class Proyecto {
     @jakarta.persistence.JoinColumn(name = "usuario_id")
     private Usuario usuario;
 
+    @Column(name = "id_estudiante")
+    private Long idEstudiante;
+
     public Proyecto() {
     }
 
@@ -84,5 +87,17 @@ public class Proyecto {
 
     public void setUsuario(Usuario usuario) {
         this.usuario = usuario;
+    }
+
+    public Long getIdEstudiante() {
+        return idEstudiante;
+    }
+
+    public void setIdEstudiante(Long idEstudiante) {
+        this.idEstudiante = idEstudiante;
+    }
+
+    public Long getIdVisible() {
+        return idEstudiante != null ? idEstudiante : id;
     }
 }

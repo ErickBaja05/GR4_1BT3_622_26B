@@ -10,11 +10,14 @@ import java.util.List;
 public class SolicitudDAOImpl implements SolicitudDAO {
 
     private static final String FETCH_DETALLE_SOLICITUD =
+        "LEFT JOIN FETCH s.usuario " +
         "LEFT JOIN FETCH s.hallazgo h " +
         "LEFT JOIN FETCH h.resultadoRegla r " +
         "LEFT JOIN FETCH r.regla " +
         "LEFT JOIN FETCH r.auditoria a " +
-        "LEFT JOIN FETCH a.proyecto ";
+        "LEFT JOIN FETCH a.usuario " +
+        "LEFT JOIN FETCH a.proyecto p " +
+        "LEFT JOIN FETCH p.usuario ";
 
     @Override
     public SolicitudRetroalimentacion buscarPorHallazgoId(Long hallazgoId) {
@@ -43,6 +46,14 @@ public class SolicitudDAOImpl implements SolicitudDAO {
                 com.gr4.owlaudit.model.Hallazgo h = session.get(com.gr4.owlaudit.model.Hallazgo.class, solicitud.getHallazgo().getId());
                 if (h != null) {
                     solicitud.setHallazgo(h);
+                    if (solicitud.getUsuario() == null && h.getResultadoRegla() != null && h.getResultadoRegla().getAuditoria() != null) {
+                        com.gr4.owlaudit.model.Auditoria a = h.getResultadoRegla().getAuditoria();
+                        if (a.getUsuario() != null) {
+                            solicitud.setUsuario(a.getUsuario());
+                        } else if (a.getProyecto() != null && a.getProyecto().getUsuario() != null) {
+                            solicitud.setUsuario(a.getProyecto().getUsuario());
+                        }
+                    }
                 } else {
                     throw new com.gr4.owlaudit.common.exception.ExcepcionNegocio("El hallazgo especificado no existe en el sistema.");
                 }
@@ -158,7 +169,7 @@ public class SolicitudDAOImpl implements SolicitudDAO {
             return session.createQuery(
                 "SELECT DISTINCT s FROM SolicitudRetroalimentacion s " +
                 FETCH_DETALLE_SOLICITUD +
-                "WHERE a.usuario.id = :usuarioId OR a.proyecto.usuario.id = :usuarioId " +
+                "WHERE (s.usuario.id = :usuarioId OR a.usuario.id = :usuarioId OR p.usuario.id = :usuarioId) " +
                 "ORDER BY s.id DESC",
                 SolicitudRetroalimentacion.class
             )

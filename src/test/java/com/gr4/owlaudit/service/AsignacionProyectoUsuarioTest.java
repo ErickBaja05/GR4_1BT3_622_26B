@@ -4,6 +4,7 @@ import com.gr4.owlaudit.client.GitHubClient;
 import com.gr4.owlaudit.dao.AuditoriaDAO;
 import com.gr4.owlaudit.dao.ProyectoDAO;
 import com.gr4.owlaudit.dao.ReglaDAO;
+import com.gr4.owlaudit.dao.SolicitudDAO;
 import com.gr4.owlaudit.dto.AuditoriaDTO;
 import com.gr4.owlaudit.dto.NuevoProyectoDTO;
 import com.gr4.owlaudit.model.Auditoria;
@@ -138,5 +139,68 @@ public class AsignacionProyectoUsuarioTest {
 
         assertFalse(listaU1.contains(p2), "El usuario 1 no debe poder ver los proyectos del usuario 2");
         assertFalse(listaU2.contains(p1), "El usuario 2 no debe poder ver los proyectos del usuario 1");
+    }
+
+    @Test
+    @DisplayName("Unit Test: El ID asignado de proyecto para cada estudiante se reinicia en 1, 2, 3...")
+    void testIdSecuencialPorEstudianteSeReiniciaEnUno() {
+        Long estudiante1 = 1L;
+        Long estudiante2 = 2L;
+
+        // Estudiante 1 no tiene proyectos aún -> su primer proyecto debe recibir idEstudiante = 1
+        when(proyectoDAO.listarPorUsuarioId(estudiante1)).thenReturn(new ArrayList<>());
+        NuevoProyectoDTO dto1E1 = new NuevoProyectoDTO("Proyecto 1 de Estudiante 1", "https://github.com/e1/repo1", estudiante1);
+        proyectoService.solicitarRegistroDeNuevoProyecto(dto1E1);
+
+        ArgumentCaptor<Proyecto> captor1 = ArgumentCaptor.forClass(Proyecto.class);
+        verify(proyectoDAO, times(1)).guardarProyectoAcademico(captor1.capture());
+        Proyecto guardado1E1 = captor1.getValue();
+        assertEquals(1L, guardado1E1.getIdEstudiante(), "El primer proyecto del estudiante 1 debe tener ID 1");
+
+        // Estudiante 1 ya tiene 1 proyecto registrado -> el segundo debe recibir idEstudiante = 2
+        Proyecto existenteE1 = new Proyecto();
+        existenteE1.setId(10L);
+        existenteE1.setIdEstudiante(1L);
+        when(proyectoDAO.listarPorUsuarioId(estudiante1)).thenReturn(List.of(existenteE1));
+
+        NuevoProyectoDTO dto2E1 = new NuevoProyectoDTO("Proyecto 2 de Estudiante 1", "https://github.com/e1/repo2", estudiante1);
+        proyectoService.solicitarRegistroDeNuevoProyecto(dto2E1);
+
+        ArgumentCaptor<Proyecto> captor2 = ArgumentCaptor.forClass(Proyecto.class);
+        verify(proyectoDAO, times(2)).guardarProyectoAcademico(captor2.capture());
+        Proyecto guardado2E1 = captor2.getValue();
+        assertEquals(2L, guardado2E1.getIdEstudiante(), "El segundo proyecto del estudiante 1 debe tener ID 2");
+
+        // Estudiante 2 registra su primer proyecto -> su ID debe REINICIARSE a 1
+        when(proyectoDAO.listarPorUsuarioId(estudiante2)).thenReturn(new ArrayList<>());
+        NuevoProyectoDTO dto1E2 = new NuevoProyectoDTO("Proyecto 1 de Estudiante 2", "https://github.com/e2/repo1", estudiante2);
+        proyectoService.solicitarRegistroDeNuevoProyecto(dto1E2);
+
+        ArgumentCaptor<Proyecto> captor3 = ArgumentCaptor.forClass(Proyecto.class);
+        verify(proyectoDAO, times(3)).guardarProyectoAcademico(captor3.capture());
+        Proyecto guardado1E2 = captor3.getValue();
+        assertEquals(1L, guardado1E2.getIdEstudiante(), "El ID de proyecto para el nuevo estudiante debe reiniciarse en 1");
+    }
+
+    @Test
+    @DisplayName("Unit Test: Al solicitar retroalimentación se asocia el usuario estudiante a la solicitud")
+    void testSolicitudRetroalimentacionAsociaUsuarioEstudiante() {
+        SolicitudDAO solicitudDAO = mock(SolicitudDAO.class);
+        RetroalimentacionService retroService = new RetroalimentacionServiceImpl(solicitudDAO);
+
+        Long hallazgoId = 99L;
+        Long usuarioEstudianteId = 7L;
+        when(solicitudDAO.buscarPorHallazgoId(hallazgoId)).thenReturn(null);
+
+        com.gr4.owlaudit.dto.SolicitudDTO dto = new com.gr4.owlaudit.dto.SolicitudDTO(hallazgoId, "Justificación técnica detallada", usuarioEstudianteId);
+        retroService.solicitarRetroalimentacionDeHallazgo(dto);
+
+        ArgumentCaptor<com.gr4.owlaudit.model.SolicitudRetroalimentacion> captor = ArgumentCaptor.forClass(com.gr4.owlaudit.model.SolicitudRetroalimentacion.class);
+        verify(solicitudDAO).crearSolicitudDeRetroalimentacion(captor.capture());
+
+        com.gr4.owlaudit.model.SolicitudRetroalimentacion guardada = captor.getValue();
+        assertNotNull(guardada, "La solicitud debe existir");
+        assertNotNull(guardada.getUsuario(), "La solicitud debe tener asociado un usuario estudiante");
+        assertEquals(usuarioEstudianteId, guardada.getUsuario().getId(), "El ID del usuario debe coincidir con el estudiante que solicitó");
     }
 }

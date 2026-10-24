@@ -39,12 +39,20 @@ public class ProyectoDAOImpl implements ProyectoDAO {
             return java.util.Collections.emptyList();
         }
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
-            return session.createQuery(
+            List<Proyecto> lista = session.createQuery(
                 "SELECT p FROM Proyecto p WHERE p.usuario.id = :usuarioId ORDER BY p.id ASC", 
                 Proyecto.class
             )
             .setParameter("usuarioId", usuarioId)
             .list();
+            long sec = 1L;
+            for (Proyecto p : lista) {
+                if (p.getIdEstudiante() == null) {
+                    p.setIdEstudiante(sec);
+                }
+                sec++;
+            }
+            return lista;
         } catch (Exception e) {
             throw new RuntimeException("Error al listar proyectos académicos por usuario: " + e.getMessage(), e);
         }

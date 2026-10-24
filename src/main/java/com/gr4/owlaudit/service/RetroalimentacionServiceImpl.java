@@ -52,6 +52,11 @@ public class RetroalimentacionServiceImpl implements RetroalimentacionService {
             h.setId(dto.getHallazgoId());
             solicitud.setHallazgo(h);
         }
+        if (solicitud.getUsuario() == null && dto.getUsuarioId() != null) {
+            com.gr4.owlaudit.model.Usuario u = new com.gr4.owlaudit.model.Usuario();
+            u.setId(dto.getUsuarioId());
+            solicitud.setUsuario(u);
+        }
         solicitudDAO.crearSolicitudDeRetroalimentacion(solicitud);
     }
 

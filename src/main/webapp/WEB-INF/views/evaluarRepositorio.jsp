@@ -49,16 +49,22 @@
                         <label for="proyectoId" class="form-label">Proyecto Registrado a Auditar</label>
                         <select id="proyectoId" name="proyectoId" class="form-control" onchange="actualizarUrlDesdeSelect(this)" required>
                             <option value="">-- Seleccione un proyecto registrado --</option>
-                            <% for (Proyecto p : proyectos) {
+                            <% 
+                               int idxEval = 1;
+                               for (Proyecto p : proyectos) {
                                    boolean esSel = proyectoIdActual != null && proyectoIdActual.equals(p.getId());
                                    if (!esSel && urlActual != null && urlActual.equals(p.getUrlGithub())) {
                                        esSel = true;
                                    }
+                                   long idMostrado = (p.getIdEstudiante() != null) ? p.getIdEstudiante() : (long) idxEval;
                             %>
                                 <option value="<%= p.getId() %>" data-url="<%= HtmlUtil.escape(p.getUrlGithub()) %>" <%= esSel ? "selected" : "" %>>
-                                    <%= HtmlUtil.escape(p.getNombre()) %> &middot; (<%= HtmlUtil.escape(p.getUrlGithub()) %>)
+                                    #<%= idMostrado %> &middot; <%= HtmlUtil.escape(p.getNombre()) %> &middot; (<%= HtmlUtil.escape(p.getUrlGithub()) %>)
                                 </option>
-                            <% } %>
+                            <% 
+                                   idxEval++;
+                               } 
+                            %>
                         </select>
                     </div>
 

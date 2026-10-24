@@ -140,7 +140,12 @@ public class RetroalimentacionServlet extends HttpServlet {
         Long hallazgoId = parseLongOrNull(hallazgoIdStr);
 
         // 1. Armado del DTO según diagrama de clases y secuencia5.puml
+        UsuarioDTO usuarioSesion = (UsuarioDTO) request.getSession().getAttribute(LoginServlet.ATRIBUTO_USUARIO);
         SolicitudDTO dto = new SolicitudDTO(hallazgoId, justificacion != null ? justificacion.trim() : "");
+        if (usuarioSesion != null) {
+            dto.setUsuarioId(usuarioSesion.getId());
+            dto.setNombreEstudiante(usuarioSesion.getNombre());
+        }
         request.setAttribute("solicitudDTO", dto);
 
         // Preservar atributos de contexto para la vista
@@ -267,8 +272,13 @@ public class RetroalimentacionServlet extends HttpServlet {
                             if (rr.getAuditoria().getFechaHora() != null && request.getAttribute("fechaAuditoria") == null) {
                                 request.setAttribute("fechaAuditoria", rr.getAuditoria().getFechaHora().toString().replace('T', ' '));
                             }
-                            if (rr.getAuditoria().getProyecto() != null && request.getAttribute("nombreProyecto") == null) {
-                                request.setAttribute("nombreProyecto", rr.getAuditoria().getProyecto().getNombre());
+                            if (rr.getAuditoria().getProyecto() != null) {
+                                if (request.getAttribute("nombreProyecto") == null) {
+                                    request.setAttribute("nombreProyecto", rr.getAuditoria().getProyecto().getNombre());
+                                }
+                                if (request.getAttribute("urlGithub") == null && rr.getAuditoria().getProyecto().getUrlGithub() != null) {
+                                    request.setAttribute("urlGithub", rr.getAuditoria().getProyecto().getUrlGithub());
+                                }
                             }
                         }
                     }
@@ -354,6 +364,12 @@ public class RetroalimentacionServlet extends HttpServlet {
                 map.put("estado", s.getEstado() != null ? s.getEstado().name() : "PENDIENTE");
                 map.put("fechaHora", "");
 
+                String nombreEstudiante = null;
+                String urlGithub = "";
+                if (s.getUsuario() != null && s.getUsuario().getNombre() != null) {
+                    nombreEstudiante = s.getUsuario().getNombre();
+                }
+
                 if (s.getHallazgo() != null) {
                     map.put("hallazgoId", s.getHallazgo().getId());
                     map.put("severidad", s.getHallazgo().getNivelSeveridad() != null ? s.getHallazgo().getNivelSeveridad().name() : "MEDIA");
@@ -368,12 +384,23 @@ public class RetroalimentacionServlet extends HttpServlet {
                             if (rr.getAuditoria().getFechaHora() != null) {
                                 map.put("fechaHora", rr.getAuditoria().getFechaHora().toString());
                             }
+                            if (nombreEstudiante == null && rr.getAuditoria().getUsuario() != null) {
+                                nombreEstudiante = rr.getAuditoria().getUsuario().getNombre();
+                            }
                             if (rr.getAuditoria().getProyecto() != null) {
                                 map.put("nombreProyecto", rr.getAuditoria().getProyecto().getNombre());
+                                if (rr.getAuditoria().getProyecto().getUrlGithub() != null) {
+                                    urlGithub = rr.getAuditoria().getProyecto().getUrlGithub();
+                                }
+                                if (nombreEstudiante == null && rr.getAuditoria().getProyecto().getUsuario() != null) {
+                                    nombreEstudiante = rr.getAuditoria().getProyecto().getUsuario().getNombre();
+                                }
                             }
                         }
                     }
                 }
+                map.put("nombreEstudiante", (nombreEstudiante != null && !nombreEstudiante.isBlank()) ? nombreEstudiante : "Estudiante");
+                map.put("urlGithub", urlGithub);
                 if (map.get("nombreProyecto") == null) {
                     map.put("nombreProyecto", "Proyecto Académico");
                 }
