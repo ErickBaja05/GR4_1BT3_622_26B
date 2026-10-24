@@ -4,6 +4,7 @@ public class NuevoProyectoDTO {
     private String nombre;
     private String urlGithub;
     private Long usuarioId;
+    private Long idEstudiante;
 
     public NuevoProyectoDTO() {
     }
@@ -41,6 +42,14 @@ public class NuevoProyectoDTO {
 
     public void setUsuarioId(Long usuarioId) {
         this.usuarioId = usuarioId;
+    }
+
+    public Long getIdEstudiante() {
+        return idEstudiante;
+    }
+
+    public void setIdEstudiante(Long idEstudiante) {
+        this.idEstudiante = idEstudiante;
     }
 
     @Override

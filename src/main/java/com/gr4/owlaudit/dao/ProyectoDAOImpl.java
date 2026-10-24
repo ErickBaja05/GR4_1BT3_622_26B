@@ -38,7 +38,9 @@ public class ProyectoDAOImpl implements ProyectoDAO {
         if (usuarioId == null) {
             return java.util.Collections.emptyList();
         }
+        Transaction tx = null;
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            tx = session.beginTransaction();
             List<Proyecto> lista = session.createQuery(
                 "SELECT p FROM Proyecto p WHERE p.usuario.id = :usuarioId ORDER BY p.id ASC", 
                 Proyecto.class
@@ -46,14 +48,25 @@ public class ProyectoDAOImpl implements ProyectoDAO {
             .setParameter("usuarioId", usuarioId)
             .list();
             long sec = 1L;
+            boolean necesitaUpdate = false;
             for (Proyecto p : lista) {
                 if (p.getIdEstudiante() == null) {
                     p.setIdEstudiante(sec);
+                    session.merge(p);
+                    necesitaUpdate = true;
                 }
                 sec++;
             }
+            if (necesitaUpdate) {
+                tx.commit();
+            } else {
+                tx.rollback();
+            }
             return lista;
         } catch (Exception e) {
+            if (tx != null && tx.isActive()) {
+                tx.rollback();
+            }
             throw new RuntimeException("Error al listar proyectos académicos por usuario: " + e.getMessage(), e);
         }
     }

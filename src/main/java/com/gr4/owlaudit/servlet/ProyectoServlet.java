@@ -72,10 +72,10 @@ public class ProyectoServlet extends HttpServlet {
                     ? proyectoDAO.listarPorUsuarioId(usuario.getId())
                     : proyectoDAO.listarTodos();
             request.setAttribute("proyectos", proyectos);
-            if (proyectos != null && urlGithub != null) {
+            if (proyectos != null && !proyectos.isEmpty() && urlGithub != null) {
                 Proyecto proyectoRegistrado = proyectos.stream()
                         .filter(p -> urlGithub.trim().equalsIgnoreCase(p.getUrlGithub() != null ? p.getUrlGithub().trim() : ""))
-                        .findFirst()
+                        .reduce((first, second) -> second)
                         .orElse(null);
                 request.setAttribute("proyectoRegistrado", proyectoRegistrado);
             }

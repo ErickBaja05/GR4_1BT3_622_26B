@@ -41,6 +41,7 @@ public class Proyecto {
             this.nombre = dto.getNombre();
             this.urlGithub = dto.getUrlGithub();
             this.fechaRegistro = LocalDateTime.now();
+            this.idEstudiante = dto.getIdEstudiante();
             if (dto.getUsuarioId() != null) {
                 Usuario u = new Usuario();
                 u.setId(dto.getUsuarioId());
