@@ -52,6 +52,11 @@ public class RetroalimentacionServiceImpl implements RetroalimentacionService {
             h.setId(dto.getHallazgoId());
             solicitud.setHallazgo(h);
         }
+        if (solicitud.getUsuario() == null && dto.getUsuarioId() != null) {
+            com.gr4.owlaudit.model.Usuario u = new com.gr4.owlaudit.model.Usuario();
+            u.setId(dto.getUsuarioId());
+            solicitud.setUsuario(u);
+        }
         solicitudDAO.crearSolicitudDeRetroalimentacion(solicitud);
     }
 
@@ -90,9 +95,16 @@ public class RetroalimentacionServiceImpl implements RetroalimentacionService {
      */
     @Override
     public List<Map<String, Object>> obtenerHallazgosDisponibles(Long proyectoId) {
+        return obtenerHallazgosDisponibles(proyectoId, null);
+    }
+
+    @Override
+    public List<Map<String, Object>> obtenerHallazgosDisponibles(Long proyectoId, Long usuarioId) {
         List<Auditoria> auditorias;
         if (proyectoId != null) {
             auditorias = auditoriaDAO.consultarHistorialDeAuditorias(proyectoId);
+        } else if (usuarioId != null) {
+            auditorias = auditoriaDAO.consultarHistorialDeAuditoriasPorUsuario(usuarioId);
         } else {
             auditorias = auditoriaDAO.consultarTodas();
         }

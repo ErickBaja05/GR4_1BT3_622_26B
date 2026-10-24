@@ -8,7 +8,9 @@ import com.gr4.owlaudit.common.exception.ExcepcionNegocio;
 import com.gr4.owlaudit.dao.ProyectoDAO;
 import com.gr4.owlaudit.dao.ProyectoDAOImpl;
 import com.gr4.owlaudit.dto.NuevoProyectoDTO;
+import com.gr4.owlaudit.dto.UsuarioDTO;
 import com.gr4.owlaudit.model.Proyecto;
+import com.gr4.owlaudit.model.RolEnum;
 import com.gr4.owlaudit.service.ProyectoService;
 import com.gr4.owlaudit.service.ProyectoServiceImpl;
 
@@ -33,7 +35,10 @@ public class ProyectoServlet extends HttpServlet {
     protected void doGet(HttpServletRequest request, HttpServletResponse response) 
             throws ServletException, IOException {
         try {
-            List<Proyecto> proyectos = proyectoDAO.listarTodos();
+            UsuarioDTO usuario = (UsuarioDTO) request.getSession().getAttribute(LoginServlet.ATRIBUTO_USUARIO);
+            List<Proyecto> proyectos = (usuario != null && usuario.getRol() == RolEnum.ESTUDIANTE)
+                    ? proyectoDAO.listarPorUsuarioId(usuario.getId())
+                    : proyectoDAO.listarTodos();
             request.setAttribute("proyectos", proyectos);
         } catch (Exception e) {
             System.err.println("[ProyectoServlet] Error al listar proyectos: " + e.getMessage());
@@ -49,12 +54,13 @@ public class ProyectoServlet extends HttpServlet {
         // Configura la codificación de caracteres para acentos y caracteres especiales
         request.setCharacterEncoding("UTF-8");
 
-        // 1. Obtención de parámetros del formulario HTML
+        // 1. Obtención de parámetros del formulario HTML y usuario de sesión
         String nombre = request.getParameter("nombre");
         String urlGithub = request.getParameter("urlGithub");
+        UsuarioDTO usuario = (UsuarioDTO) request.getSession().getAttribute(LoginServlet.ATRIBUTO_USUARIO);
 
         // 2. Instanciación del DTO según el Diagrama de Clases
-        NuevoProyectoDTO dto = new NuevoProyectoDTO(nombre, urlGithub);
+        NuevoProyectoDTO dto = new NuevoProyectoDTO(nombre, urlGithub, usuario != null ? usuario.getId() : null);
         request.setAttribute("proyectoDTO", dto);
 
         // 3. Delegación a la capa de servicio (validación del enlace + persistencia)
@@ -62,25 +68,33 @@ public class ProyectoServlet extends HttpServlet {
             proyectoService.solicitarRegistroDeNuevoProyecto(dto);
             request.setAttribute("mensajeExito", "Proyecto '" + dto.getNombre() + "' registrado correctamente.");
 
-            List<Proyecto> proyectos = proyectoDAO.listarTodos();
+            List<Proyecto> proyectos = (usuario != null && usuario.getRol() == RolEnum.ESTUDIANTE)
+                    ? proyectoDAO.listarPorUsuarioId(usuario.getId())
+                    : proyectoDAO.listarTodos();
             request.setAttribute("proyectos", proyectos);
-            if (proyectos != null && urlGithub != null) {
+            if (proyectos != null && !proyectos.isEmpty() && urlGithub != null) {
                 Proyecto proyectoRegistrado = proyectos.stream()
                         .filter(p -> urlGithub.trim().equalsIgnoreCase(p.getUrlGithub() != null ? p.getUrlGithub().trim() : ""))
-                        .findFirst()
+                        .reduce((first, second) -> second)
                         .orElse(null);
                 request.setAttribute("proyectoRegistrado", proyectoRegistrado);
             }
         } catch (ExcepcionNegocio e) {
             request.setAttribute("mensajeError", e.getMessage());
             try {
-                request.setAttribute("proyectos", proyectoDAO.listarTodos());
+                List<Proyecto> proyectos = (usuario != null && usuario.getRol() == RolEnum.ESTUDIANTE)
+                        ? proyectoDAO.listarPorUsuarioId(usuario.getId())
+                        : proyectoDAO.listarTodos();
+                request.setAttribute("proyectos", proyectos);
             } catch (Exception ignored) {}
         } catch (RuntimeException e) {
             System.err.println("[ProyectoServlet] Error técnico: " + e.getMessage());
             request.setAttribute("mensajeError", "Ocurrió un error inesperado al registrar el proyecto. Intente nuevamente.");
             try {
-                request.setAttribute("proyectos", proyectoDAO.listarTodos());
+                List<Proyecto> proyectos = (usuario != null && usuario.getRol() == RolEnum.ESTUDIANTE)
+                        ? proyectoDAO.listarPorUsuarioId(usuario.getId())
+                        : proyectoDAO.listarTodos();
+                request.setAttribute("proyectos", proyectos);
             } catch (Exception ignored) {}
         }
 

@@ -5,6 +5,7 @@ import com.gr4.owlaudit.dao.ProyectoDAO;
 import com.gr4.owlaudit.dao.ProyectoDAOImpl;
 import com.gr4.owlaudit.dto.NuevoProyectoDTO;
 import com.gr4.owlaudit.model.Proyecto;
+import com.gr4.owlaudit.model.Usuario;
 
 import java.util.regex.Pattern;
 
@@ -38,6 +39,19 @@ public class ProyectoServiceImpl implements ProyectoService {
 
         // Instanciación y persistencia
         Proyecto proyecto = new Proyecto(dto);
+        if (dto.getUsuarioId() != null) {
+            Usuario u = new Usuario();
+            u.setId(dto.getUsuarioId());
+            proyecto.setUsuario(u);
+
+            java.util.List<Proyecto> existentes = proyectoDAO.listarPorUsuarioId(dto.getUsuarioId());
+            long proximoId = (existentes != null ? existentes.size() : 0) + 1L;
+            proyecto.setIdEstudiante(proximoId);
+            dto.setIdEstudiante(proximoId);
+        } else {
+            proyecto.setIdEstudiante(1L);
+            dto.setIdEstudiante(1L);
+        }
         proyectoDAO.guardarProyectoAcademico(proyecto);
     }
 

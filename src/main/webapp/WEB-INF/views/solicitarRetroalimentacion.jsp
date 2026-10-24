@@ -19,6 +19,7 @@
     String evidencia = (String) request.getAttribute("evidencia");
     String recomendacion = (String) request.getAttribute("recomendacion");
     String proyectoNombre = (String) request.getAttribute("nombreProyecto");
+    String urlGithub = (String) request.getAttribute("urlGithub");
     Long auditoriaId = (Long) request.getAttribute("auditoriaId");
     String fechaAuditoria = (String) request.getAttribute("fechaAuditoria");
     SolicitudRetroalimentacion solicitudExistente = (SolicitudRetroalimentacion) request.getAttribute("solicitudExistente");
@@ -118,6 +119,13 @@
                             <% if (proyectoNombre != null && !proyectoNombre.isBlank()) { %>
                                 <p style="margin: 0.25rem 0;"><strong>📁 Proyecto:</strong> <%= HtmlUtil.escape(proyectoNombre) %></p>
                             <% } %>
+                            <% if (urlGithub != null && !urlGithub.isBlank()) { %>
+                                <p style="margin: 0.25rem 0;"><strong>🔗 URL Repositorio:</strong> 
+                                    <a href="<%= HtmlUtil.escape(urlGithub) %>" target="_blank" rel="noopener noreferrer" style="color: var(--brand-blue); text-decoration: underline;">
+                                        <%= HtmlUtil.escape(urlGithub) %> ↗
+                                    </a>
+                                </p>
+                            <% } %>
                             <% if (auditoriaId != null) { %>
                                 <p style="margin: 0.25rem 0;"><strong>📋 Reporte Auditoría:</strong> #<%= auditoriaId %> <%= fechaAuditoria != null ? "(" + HtmlUtil.escape(fechaAuditoria) + ")" : "" %></p>
                             <% } %>
@@ -215,13 +223,16 @@
                         <select id="proyectoFiltro" onchange="filtrarPorProyecto(this.value)">
                             <option value="">-- Todos los Proyectos Registrados --</option>
                             <% if (proyectosDisponibles != null) {
+                                   int idxSol = 1;
                                    for (Proyecto p : proyectosDisponibles) { 
                                        boolean sel = proyectoIdFiltro != null && proyectoIdFiltro.equals(p.getId());
+                                       long idMostrado = (p.getIdEstudiante() != null) ? p.getIdEstudiante() : (long) idxSol;
                             %>
                                 <option value="<%= p.getId() %>" <%= sel ? "selected" : "" %>>
-                                    <%= HtmlUtil.escape(p.getNombre()) %>
+                                    #<%= idMostrado %> &middot; <%= HtmlUtil.escape(p.getNombre()) %>
                                 </option>
-                            <%     }
+                            <%         idxSol++;
+                                   }
                                } %>
                         </select>
                     </div>

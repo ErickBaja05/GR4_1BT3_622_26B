@@ -100,4 +100,27 @@ public class AuditoriaDAOImpl implements AuditoriaDAO {
             throw new RuntimeException("Error al buscar auditoría por ID: " + e.getMessage(), e);
         }
     }
+
+    @Override
+    public List<Auditoria> consultarHistorialDeAuditoriasPorUsuario(Long usuarioId) {
+        if (usuarioId == null) {
+            return java.util.Collections.emptyList();
+        }
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            return session.createQuery(
+                "SELECT DISTINCT a FROM Auditoria a " +
+                "LEFT JOIN FETCH a.proyecto " +
+                "LEFT JOIN FETCH a.resultados r " +
+                "LEFT JOIN FETCH r.regla " +
+                "LEFT JOIN FETCH r.hallazgo " +
+                "WHERE a.usuario.id = :usuarioId OR a.proyecto.usuario.id = :usuarioId " +
+                "ORDER BY a.fechaHora DESC",
+                Auditoria.class
+            )
+            .setParameter("usuarioId", usuarioId)
+            .getResultList();
+        } catch (Exception e) {
+            throw new RuntimeException("Error al consultar auditorías por usuario: " + e.getMessage(), e);
+        }
+    }
 }

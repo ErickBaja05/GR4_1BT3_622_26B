@@ -14,4 +14,7 @@ public interface AuditoriaDAO {
     default Auditoria buscarPorId(Long id) {
         return null;
     }
+    default List<Auditoria> consultarHistorialDeAuditoriasPorUsuario(Long usuarioId) {
+        return java.util.Collections.emptyList();
+    }
 }

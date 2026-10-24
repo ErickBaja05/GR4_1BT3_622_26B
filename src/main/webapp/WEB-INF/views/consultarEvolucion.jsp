@@ -53,12 +53,18 @@
                     <label for="proyectoId" class="form-label">Proyecto Académico</label>
                     <% if (listaProyectos != null && !listaProyectos.isEmpty()) { %>
                         <select id="proyectoId" name="proyectoId" class="form-control" onchange="this.form.submit()" required>
-                            <option value="">-- Seleccione un Proyecto Registrado --</option>
-                            <% for (Proyecto p : listaProyectos) { %>
+                            <% 
+                               int idxEvol = 1;
+                               for (Proyecto p : listaProyectos) { 
+                                   long idMostrado = (p.getIdEstudiante() != null) ? p.getIdEstudiante() : (long) idxEvol;
+                            %>
                                 <option value="<%= p.getId() %>" <%= (proyectoIdActual != null && proyectoIdActual.equals(p.getId())) ? "selected" : "" %>>
-                                    #<%= p.getId() %> &middot; <%= HtmlUtil.escape(p.getNombre()) %> (<%= HtmlUtil.escape(p.getUrlGithub()) %>)
+                                    #<%= idMostrado %> &middot; <%= HtmlUtil.escape(p.getNombre()) %> (<%= HtmlUtil.escape(p.getUrlGithub()) %>)
                                 </option>
-                            <% } %>
+                            <% 
+                                   idxEvol++;
+                               } 
+                            %>
                         </select>
                     <% } else { %>
                         <input type="number" id="proyectoId" name="proyectoId" class="form-control" 

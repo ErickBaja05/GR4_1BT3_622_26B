@@ -34,6 +34,10 @@ public class SolicitudRetroalimentacion {
     @JoinColumn(name = "hallazgo_id", nullable = false)
     private Hallazgo hallazgo;
 
+    @jakarta.persistence.ManyToOne
+    @JoinColumn(name = "usuario_id")
+    private Usuario usuario;
+
     public SolicitudRetroalimentacion() {
         this.estado = EstadoRetroEnum.PENDIENTE;
     }
@@ -46,6 +50,11 @@ public class SolicitudRetroalimentacion {
             Hallazgo h = new Hallazgo();
             h.setId(dto.getHallazgoId());
             this.hallazgo = h;
+        }
+        if (dto != null && dto.getUsuarioId() != null) {
+            Usuario u = new Usuario();
+            u.setId(dto.getUsuarioId());
+            this.usuario = u;
         }
     }
 
@@ -87,6 +96,14 @@ public class SolicitudRetroalimentacion {
 
     public void setHallazgo(Hallazgo hallazgo) {
         this.hallazgo = hallazgo;
+    }
+
+    public Usuario getUsuario() {
+        return usuario;
+    }
+
+    public void setUsuario(Usuario usuario) {
+        this.usuario = usuario;
     }
 
     public void marcarSolicitudComoAtendida() {

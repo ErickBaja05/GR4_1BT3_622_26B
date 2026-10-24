@@ -6,6 +6,9 @@ import com.gr4.owlaudit.dao.ProyectoDAOImpl;
 import com.gr4.owlaudit.dto.EvolucionDTO;
 import com.gr4.owlaudit.dto.EvolucionFinalDTO;
 import com.gr4.owlaudit.dto.ResumenHistorialDTO;
+import com.gr4.owlaudit.dto.UsuarioDTO;
+import com.gr4.owlaudit.model.Proyecto;
+import com.gr4.owlaudit.model.RolEnum;
 import com.gr4.owlaudit.service.EvolucionService;
 import com.gr4.owlaudit.service.EvolucionServiceImpl;
 
@@ -15,6 +18,7 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.List;
 
 /**
  * CU04 - Consultar evolución de la calidad (roles ESTUDIANTE y DOCENTE).
@@ -45,8 +49,13 @@ public class EvolucionServlet extends HttpServlet {
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
 
+        UsuarioDTO usuario = (UsuarioDTO) request.getSession().getAttribute(LoginServlet.ATRIBUTO_USUARIO);
+        List<Proyecto> listaProyectos = null;
         try {
-            request.setAttribute("listaProyectos", proyectoDAO.listarTodos());
+            listaProyectos = (usuario != null && usuario.getRol() == RolEnum.ESTUDIANTE)
+                    ? proyectoDAO.listarPorUsuarioId(usuario.getId())
+                    : proyectoDAO.listarTodos();
+            request.setAttribute("listaProyectos", listaProyectos);
         } catch (Exception e) {
             System.err.println("[EvolucionServlet] Error al listar proyectos: " + e.getMessage());
         }
@@ -55,6 +64,15 @@ public class EvolucionServlet extends HttpServlet {
         if (proyectoIdParam != null && !proyectoIdParam.isBlank()) {
             try {
                 Long proyectoId = Long.parseLong(proyectoIdParam.trim());
+                if (usuario != null && usuario.getRol() == RolEnum.ESTUDIANTE) {
+                    final Long finalPid = proyectoId;
+                    boolean pertenece = listaProyectos != null && listaProyectos.stream().anyMatch(p -> p.getId().equals(finalPid));
+                    if (!pertenece) {
+                        request.setAttribute("mensajeError", "No tiene permisos para consultar el proyecto seleccionado.");
+                        request.getRequestDispatcher(VISTA).forward(request, response);
+                        return;
+                    }
+                }
                 EvolucionDTO dto = new EvolucionDTO(proyectoId);
                 request.setAttribute("evolucionDTO", dto);
 
@@ -78,8 +96,13 @@ public class EvolucionServlet extends HttpServlet {
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
 
+        UsuarioDTO usuario = (UsuarioDTO) request.getSession().getAttribute(LoginServlet.ATRIBUTO_USUARIO);
+        List<Proyecto> listaProyectos = null;
         try {
-            request.setAttribute("listaProyectos", proyectoDAO.listarTodos());
+            listaProyectos = (usuario != null && usuario.getRol() == RolEnum.ESTUDIANTE)
+                    ? proyectoDAO.listarPorUsuarioId(usuario.getId())
+                    : proyectoDAO.listarTodos();
+            request.setAttribute("listaProyectos", listaProyectos);
         } catch (Exception e) {
             System.err.println("[EvolucionServlet] Error al listar proyectos: " + e.getMessage());
         }
@@ -110,6 +133,16 @@ public class EvolucionServlet extends HttpServlet {
             }
             if (comparadaIdParam != null && !comparadaIdParam.isBlank()) {
                 comparadaId = Long.parseLong(comparadaIdParam.trim());
+            }
+
+            if (proyectoId != null && usuario != null && usuario.getRol() == RolEnum.ESTUDIANTE) {
+                final Long finalPid = proyectoId;
+                boolean pertenece = listaProyectos != null && listaProyectos.stream().anyMatch(p -> p.getId().equals(finalPid));
+                if (!pertenece) {
+                    request.setAttribute("mensajeError", "No tiene permisos para consultar el proyecto seleccionado.");
+                    request.getRequestDispatcher(VISTA).forward(request, response);
+                    return;
+                }
             }
 
             EvolucionDTO dto = new EvolucionDTO(proyectoId, baseId, comparadaId);

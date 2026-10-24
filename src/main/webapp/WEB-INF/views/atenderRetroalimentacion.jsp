@@ -60,6 +60,8 @@
                            String reglaNombre = (String) sol.get("reglaNombre");
                            String justificacion = (String) sol.get("justificacion");
                            String fechaHora = (String) sol.get("fechaHora");
+                           String nombreEstudiante = (String) sol.get("nombreEstudiante");
+                           String urlGithub = (String) sol.get("urlGithub");
                     %>
                         <div class="request-item<%= esSeleccionada ? " selected" : "" %>">
                             <div class="request-header">
@@ -68,6 +70,19 @@
                                 </span>
                                 <span class="badge badge-<%= estado.toLowerCase() %>"><%= estado %></span>
                             </div>
+                            <p style="margin-bottom: 0.35rem; font-size: 0.92rem;">
+                                <strong>👤 Estudiante:</strong> <span style="color: var(--brand-blue); font-weight: 600;"><%= HtmlUtil.escape(nombreEstudiante != null ? nombreEstudiante : "Estudiante") %></span>
+                            </p>
+                            <p style="margin-bottom: 0.35rem; font-size: 0.9rem;">
+                                <strong>🔗 URL del Repositorio:</strong> 
+                                <% if (urlGithub != null && !urlGithub.isBlank()) { %>
+                                    <a href="<%= HtmlUtil.escape(urlGithub) %>" target="_blank" rel="noopener noreferrer" style="color: var(--brand-blue); text-decoration: underline;">
+                                        <%= HtmlUtil.escape(urlGithub) %> ↗
+                                    </a>
+                                <% } else { %>
+                                    <span style="color: var(--text-muted);">No disponible</span>
+                                <% } %>
+                            </p>
                             <p style="margin-bottom: 0.5rem; font-size: 0.9rem;">
                                 <strong>Regla:</strong> <%= HtmlUtil.escape(reglaNombre) %> &middot; 
                                 <span class="badge badge-<%= severidad.toLowerCase() %>"><%= severidad %></span>
@@ -108,6 +123,8 @@
                    String selRegla = seleccionada != null ? (String) seleccionada.get("reglaNombre") : "";
                    String selEvidencia = seleccionada != null ? (String) seleccionada.get("evidencia") : "";
                    String selJustificacion = seleccionada != null ? (String) seleccionada.get("justificacion") : "";
+                   String selEstudiante = seleccionada != null ? (String) seleccionada.get("nombreEstudiante") : "Estudiante";
+                   String selUrlRepo = seleccionada != null ? (String) seleccionada.get("urlGithub") : "";
                    String orientacionTexto = (solicitudActual != null && solicitudActual.getOrientacion() != null) 
                            ? solicitudActual.getOrientacion() : "";
             %>
@@ -117,7 +134,17 @@
                     </h3>
                     
                     <div class="context-box">
+                        <p><strong>👤 Estudiante Solicitante:</strong> <span style="color: var(--brand-blue); font-weight: 600;"><%= HtmlUtil.escape(selEstudiante) %></span></p>
                         <p><strong>📁 Proyecto:</strong> <%= HtmlUtil.escape(selProyecto) %></p>
+                        <p><strong>🔗 URL del Repositorio:</strong> 
+                            <% if (selUrlRepo != null && !selUrlRepo.isBlank()) { %>
+                                <a href="<%= HtmlUtil.escape(selUrlRepo) %>" target="_blank" rel="noopener noreferrer" style="color: var(--brand-blue); text-decoration: underline; font-weight: 500;">
+                                    <%= HtmlUtil.escape(selUrlRepo) %> ↗ (Abrir en GitHub)
+                                </a>
+                            <% } else { %>
+                                <span style="color: var(--text-muted);">No especificada</span>
+                            <% } %>
+                        </p>
                         <p><strong>📐 Regla:</strong> <%= HtmlUtil.escape(selRegla) %></p>
                         <p><strong>⚠️ Evidencia:</strong> <span class="evidence-code"><%= HtmlUtil.escape(selEvidencia) %></span></p>
                         <p><strong>💬 Justificación recibida:</strong> <%= HtmlUtil.escape(selJustificacion) %></p>

@@ -10,6 +10,8 @@ public class SolicitudDTO {
     private Long solicitudId;
     private String justificacion;
     private String orientacion;
+    private Long usuarioId;
+    private String nombreEstudiante;
 
     public SolicitudDTO() {
     }
@@ -17,6 +19,12 @@ public class SolicitudDTO {
     public SolicitudDTO(Long hallazgoId, String justificacion) {
         this.hallazgoId = hallazgoId;
         this.justificacion = justificacion;
+    }
+
+    public SolicitudDTO(Long hallazgoId, String justificacion, Long usuarioId) {
+        this.hallazgoId = hallazgoId;
+        this.justificacion = justificacion;
+        this.usuarioId = usuarioId;
     }
 
     public SolicitudDTO(Long solicitudId, String orientacion, boolean esDocente) {
@@ -61,5 +69,21 @@ public class SolicitudDTO {
 
     public void setOrientacion(String orientacion) {
         this.orientacion = orientacion;
+    }
+
+    public Long getUsuarioId() {
+        return usuarioId;
+    }
+
+    public void setUsuarioId(Long usuarioId) {
+        this.usuarioId = usuarioId;
+    }
+
+    public String getNombreEstudiante() {
+        return nombreEstudiante;
+    }
+
+    public void setNombreEstudiante(String nombreEstudiante) {
+        this.nombreEstudiante = nombreEstudiante;
     }
 }
