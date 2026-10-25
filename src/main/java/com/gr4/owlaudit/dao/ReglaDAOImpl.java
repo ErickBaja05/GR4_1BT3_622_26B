@@ -44,31 +44,28 @@ public class ReglaDAOImpl implements ReglaDAO {
     @Override
     public List<Regla> consultarReglasDeEvaluacionVigentes() {
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
-            Query<Regla> query = session.createQuery(
-                    "SELECT r FROM Regla r WHERE r.activa = true",
-                    Regla.class);
-            return query.list();
+            return session.createQuery(
+                "SELECT r FROM Regla r WHERE r.vigencia = :vigencia",
+                Regla.class
+            ).setParameter("vigencia", EstadoVigencia.VIGENTE).list();
         }
     }
 
     @Override
     public Regla obtenerPorNombre(String nombre) {
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
-            Query<Regla> query = session.createQuery(
+            // Refactorización: Inline Temp sobre la variable temporal query
+            return session.createQuery(
                 "SELECT r FROM Regla r WHERE r.nombreRepresentativo = :nombre",
                 Regla.class
-            );
-            query.setParameter("nombre", nombre);
-            return query.uniqueResult();
+            ).setParameter("nombre", nombre).uniqueResult();
         }
     }
 
     @Override
     public boolean actualizarEstadoVigencia(String nombre, EstadoVigencia nuevoEstado) {
-        boolean esActiva = false;
-        if (nuevoEstado == EstadoVigencia.VIGENTE) {
-            esActiva = true;
-        }
+        // Refactorización: Extract Method utilizando esEstadoActivo(...)
+        boolean esActiva = esEstadoActivo(nuevoEstado);
 
         Transaction tx = null;
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
@@ -88,6 +85,10 @@ public class ReglaDAOImpl implements ReglaDAO {
             }
             return false;
         }
+    }
+
+    private boolean esEstadoActivo(EstadoVigencia estado) {
+        return estado == EstadoVigencia.VIGENTE;
     }
 
 }

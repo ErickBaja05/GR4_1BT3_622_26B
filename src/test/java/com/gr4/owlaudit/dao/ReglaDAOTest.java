@@ -1,3 +1,4 @@
+
 package com.gr4.owlaudit.dao;
 
 import com.gr4.owlaudit.common.config.HibernateUtil;
@@ -73,5 +74,29 @@ class ReglaDAOTest {
         assertNotNull(reglaConsultada, "La regla debe ser encontrada por su nombre representativo");
         assertEquals(EstadoVigencia.NO_VIGENTE, reglaConsultada.getVigencia(), "La regla debe reflejar el nuevo estado NO_VIGENTE");
         assertFalse(reglaConsultada.isActiva(), "El booleano de activación debe mantenerse consistente (false)");
+    }
+
+    @Test
+    @DisplayName("Debe consultar únicamente las reglas con estado VIGENTE")
+    void consultarReglasDeEvaluacionVigentes_debeRetornarSoloReglasVigentes() {
+        // GIVEN: Una regla en estado NO_VIGENTE registrada en el sistema
+        String nombreRegla = "Regla No Vigente " + System.nanoTime();
+        reglaPrueba = new Regla();
+        reglaPrueba.setNombreRepresentativo(nombreRegla);
+        reglaPrueba.setTipoMotor(TipoMotorEnum.PRESENCIA_ARCHIVO);
+        reglaPrueba.setParametroExacto("pom.xml");
+        reglaPrueba.setNivelSeveridad(NivelSeveridadEnum.BAJA);
+        reglaPrueba.setPonderacion(5);
+        reglaPrueba.setActiva(false);
+        reglaPrueba.setVigencia(EstadoVigencia.NO_VIGENTE);
+        reglaDAO.guardar(reglaPrueba);
+
+        // WHEN: Se consultan las reglas vigentes para el motor de auditorías
+        java.util.List<Regla> vigentes = reglaDAO.consultarReglasDeEvaluacionVigentes();
+
+        // THEN: La lista no debe incluir la regla en estado NO_VIGENTE
+        boolean contieneNoVigente = vigentes.stream()
+                .anyMatch(r -> r.getNombreRepresentativo().equals(nombreRegla));
+        assertFalse(contieneNoVigente, "La consulta no debe incluir reglas en estado NO_VIGENTE");
     }
 }

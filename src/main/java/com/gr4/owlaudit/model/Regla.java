@@ -43,9 +43,10 @@ public class Regla {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "vigencia", nullable = false, length = 20)
-    private EstadoVigencia vigencia;
+    private EstadoVigencia vigencia = EstadoVigencia.VIGENTE;
 
     public Regla() {
+        this.vigencia = EstadoVigencia.VIGENTE;
     }
 
     public Regla(NuevaReglaDTO dto) {
