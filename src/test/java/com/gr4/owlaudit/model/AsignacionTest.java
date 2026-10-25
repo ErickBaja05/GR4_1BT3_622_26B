@@ -36,7 +36,7 @@ class AsignacionTest {
         Asignacion asignacion = new Asignacion(nombre, umbral, List.of(regla1));
 
         assertEquals(nombre, asignacion.getNombre());
-        assertEquals(umbral, asignacion.getUmbral());
+        assertEquals(umbral, asignacion.getUmbralAprobacion());
         assertNotNull(asignacion.getReglas());
         assertEquals(1, asignacion.getReglas().size());
         assertEquals("Regla Test", asignacion.getReglas().get(0).getNombreRepresentativo());

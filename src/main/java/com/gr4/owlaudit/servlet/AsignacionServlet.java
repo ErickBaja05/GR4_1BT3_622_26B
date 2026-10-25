@@ -54,15 +54,15 @@ public class AsignacionServlet extends HttpServlet {
         request.setCharacterEncoding("UTF-8");
 
         String nombre = request.getParameter("nombre");
-        String umbralStr = request.getParameter("umbralAprobacion");
+        String umbralAprobacionStr = request.getParameter("umbralAprobacion");
         String[] reglasIdsParam = request.getParameterValues("reglasIds");
 
-        Double umbral;
+        Double umbralAprobacion;
         try {
-            if (umbralStr == null || umbralStr.trim().isEmpty()) {
+            if (umbralAprobacionStr == null || umbralAprobacionStr.trim().isEmpty()) {
                 throw new NumberFormatException("El umbral no puede ser vacío");
             }
-            umbral = Double.parseDouble(umbralStr.trim());
+            umbralAprobacion = Double.parseDouble(umbralAprobacionStr.trim());
         } catch (NumberFormatException e) {
             request.setAttribute("mensajeError", "El umbral de aprobación debe ser un número válido.");
             request.getRequestDispatcher(VISTA_CREAR).forward(request, response);
@@ -70,17 +70,21 @@ public class AsignacionServlet extends HttpServlet {
         }
 
         // Refactorización 1 (Martin Fowler): Extract Method sobre el procesamiento de identificadores de reglas
-        List<Long> idsReglas = parsearIdsReglas(reglasIdsParam);
+        List<Long> reglasIds = parsearReglasIds(reglasIdsParam);
 
-        NuevaAsignacionDTO dto = new NuevaAsignacionDTO(nombre, umbral, idsReglas);
+        NuevaAsignacionDTO dto = new NuevaAsignacionDTO(nombre, umbralAprobacion, reglasIds);
 
-        // Refactorización 2 (Martin Fowler): Introduce Explaining Variable para clarificar el resultado de la operación
-        final boolean fueAsignacionExitosa = asignacionesService != null && asignacionesService.crearAsignacion(dto) != null;
+        try {
+            // Refactorización 2 (Martin Fowler): Introduce Explaining Variable para clarificar el resultado de la operación
+            final boolean fueAsignacionExitosa = asignacionesService != null && asignacionesService.crearAsignacion(dto) != null;
 
-        if (fueAsignacionExitosa) {
-            request.setAttribute("mensajeExito", "Asignación creada correctamente.");
-        } else {
-            request.setAttribute("mensajeError", "No se pudo crear la asignación.");
+            if (fueAsignacionExitosa) {
+                request.setAttribute("mensajeExito", "Asignación creada correctamente.");
+            } else {
+                request.setAttribute("mensajeError", "No se pudo crear la asignación.");
+            }
+        } catch (IllegalArgumentException e) {
+            request.setAttribute("mensajeError", e.getMessage());
         }
 
         request.getRequestDispatcher(VISTA_CREAR).forward(request, response);
@@ -91,16 +95,16 @@ public class AsignacionServlet extends HttpServlet {
      * Transforma el arreglo de cadenas recibido desde los checkboxes de la vista
      * en una lista de identificadores numéricos {@code Long}.
      */
-    private List<Long> parsearIdsReglas(String[] reglasIdsParam) {
-        List<Long> idsReglas = new ArrayList<>();
+    private List<Long> parsearReglasIds(String[] reglasIdsParam) {
+        List<Long> reglasIds = new ArrayList<>();
         if (reglasIdsParam != null) {
             for (String idStr : reglasIdsParam) {
                 try {
-                    idsReglas.add(Long.parseLong(idStr.trim()));
+                    reglasIds.add(Long.parseLong(idStr.trim()));
                 } catch (NumberFormatException ignored) {
                 }
             }
         }
-        return idsReglas;
+        return reglasIds;
     }
 }

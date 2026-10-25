@@ -38,7 +38,7 @@ public class AsignacionesServiceImpl implements AsignacionesService {
         validarNombreAsignacion(dto);
 
         // 2. Validar y convertir el umbral.
-        double valorUmbral = validarYConvertirUmbral(dto.getUmbral());
+        double valorUmbral = validarUmbralAprobacion(dto.getUmbralAprobacion());
 
         // 3. Validar las reglas seleccionadas.
         if (dto.getReglasIds() == null
@@ -67,31 +67,18 @@ public class AsignacionesServiceImpl implements AsignacionesService {
         }
     }
 
-    private double validarYConvertirUmbral(String umbral) {
-        if (umbral == null || umbral.trim().isEmpty()) {
+    private double validarUmbralAprobacion(Double umbralAprobacion) {
+        if (umbralAprobacion == null || !Double.isFinite(umbralAprobacion)) {
             throw new IllegalArgumentException(
                     "El umbral de aprobación es obligatorio y debe ser un valor numérico válido.");
         }
 
-        double valorUmbral;
-
-        try {
-            valorUmbral = Double.parseDouble(umbral.trim());
-
-            if (!Double.isFinite(valorUmbral)) {
-                throw new NumberFormatException();
-            }
-        } catch (NumberFormatException e) {
-            throw new IllegalArgumentException(
-                    "El umbral ingresado debe ser un valor numérico válido.");
-        }
-
-        if (valorUmbral < 50.0 || valorUmbral > 100.0) {
+        if (umbralAprobacion < 50.0 || umbralAprobacion > 100.0) {
             throw new IllegalArgumentException(
                     "El umbral de aprobación debe encontrarse en el rango válido entre 50% y 100%.");
         }
 
-        return valorUmbral;
+        return umbralAprobacion;
     }
 
     private List<Regla> obtenerReglasVigentes(

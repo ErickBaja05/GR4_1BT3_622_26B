@@ -8,7 +8,7 @@ import java.util.List;
  * Objeto de transferencia de datos (DTO) para la creación de una nueva asignación de auditoría.
  * Encapsula:
  * - nombre (String): Nombre descriptivo de la asignación.
- * - umbral (String): Umbral recibido desde la interfaz para permitir validación de formatos en el servicio.
+ * - umbralAprobacion (Double): Umbral requerido para la aprobación de la auditoría.
  * - reglasIds (List<Long>): Colección de identificadores de las reglas vigentes seleccionadas.
  *
  * Refactorizaciones Martin Fowler aplicadas:
@@ -18,23 +18,35 @@ import java.util.List;
 public class NuevaAsignacionDTO {
 
     private String nombre;
-    private String umbral;
+    private Double umbralAprobacion;
     private List<Long> reglasIds;
 
     public NuevaAsignacionDTO() {
         this.reglasIds = new ArrayList<>();
     }
 
-    public NuevaAsignacionDTO(String nombre, String umbral, List<Long> reglasIds) {
+    public NuevaAsignacionDTO(String nombre, Double umbralAprobacion, List<Long> reglasIds) {
         this.nombre = nombre;
-        this.umbral = umbral;
+        this.umbralAprobacion = umbralAprobacion;
         this.reglasIds = (reglasIds != null) ? new ArrayList<>(reglasIds) : new ArrayList<>();
     }
 
-    public NuevaAsignacionDTO(String nombre, Double umbralAprobacion, List<Long> idsReglas) {
+    public NuevaAsignacionDTO(String nombre, String umbralAprobacion, List<Long> reglasIds) {
         this.nombre = nombre;
-        this.umbral = (umbralAprobacion != null) ? String.valueOf(umbralAprobacion) : null;
-        this.reglasIds = (idsReglas != null) ? new ArrayList<>(idsReglas) : new ArrayList<>();
+        this.umbralAprobacion = parsearUmbralAprobacion(umbralAprobacion);
+        this.reglasIds = (reglasIds != null) ? new ArrayList<>(reglasIds) : new ArrayList<>();
+    }
+
+    private static Double parsearUmbralAprobacion(String valor) {
+        if (valor == null || valor.trim().isEmpty()) {
+            return null;
+        }
+        try {
+            double parsed = Double.parseDouble(valor.trim());
+            return Double.isFinite(parsed) ? parsed : null;
+        } catch (NumberFormatException e) {
+            return null;
+        }
     }
 
     public String getNombre() {
@@ -45,12 +57,12 @@ public class NuevaAsignacionDTO {
         this.nombre = nombre;
     }
 
-    public String getUmbral() {
-        return umbral;
+    public Double getUmbralAprobacion() {
+        return umbralAprobacion;
     }
 
-    public void setUmbral(String umbral) {
-        this.umbral = umbral;
+    public void setUmbralAprobacion(Double umbralAprobacion) {
+        this.umbralAprobacion = umbralAprobacion;
     }
 
     /**
@@ -85,29 +97,5 @@ public class NuevaAsignacionDTO {
      */
     public int obtenerCantidadReglas() {
         return this.reglasIds.size();
-    }
-
-    // Métodos alias para compatibilidad y conveniencia adicional
-    public List<Long> getIdsReglas() {
-        return getReglasIds();
-    }
-
-    public void setIdsReglas(List<Long> idsReglas) {
-        setReglasIds(idsReglas);
-    }
-
-    public Double getUmbralAprobacion() {
-        if (this.umbral == null || this.umbral.trim().isEmpty()) {
-            return null;
-        }
-        try {
-            return Double.parseDouble(this.umbral.trim());
-        } catch (NumberFormatException e) {
-            return null;
-        }
-    }
-
-    public void setUmbralAprobacion(Double umbralAprobacion) {
-        this.umbral = (umbralAprobacion != null) ? String.valueOf(umbralAprobacion) : null;
     }
 }

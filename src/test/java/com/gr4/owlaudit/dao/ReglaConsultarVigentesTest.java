@@ -113,25 +113,25 @@ class ReglaConsultarVigentesTest {
     void nuevaAsignacionDTO_debeEncapsularDatosCorrectamente() {
         // GIVEN: Datos para una nueva asignación
         String nombre = "Laboratorio 1 - Buenas Prácticas";
-        Double umbral = 75.0;
-        List<Long> idsReglas = List.of(10L, 20L, 30L);
+        Double umbralAprobacion = 75.0;
+        List<Long> reglasIds = List.of(10L, 20L, 30L);
 
         // WHEN: Se instancia el DTO
-        NuevaAsignacionDTO dto = new NuevaAsignacionDTO(nombre, umbral, idsReglas);
+        NuevaAsignacionDTO dto = new NuevaAsignacionDTO(nombre, umbralAprobacion, reglasIds);
 
         // THEN: Los valores deben recuperarse fielmente
         assertEquals("Laboratorio 1 - Buenas Prácticas", dto.getNombre());
         assertEquals(75.0, dto.getUmbralAprobacion(), 0.001);
-        assertNotNull(dto.getIdsReglas());
-        assertEquals(3, dto.getIdsReglas().size());
-        assertTrue(dto.getIdsReglas().containsAll(List.of(10L, 20L, 30L)));
+        assertNotNull(dto.getReglasIds());
+        assertEquals(3, dto.getReglasIds().size());
+        assertTrue(dto.getReglasIds().containsAll(List.of(10L, 20L, 30L)));
         assertTrue(dto.tieneReglas());
 
         // Fowler: Encapsulate Collection (la lista retornada debe ser inmutable hacia el exterior)
-        assertThrows(UnsupportedOperationException.class, () -> dto.getIdsReglas().add(40L));
+        assertThrows(UnsupportedOperationException.class, () -> dto.getReglasIds().add(40L));
 
         // Manipulación controlada mediante métodos de dominio
         dto.agregarReglaId(40L);
-        assertEquals(4, dto.getIdsReglas().size());
+        assertEquals(4, dto.getReglasIds().size());
     }
 }

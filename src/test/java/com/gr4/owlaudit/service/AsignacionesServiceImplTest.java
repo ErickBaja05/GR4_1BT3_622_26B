@@ -72,7 +72,7 @@ class AsignacionesServiceImplTest {
 
         assertNotNull(resultado, "La asignación retornada no debe ser nula");
         assertEquals("Auditoría Calidad S1", resultado.getNombre());
-        assertEquals(Double.parseDouble(umbralValido), resultado.getUmbral());
+        assertEquals(Double.parseDouble(umbralValido), resultado.getUmbralAprobacion());
         assertEquals(2, resultado.getReglas().size());
 
         ArgumentCaptor<Asignacion> captor = ArgumentCaptor.forClass(Asignacion.class);

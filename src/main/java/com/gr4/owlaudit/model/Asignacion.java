@@ -70,13 +70,6 @@ public class Asignacion {
         this.umbralAprobacion = umbralAprobacion;
     }
 
-    public Double getUmbral() {
-        return getUmbralAprobacion();
-    }
-
-    public void setUmbral(Double umbral) {
-        setUmbralAprobacion(umbral);
-    }
 
     public List<Regla> getReglas() {
         return reglas;
