@@ -154,4 +154,18 @@ class AsignacionesServiceImplTest {
                 ex.getMessage().toLowerCase().contains("umbral") || ex.getMessage().toLowerCase().contains("numérico"));
         verifyNoInteractions(asignacionesDAO);
     }
+
+    @Test
+    @DisplayName("listarAsignaciones: debe delegar la consulta al DAO y retornar las asignaciones")
+    void debeDelegarListarAsignacionesAlDAO() {
+        List<Asignacion> asignacionesEsperadas = List.of(new Asignacion("Asignación Test", 70.0, List.of()));
+        when(asignacionesDAO.listarAsignaciones()).thenReturn(asignacionesEsperadas);
+
+        List<Asignacion> resultado = asignacionesService.listarAsignaciones();
+
+        assertNotNull(resultado);
+        assertEquals(1, resultado.size());
+        assertEquals("Asignación Test", resultado.get(0).getNombre());
+        verify(asignacionesDAO, times(1)).listarAsignaciones();
+    }
 }

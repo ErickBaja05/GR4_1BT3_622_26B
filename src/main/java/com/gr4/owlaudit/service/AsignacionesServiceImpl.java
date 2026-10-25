@@ -58,6 +58,11 @@ public class AsignacionesServiceImpl implements AsignacionesService {
         return asignacionesDAO.crearAsignacion(nuevaAsignacion);
     }
 
+    @Override
+    public List<Asignacion> listarAsignaciones() {
+        return asignacionesDAO.listarAsignaciones();
+    }
+
     private void validarNombreAsignacion(NuevaAsignacionDTO dto) {
         if (dto == null
                 || dto.getNombre() == null

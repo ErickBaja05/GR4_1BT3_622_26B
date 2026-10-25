@@ -40,11 +40,7 @@ public class AsignacionServlet extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        try {
-            request.setAttribute("reglasVigentes", reglaDAO.consultarReglasDeEvaluacionVigentes());
-        } catch (Exception e) {
-            System.err.println("[AsignacionServlet] Error al consultar reglas vigentes: " + e.getMessage());
-        }
+        cargarDatosVista(request);
         request.getRequestDispatcher(VISTA_CREAR).forward(request, response);
     }
 
@@ -65,6 +61,7 @@ public class AsignacionServlet extends HttpServlet {
             umbralAprobacion = Double.parseDouble(umbralAprobacionStr.trim());
         } catch (NumberFormatException e) {
             request.setAttribute("mensajeError", "El umbral de aprobación debe ser un número válido.");
+            cargarDatosVista(request);
             request.getRequestDispatcher(VISTA_CREAR).forward(request, response);
             return;
         }
@@ -87,7 +84,24 @@ public class AsignacionServlet extends HttpServlet {
             request.setAttribute("mensajeError", e.getMessage());
         }
 
+        cargarDatosVista(request);
         request.getRequestDispatcher(VISTA_CREAR).forward(request, response);
+    }
+
+    private void cargarDatosVista(HttpServletRequest request) {
+        try {
+            request.setAttribute("reglasVigentes", reglaDAO.consultarReglasDeEvaluacionVigentes());
+        } catch (Exception e) {
+            System.err.println("[AsignacionServlet] Error al consultar reglas vigentes: " + e.getMessage());
+        }
+
+        try {
+            if (asignacionesService != null) {
+                request.setAttribute("asignaciones", asignacionesService.listarAsignaciones());
+            }
+        } catch (Exception e) {
+            System.err.println("[AsignacionServlet] Error al listar asignaciones: " + e.getMessage());
+        }
     }
 
     /**

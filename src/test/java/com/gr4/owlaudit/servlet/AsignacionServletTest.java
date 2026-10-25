@@ -61,11 +61,12 @@ class AsignacionServletTest {
     }
 
     @Test
-    @DisplayName("doGet: debe consultar reglas vigentes y despachar a crearAsignacion.jsp")
+    @DisplayName("doGet: debe consultar reglas vigentes, asignaciones y despachar a crearAsignacion.jsp")
     void given_peticionGet_when_doGet_then_cargaReglasVigentesYDespacha() throws Exception {
         // GIVEN
         List<Regla> reglasVigentes = Collections.emptyList();
         when(reglaDAO.consultarReglasDeEvaluacionVigentes()).thenReturn(reglasVigentes);
+        when(asignacionesService.listarAsignaciones()).thenReturn(Collections.emptyList());
 
         // WHEN
         servlet.doGet(request, response);
@@ -73,6 +74,8 @@ class AsignacionServletTest {
         // THEN
         verify(reglaDAO).consultarReglasDeEvaluacionVigentes();
         verify(request).setAttribute("reglasVigentes", reglasVigentes);
+        verify(asignacionesService).listarAsignaciones();
+        verify(request).setAttribute(eq("asignaciones"), any());
         verify(request).getRequestDispatcher(VISTA_CREAR);
         verify(dispatcher).forward(request, response);
     }

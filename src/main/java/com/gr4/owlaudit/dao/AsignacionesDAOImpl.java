@@ -33,7 +33,7 @@ public class AsignacionesDAOImpl implements AsignacionesDAO {
     @Override
     public List<Asignacion> listarAsignaciones() {
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
-            return session.createQuery("FROM Asignacion", Asignacion.class).list();
+            return session.createQuery("SELECT DISTINCT a FROM Asignacion a LEFT JOIN FETCH a.reglas", Asignacion.class).list();
         }
     }
 
