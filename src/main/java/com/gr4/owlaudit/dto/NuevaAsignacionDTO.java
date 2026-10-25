@@ -1,6 +1,7 @@
 package com.gr4.owlaudit.dto;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -42,11 +43,61 @@ public class NuevaAsignacionDTO {
         this.umbral = umbral;
     }
 
+    /**
+     * Refactorización: Encapsulate Collection.
+     * Retorna una vista no modificable de los identificadores de reglas seleccionadas.
+     */
     public List<Long> getReglasIds() {
-        return reglasIds;
+        return Collections.unmodifiableList(reglasIds);
     }
 
     public void setReglasIds(List<Long> reglasIds) {
         this.reglasIds = (reglasIds != null) ? new ArrayList<>(reglasIds) : new ArrayList<>();
+    }
+
+    public void agregarReglaId(Long reglaId) {
+        if (reglaId != null && !this.reglasIds.contains(reglaId)) {
+            this.reglasIds.add(reglaId);
+        }
+    }
+
+    /**
+     * Refactorización Martin Fowler: Replace Temp with Query (Composing Methods)
+     * Reemplaza variables temporales de verificación consultando dinámicamente si existen reglas.
+     */
+    public boolean tieneReglas() {
+        return obtenerCantidadReglas() > 0;
+    }
+
+    /**
+     * Refactorización Martin Fowler: Replace Temp with Query (Composing Methods)
+     * Reemplaza variables temporales de conteo consultando directamente el tamaño de la lista.
+     */
+    public int obtenerCantidadReglas() {
+        return this.reglasIds.size();
+    }
+
+    // Métodos alias para compatibilidad y conveniencia adicional
+    public List<Long> getIdsReglas() {
+        return getReglasIds();
+    }
+
+    public void setIdsReglas(List<Long> idsReglas) {
+        setReglasIds(idsReglas);
+    }
+
+    public Double getUmbralAprobacion() {
+        if (this.umbral == null || this.umbral.trim().isEmpty()) {
+            return null;
+        }
+        try {
+            return Double.parseDouble(this.umbral.trim());
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
+    public void setUmbralAprobacion(Double umbralAprobacion) {
+        this.umbral = (umbralAprobacion != null) ? String.valueOf(umbralAprobacion) : null;
     }
 }

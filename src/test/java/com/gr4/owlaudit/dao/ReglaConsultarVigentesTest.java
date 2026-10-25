@@ -55,46 +55,55 @@ class ReglaConsultarVigentesTest {
     @DisplayName("consultarReglasVigentes debe retornar únicamente las reglas con estado VIGENTE")
     void consultarReglasVigentes_debeRetornarSoloReglasConEstadoVigente() {
         // GIVEN: Una regla VIGENTE y una regla NO_VIGENTE registradas en la base de datos
-        String nombreVigente = "Regla Vigente Asignacion " + System.nanoTime();
-        Regla reglaVigente = new Regla();
-        reglaVigente.setNombreRepresentativo(nombreVigente);
-        reglaVigente.setTipoMotor(TipoMotorEnum.PRESENCIA_ARCHIVO);
-        reglaVigente.setParametroExacto("README.md");
-        reglaVigente.setNivelSeveridad(NivelSeveridadEnum.MEDIA);
-        reglaVigente.setPonderacion(20);
-        reglaVigente.setVigencia(EstadoVigencia.VIGENTE);
-        reglaDAO.guardar(reglaVigente);
-        reglasCreadas.add(reglaVigente);
-
-        String nombreNoVigente = "Regla No Vigente Asignacion " + System.nanoTime();
-        Regla reglaNoVigente = new Regla();
-        reglaNoVigente.setNombreRepresentativo(nombreNoVigente);
-        reglaNoVigente.setTipoMotor(TipoMotorEnum.RESTRICCION_ARCHIVOS);
-        reglaNoVigente.setParametroExacto(".env");
-        reglaNoVigente.setNivelSeveridad(NivelSeveridadEnum.ALTA);
-        reglaNoVigente.setPonderacion(30);
-        reglaNoVigente.setVigencia(EstadoVigencia.NO_VIGENTE);
-        reglaDAO.guardar(reglaNoVigente);
-        reglasCreadas.add(reglaNoVigente);
+        // Refactorización: Extract Method crearReglaPrueba(...)
+        Regla reglaVigente = crearReglaPrueba("Regla Vigente Asignacion", TipoMotorEnum.PRESENCIA_ARCHIVO, "README.md",
+                NivelSeveridadEnum.MEDIA, 20, EstadoVigencia.VIGENTE);
+        Regla reglaNoVigente = crearReglaPrueba("Regla No Vigente Asignacion", TipoMotorEnum.RESTRICCION_ARCHIVOS, ".env",
+                NivelSeveridadEnum.ALTA, 30, EstadoVigencia.NO_VIGENTE);
 
         // WHEN: Se consultan las reglas vigentes para la creación de una nueva asignación
         List<Regla> vigentes = reglaDAO.consultarReglasVigentes();
 
         // THEN: La lista no debe ser nula, debe incluir la regla VIGENTE y excluir la NO_VIGENTE
         assertNotNull(vigentes, "La lista de reglas vigentes no debe ser nula");
-        boolean contieneVigente = vigentes.stream()
-                .anyMatch(r -> nombreVigente.equals(r.getNombreRepresentativo()));
-        boolean contieneNoVigente = vigentes.stream()
-                .anyMatch(r -> nombreNoVigente.equals(r.getNombreRepresentativo()));
 
-        assertTrue(contieneVigente, "Debe contener la regla registrada como VIGENTE");
-        assertFalse(contieneNoVigente, "No debe contener reglas en estado NO_VIGENTE");
+        // Refactorización: Replace Temp with Query (contieneReglaPorNombre)
+        assertTrue(contieneReglaPorNombre(vigentes, reglaVigente.getNombreRepresentativo()),
+                "Debe contener la regla registrada como VIGENTE");
+        assertFalse(contieneReglaPorNombre(vigentes, reglaNoVigente.getNombreRepresentativo()),
+                "No debe contener reglas en estado NO_VIGENTE");
 
         // Validar que todas las entidades retornadas tengan vigencia VIGENTE
         for (Regla r : vigentes) {
             assertEquals(EstadoVigencia.VIGENTE, r.getVigencia(), "Cada regla retornada debe tener estado VIGENTE");
             assertTrue(r.esVigente(), "El método de dominio esVigente() debe ser true");
         }
+    }
+
+    /**
+     * Refactorización Martin Fowler: Extract Method (Composing Methods)
+     * Extrae la creación, parametrización y persistencia de reglas de prueba.
+     */
+    private Regla crearReglaPrueba(String prefijo, TipoMotorEnum motor, String parametro,
+                                   NivelSeveridadEnum severidad, int ponderacion, EstadoVigencia vigencia) {
+        Regla regla = new Regla();
+        regla.setNombreRepresentativo(prefijo + " " + System.nanoTime());
+        regla.setTipoMotor(motor);
+        regla.setParametroExacto(parametro);
+        regla.setNivelSeveridad(severidad);
+        regla.setPonderacion(ponderacion);
+        regla.setVigencia(vigencia);
+        reglaDAO.guardar(regla);
+        reglasCreadas.add(regla);
+        return regla;
+    }
+
+    /**
+     * Refactorización Martin Fowler: Replace Temp with Query (Composing Methods)
+     * Reemplaza variables temporales booleanas por una consulta directa sobre la colección.
+     */
+    private boolean contieneReglaPorNombre(List<Regla> reglas, String nombre) {
+        return reglas.stream().anyMatch(r -> nombre.equals(r.getNombreRepresentativo()));
     }
 
     @Test
@@ -111,8 +120,17 @@ class ReglaConsultarVigentesTest {
         // THEN: Los valores deben recuperarse fielmente
         assertEquals("Laboratorio 1 - Buenas Prácticas", dto.getNombre());
         assertEquals("75.0", dto.getUmbral());
+        assertEquals(75.0, dto.getUmbralAprobacion(), 0.001);
         assertNotNull(dto.getReglasIds());
         assertEquals(3, dto.getReglasIds().size());
         assertTrue(dto.getReglasIds().containsAll(List.of(10L, 20L, 30L)));
+        assertTrue(dto.tieneReglas());
+
+        // Fowler: Encapsulate Collection (la lista retornada debe ser inmutable hacia el exterior)
+        assertThrows(UnsupportedOperationException.class, () -> dto.getReglasIds().add(40L));
+
+        // Manipulación controlada mediante métodos de dominio
+        dto.agregarReglaId(40L);
+        assertEquals(4, dto.getReglasIds().size());
     }
 }
