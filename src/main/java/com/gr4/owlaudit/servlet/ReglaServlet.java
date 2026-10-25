@@ -18,11 +18,14 @@ import jakarta.servlet.http.HttpServletResponse;
 
 /**
  * CU01 - Registrar regla de evaluación técnica (rol DOCENTE, validado por AutenticacionFilter).
+ * HU-01 - Activar / Desactivar vigencia de reglas.
  */
 @WebServlet("/regla")
 public class ReglaServlet extends HttpServlet {
 
     private static final String VISTA = "/WEB-INF/views/registrarRegla.jsp";
+    private static final String VISTA_CATALOGO = "/WEB-INF/views/catalogoReglas.jsp";
+    private static final String ACCION_CAMBIAR_VIGENCIA = "cambiarVigencia";
 
     private final ReglaService reglaService;
     private final ReglaDAO reglaDAO;
@@ -55,16 +58,8 @@ public class ReglaServlet extends HttpServlet {
         
         request.setCharacterEncoding("UTF-8");
 
-        if ("cambiarVigencia".equals(request.getParameter("accion"))) {
-            String nombreRegla = request.getParameter("nombreRegla");
-            EstadoVigencia nuevoEstado = EstadoVigencia.valueOf(request.getParameter("nuevoEstado"));
-            reglaService.cambiarEstadoVigenciaDeUnaRegla(nombreRegla, nuevoEstado);
-            if (nuevoEstado == EstadoVigencia.NO_VIGENTE) {
-                request.setAttribute("mensajeExito", "La regla fue desactivada para nuevas evaluaciones.");
-            } else {
-                request.setAttribute("mensajeExito", "La regla fue reactivada y vuelve a estar disponible para su aplicación.");
-            }
-            request.getRequestDispatcher("/WEB-INF/views/catalogoReglas.jsp").forward(request, response);
+        if (ACCION_CAMBIAR_VIGENCIA.equals(request.getParameter("accion"))) {
+            procesarCambioVigencia(request, response);
             return;
         }
 
@@ -109,5 +104,23 @@ public class ReglaServlet extends HttpServlet {
         } catch (Exception ignored) {}
 
         request.getRequestDispatcher(VISTA).forward(request, response);
+    }
+
+    /**
+     * HU-01: Procesa la solicitud de cambio de vigencia de una regla técnica.
+     */
+    private void procesarCambioVigencia(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        String nombreRegla = request.getParameter("nombreRegla");
+        EstadoVigencia nuevoEstado = EstadoVigencia.valueOf(request.getParameter("nuevoEstado"));
+
+        reglaService.cambiarEstadoVigenciaDeUnaRegla(nombreRegla, nuevoEstado);
+
+        String mensaje = (nuevoEstado == EstadoVigencia.NO_VIGENTE)
+                ? "La regla fue desactivada para nuevas evaluaciones."
+                : "La regla fue reactivada y vuelve a estar disponible para su aplicación.";
+
+        request.setAttribute("mensajeExito", mensaje);
+        request.getRequestDispatcher(VISTA_CATALOGO).forward(request, response);
     }
 }
