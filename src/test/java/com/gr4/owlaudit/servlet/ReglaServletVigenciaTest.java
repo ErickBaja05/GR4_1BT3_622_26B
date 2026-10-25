@@ -8,6 +8,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -76,6 +77,25 @@ class ReglaServletVigenciaTest {
         // THEN: delega al servicio, confirma el cambio y responde hacia la vista del catálogo
         verify(reglaService).cambiarEstadoVigenciaDeUnaRegla("Archivo README", estado);
         verify(request).setAttribute(eq("mensajeExito"), contains(textoEsperado));
+        verify(request).getRequestDispatcher(VISTA_CATALOGO);
+        verify(dispatcher).forward(request, response);
+    }
+
+    @Test
+    @DisplayName("POST cambiarVigencia: Escenario 1.3 (la regla ya se encuentra en el estado solicitado)")
+    void given_reglaEnMismoEstado_when_doPost_then_indicaQueYaSeEncuentraEnEseEstado() throws Exception {
+        // GIVEN: El docente solicita cambiar a NO_VIGENTE una regla que ya está no vigente (el servicio retorna false)
+        String nombreRegla = "Archivo README";
+        EstadoVigencia estadoSolicitado = EstadoVigencia.NO_VIGENTE;
+        simularSolicitudDeCambio(nombreRegla, "NO_VIGENTE");
+        when(reglaService.cambiarEstadoVigenciaDeUnaRegla(nombreRegla, estadoSolicitado)).thenReturn(false);
+
+        // WHEN: envía la solicitud de cambio
+        servlet.doPost(request, response);
+
+        // THEN: delega al servicio, notifica que ya está en ese estado y responde hacia la vista del catálogo
+        verify(reglaService).cambiarEstadoVigenciaDeUnaRegla(nombreRegla, estadoSolicitado);
+        verify(request).setAttribute(eq("mensajeError"), contains("ya se encuentra en estado no vigente"));
         verify(request).getRequestDispatcher(VISTA_CATALOGO);
         verify(dispatcher).forward(request, response);
     }
