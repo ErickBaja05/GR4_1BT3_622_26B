@@ -26,6 +26,8 @@ public class ReglaServlet extends HttpServlet {
     private static final String VISTA = "/WEB-INF/views/registrarRegla.jsp";
     private static final String VISTA_CATALOGO = "/WEB-INF/views/catalogoReglas.jsp";
     private static final String ACCION_CAMBIAR_VIGENCIA = "cambiarVigencia";
+    private static final String ATTR_MENSAJE_EXITO = "mensajeExito";
+    private static final String ATTR_MENSAJE_ERROR = "mensajeError";
 
     private final ReglaService reglaService;
     private final ReglaDAO reglaDAO;
@@ -91,12 +93,12 @@ public class ReglaServlet extends HttpServlet {
         // 3. Delegación a la capa de servicio (validación de sintaxis, unicidad y persistencia)
         try {
             reglaService.registrarReglaEvaluacionTecnica(dto);
-            request.setAttribute("mensajeExito", "Regla '" + dto.getNombreRepresentativo() + "' registrada con éxito y activa para las auditorías.");
+            request.setAttribute(ATTR_MENSAJE_EXITO, "Regla '" + dto.getNombreRepresentativo() + "' registrada con éxito y activa para las auditorías.");
         } catch (ExcepcionNegocio e) {
-            request.setAttribute("mensajeError", e.getMessage());
+            request.setAttribute(ATTR_MENSAJE_ERROR, e.getMessage());
         } catch (RuntimeException e) {
             System.err.println("[ReglaServlet] Error técnico: " + e.getMessage());
-            request.setAttribute("mensajeError", "Ocurrió un error inesperado al registrar la regla. Intente nuevamente.");
+            request.setAttribute(ATTR_MENSAJE_ERROR, "Ocurrió un error inesperado al registrar la regla. Intente nuevamente.");
         }
 
         try {
@@ -118,14 +120,17 @@ public class ReglaServlet extends HttpServlet {
 
         if (!actualizado) {
             String estadoTexto = (nuevoEstado == EstadoVigencia.NO_VIGENTE) ? "no vigente" : "vigente";
-            request.setAttribute("mensajeError", "La regla ya se encuentra en estado " + estadoTexto + ".");
+            request.setAttribute(ATTR_MENSAJE_ERROR, "La regla ya se encuentra en estado " + estadoTexto + ".");
         } else {
-            String mensaje = (nuevoEstado == EstadoVigencia.NO_VIGENTE)
-                    ? "La regla fue desactivada para nuevas evaluaciones."
-                    : "La regla fue reactivada y vuelve a estar disponible para su aplicación.";
-            request.setAttribute("mensajeExito", mensaje);
+            request.setAttribute(ATTR_MENSAJE_EXITO, construirMensajeExito(nuevoEstado));
         }
 
         request.getRequestDispatcher(VISTA_CATALOGO).forward(request, response);
+    }
+
+    private String construirMensajeExito(EstadoVigencia nuevoEstado) {
+        return (nuevoEstado == EstadoVigencia.NO_VIGENTE)
+                ? "La regla fue desactivada para nuevas evaluaciones."
+                : "La regla fue reactivada y vuelve a estar disponible para su aplicación.";
     }
 }
