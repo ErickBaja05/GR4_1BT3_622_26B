@@ -2,11 +2,14 @@ package com.gr4.owlaudit.service;
 
 import com.gr4.owlaudit.dao.AsignacionesDAO;
 import com.gr4.owlaudit.dao.AsignacionesDAOImpl;
+import com.gr4.owlaudit.dao.ProyectoDAO;
+import com.gr4.owlaudit.dao.ProyectoDAOImpl;
 import com.gr4.owlaudit.dao.ReglaDAO;
 import com.gr4.owlaudit.dao.ReglaDAOImpl;
 import com.gr4.owlaudit.dto.NuevaAsignacionDTO;
 import com.gr4.owlaudit.dto.ResumenAsignacionDTO;
 import com.gr4.owlaudit.model.Asignacion;
+import com.gr4.owlaudit.model.Proyecto;
 import com.gr4.owlaudit.model.Regla;
 import com.gr4.owlaudit.service.AsignacionesService;
 
@@ -19,18 +22,26 @@ public class AsignacionesServiceImpl implements AsignacionesService {
 
     private final AsignacionesDAO asignacionesDAO;
     private final ReglaDAO reglaDAO;
+    private final ProyectoDAO proyectoDAO;
 
     public AsignacionesServiceImpl() {
-        this.asignacionesDAO = new AsignacionesDAOImpl();
-        this.reglaDAO = new ReglaDAOImpl();
+        this(new AsignacionesDAOImpl(), new ReglaDAOImpl(), new ProyectoDAOImpl());
     }
 
     public AsignacionesServiceImpl(
             AsignacionesDAO asignacionesDAO,
             ReglaDAO reglaDAO) {
+        this(asignacionesDAO, reglaDAO, new ProyectoDAOImpl());
+    }
+
+    public AsignacionesServiceImpl(
+            AsignacionesDAO asignacionesDAO,
+            ReglaDAO reglaDAO,
+            ProyectoDAO proyectoDAO) {
 
         this.asignacionesDAO = asignacionesDAO;
         this.reglaDAO = reglaDAO;
+        this.proyectoDAO = proyectoDAO;
     }
 
     @Override
@@ -115,21 +126,68 @@ public class AsignacionesServiceImpl implements AsignacionesService {
 
     @Override
     public List<Asignacion> consultarAsignacionesDisponibles() {
-        return null;
+        return asignacionesDAO.consultarAsignacionesDisponibles();
     }
 
     @Override
     public List<Regla> consultarReglasDeAsignacion(Long idAsignacion) {
-        return null;
+        return asignacionesDAO.consultarReglasDeAsignacion(idAsignacion);
     }
 
     @Override
     public double consultarUmbralAprobacion(Long idAsignacion) {
-        return 0.0;
+        return asignacionesDAO.consultarUmbralAprobacion(idAsignacion);
     }
 
+    /**
+     * Genera el resumen consolidado de la asignación.
+     * Refactorización Martin Fowler:
+     * - Extract Method (armarResumenAsignacionDTO)
+     * - Replace Temp with Query (obtenerNombreAsignacion)
+     */
     @Override
     public ResumenAsignacionDTO generarResumenAsignacion(Long idAsignacion) {
-        return null;
+        return armarResumenAsignacionDTO(
+                idAsignacion,
+                consultarUmbralAprobacion(idAsignacion),
+                consultarReglasDeAsignacion(idAsignacion),
+                proyectoDAO.listarTodos(),
+                obtenerNombreAsignacion(idAsignacion));
+    }
+
+    /**
+     * Refactorización Martin Fowler: Replace Temp with Query (Composing Methods).
+     * Consulta el nombre de la asignación a partir del catálogo de asignaciones disponibles.
+     */
+    private String obtenerNombreAsignacion(Long idAsignacion) {
+        List<Asignacion> asignaciones = consultarAsignacionesDisponibles();
+        if (asignaciones == null || idAsignacion == null) {
+            return null;
+        }
+        return asignaciones.stream()
+                .filter(a -> a != null && idAsignacion.equals(a.getId()))
+                .map(Asignacion::getNombre)
+                .findFirst()
+                .orElse(null);
+    }
+
+    /**
+     * Refactorización Martin Fowler: Extract Method (Composing Methods).
+     * Construye y mapea el objeto ResumenAsignacionDTO desacoplando su estructura.
+     */
+    private ResumenAsignacionDTO armarResumenAsignacionDTO(
+            Long idAsignacion,
+            double umbral,
+            List<Regla> reglas,
+            List<Proyecto> proyectos,
+            String nombre) {
+
+        ResumenAsignacionDTO resumen = new ResumenAsignacionDTO();
+        resumen.setIdAsignacion(idAsignacion);
+        resumen.setUmbralAprobacion(umbral);
+        resumen.setReglasAsociadas(reglas);
+        resumen.setProyectosEstudiante(proyectos);
+        resumen.setNombreAsignacion(nombre);
+        return resumen;
     }
 }
