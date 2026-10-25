@@ -55,12 +55,13 @@ public class ReglaServlet extends HttpServlet {
 
         String vista = request.getParameter("vista");
         String accion = request.getParameter("accion");
-        if ("catalogo".equalsIgnoreCase(vista) || "catalogo".equalsIgnoreCase(accion)) {
-            request.getRequestDispatcher(VISTA_CATALOGO).forward(request, response);
+        if ("registro".equalsIgnoreCase(vista) || "registrar".equalsIgnoreCase(vista)
+                || "nueva".equalsIgnoreCase(vista) || "registrar".equalsIgnoreCase(accion)) {
+            request.getRequestDispatcher(VISTA).forward(request, response);
             return;
         }
 
-        request.getRequestDispatcher(VISTA).forward(request, response);
+        request.getRequestDispatcher(VISTA_CATALOGO).forward(request, response);
     }
 
     @Override
@@ -103,6 +104,12 @@ public class ReglaServlet extends HttpServlet {
         try {
             reglaService.registrarReglaEvaluacionTecnica(dto);
             request.setAttribute(ATTR_MENSAJE_EXITO, "Regla '" + dto.getNombreRepresentativo() + "' registrada con éxito y activa para las auditorías.");
+            try {
+                request.setAttribute("reglas", reglaDAO.consultarTodasLasReglas());
+                request.setAttribute("reglasVigentes", reglaDAO.consultarReglasDeEvaluacionVigentes());
+            } catch (Exception ignored) {}
+            request.getRequestDispatcher(VISTA_CATALOGO).forward(request, response);
+            return;
         } catch (ExcepcionNegocio e) {
             request.setAttribute(ATTR_MENSAJE_ERROR, e.getMessage());
         } catch (RuntimeException e) {
@@ -112,6 +119,7 @@ public class ReglaServlet extends HttpServlet {
 
         try {
             request.setAttribute("reglasVigentes", reglaDAO.consultarReglasDeEvaluacionVigentes());
+            request.setAttribute("reglas", reglaDAO.consultarTodasLasReglas());
         } catch (Exception ignored) {}
 
         request.getRequestDispatcher(VISTA).forward(request, response);

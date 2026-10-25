@@ -99,8 +99,8 @@
                     <p class="card-subtitle" style="margin-bottom: 0;">Cree políticas de calidad de código para ser evaluadas automáticamente en los repositorios.</p>
                 </div>
                 <div>
-                    <a href="${pageContext.request.contextPath}/regla?vista=catalogo" class="btn btn-secondary" style="display: inline-flex; align-items: center; gap: 0.4rem;">
-                        <span>📋</span> Ver Catálogo de Reglas
+                    <a href="${pageContext.request.contextPath}/regla" class="btn btn-secondary" style="display: inline-flex; align-items: center; gap: 0.4rem;">
+                        <span>📋</span> Volver al Catálogo de Reglas
                     </a>
                 </div>
             </div>

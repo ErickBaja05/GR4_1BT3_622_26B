@@ -1,11 +1,13 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ page import="java.util.List" %>
 <%@ page import="com.gr4.owlaudit.model.Regla" %>
+<%@ page import="com.gr4.owlaudit.dto.NuevaReglaDTO" %>
 <%@ page import="com.gr4.owlaudit.common.util.HtmlUtil" %>
 <%@ page import="com.gr4.owlaudit.dao.ReglaDAOImpl" %>
 <%
     String mensajeExito = (String) request.getAttribute("mensajeExito");
     String mensajeError = (String) request.getAttribute("mensajeError");
+    NuevaReglaDTO dto = (NuevaReglaDTO) request.getAttribute("reglaDTO");
 
     @SuppressWarnings("unchecked")
     List<Regla> reglas = (List<Regla>) request.getAttribute("reglas");
@@ -17,6 +19,11 @@
             reglas = new ReglaDAOImpl().consultarTodasLasReglas();
         } catch (Exception ignored) {}
     }
+
+    NuevaReglaDTO valores = (mensajeError != null && dto != null) ? dto : new NuevaReglaDTO();
+    String motorSel = valores.getTipoMotor();
+    String severidadSel = valores.getNivelSeveridad();
+    boolean mostrarFormularioAbierto = (mensajeError != null && dto != null) || "true".equals(request.getParameter("abrirForm"));
 %>
 <!DOCTYPE html>
 <html lang="es">
@@ -48,7 +55,7 @@
         .btn-deactivate { background-color: #FFF1F2; color: #BE123C; border-color: #FECDD3; }
         .btn-deactivate:hover { background-color: #E11D48; color: #FFFFFF; border-color: #E11D48; box-shadow: 0 2px 4px rgba(225, 29, 72, 0.2); }
         .btn-activate { background-color: #F0FDF4; color: #15803D; border-color: #BBF7D0; }
-        .btn-activate:hover { background-color: #16A34A; color: #FFFFFF; border-color: #16A34A; box-shadow: 0 2px 4px rgba(22, 163, 74, 0.2); }
+        .btn-activate:hover { background-color: #16A34A; color: #FFFFFF; border-color: #16A34A; box-shadow: 0 2px 4px rgba(225, 29, 72, 0.2); }
 
         .alert-dismissible {
             position: relative; display: flex; align-items: flex-start; justify-content: space-between;
@@ -66,21 +73,22 @@
     <%@ include file="/WEB-INF/views/fragments/navbar.jspf" %>
 
     <main class="container">
-        <!-- Encabezado con navegación -->
+        <!-- Encabezado con navegación principal -->
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
             <div>
                 <a href="${pageContext.request.contextPath}/vistas" class="back-link">&larr; Volver al Menú Principal</a>
                 <h1 class="page-title" style="margin-top: 0.5rem;">Catálogo de Reglas Técnicas</h1>
-                <p class="card-subtitle" style="margin-bottom: 0;">Gestión de vigencia de las políticas de auditoría (VIGENTE / NO_VIGENTE).</p>
+                <p class="card-subtitle" style="margin-bottom: 0;">Políticas de evaluación técnica y gestión de su vigencia para las auditorías.</p>
             </div>
             <div>
-                <a href="${pageContext.request.contextPath}/regla" class="btn btn-primary" style="display: inline-flex; align-items: center; gap: 0.4rem;">
-                    <span>➕</span> Registrar Nueva Regla
-                </a>
+                <button type="button" id="btnToggleFormulario" class="btn btn-primary" onclick="toggleFormularioRegistro()"
+                        style="display: inline-flex; align-items: center; gap: 0.4rem;">
+                    <span id="iconoToggle">➕</span> <span id="textoToggle">Registrar Nueva Regla</span>
+                </button>
             </div>
         </div>
 
-        <!-- Mensajes de Confirmación o Error (HU-01) -->
+        <!-- Mensajes de Confirmación o Error (HU-01 y CU01) -->
         <% if (mensajeExito != null) { %>
             <div id="alertaExito" class="alert alert-success alert-dismissible" role="alert">
                 <div style="display: flex; align-items: center; gap: 0.5rem;">
@@ -101,10 +109,80 @@
             </div>
         <% } %>
 
-        <!-- Tabla del Catálogo de Reglas -->
+        <!-- Sección de Registro de Nueva Regla (Desplegable) -->
+        <div id="cardRegistroRegla" class="card" style="display: <%= mostrarFormularioAbierto ? "block" : "none" %>; margin-bottom: 1.5rem; border-left: 4px solid var(--primary-color);">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
+                <div>
+                    <h2 class="card-title" style="font-size: 1.2rem; margin-bottom: 0.25rem;">Configurar Regla de Evaluación Técnica</h2>
+                    <p class="card-subtitle" style="margin-bottom: 0;">Complete los parámetros para registrar una nueva regla en el catálogo.</p>
+                </div>
+                <button type="button" class="btn btn-secondary" onclick="toggleFormularioRegistro()" style="padding: 0.35rem 0.75rem; font-size: 0.85rem;">
+                    ✕ Cancelar
+                </button>
+            </div>
+
+            <form action="${pageContext.request.contextPath}/regla" method="POST">
+                <input type="hidden" name="accion" value="registrar">
+
+                <div class="form-group">
+                    <label for="tipoMotor" class="form-label">Tipo de Motor de Evaluación</label>
+                    <select id="tipoMotor" name="tipoMotor" class="form-control" required>
+                        <option value="PRESENCIA_ARCHIVO" <%="PRESENCIA_ARCHIVO".equals(motorSel) ? "selected" : ""%>>Presencia de Archivo</option>
+                        <option value="RESTRICCION_ARCHIVOS" <%="RESTRICCION_ARCHIVOS".equals(motorSel) ? "selected" : ""%>>Restricción de Archivos</option>
+                        <option value="ESTRUCTURA_CARPETAS" <%="ESTRUCTURA_CARPETAS".equals(motorSel) ? "selected" : ""%>>Estructura de Carpetas</option>
+                        <option value="CONVENCION_COMMITS" <%="CONVENCION_COMMITS".equals(motorSel) ? "selected" : ""%>>Convención de Commits</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="nombreRepresentativo" class="form-label">Nombre Representativo</label>
+                    <input type="text" id="nombreRepresentativo" name="nombreRepresentativo" class="form-control"
+                           placeholder="Ej. Verificar archivo README.md" maxlength="100"
+                           value="<%= HtmlUtil.escape(valores.getNombreRepresentativo()) %>" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="descripcionDetallada" class="form-label">Descripción Detallada</label>
+                    <textarea id="descripcionDetallada" name="descripcionDetallada" class="form-control" rows="2"
+                              placeholder="Explique el propósito de la regla..." maxlength="200"
+                              required><%= HtmlUtil.escape(valores.getDescripcionDetallada()) %></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="parametroExacto" class="form-label">Parámetro Exacto (Ruta / Expresión / Archivo)</label>
+                    <input type="text" id="parametroExacto" name="parametroExacto" class="form-control"
+                           placeholder="Ej. README.md, src/main/java o *.env" maxlength="100"
+                           value="<%= HtmlUtil.escape(valores.getParametroExacto()) %>" required>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div class="form-group">
+                        <label for="nivelSeveridad" class="form-label">Nivel de Severidad</label>
+                        <select id="nivelSeveridad" name="nivelSeveridad" class="form-control" required>
+                            <option value="ALTA" <%="ALTA".equals(severidadSel) ? "selected" : ""%>>ALTA</option>
+                            <option value="MEDIA" <%="MEDIA".equals(severidadSel) ? "selected" : ""%>>MEDIA</option>
+                            <option value="BAJA" <%="BAJA".equals(severidadSel) ? "selected" : ""%>>BAJA</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="ponderacion" class="form-label">Ponderación (Puntos)</label>
+                        <input type="number" id="ponderacion" name="ponderacion" class="form-control" min="1" max="100"
+                               placeholder="Ej. 20" value="<%= valores.getPonderacion() > 0 ? String.valueOf(valores.getPonderacion()) : "" %>" required>
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 0.75rem; margin-top: 0.5rem;">
+                    <button type="submit" class="btn btn-primary">Registrar Regla</button>
+                    <button type="button" class="btn btn-secondary" onclick="toggleFormularioRegistro()">Cancelar</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Tabla del Catálogo de Reglas Técnicas (Módulo Principal) -->
         <div class="card">
             <h2 class="card-title" style="font-size: 1.25rem;">Políticas de Evaluación Configuradas</h2>
-            <p class="card-subtitle">Listado completo de reglas técnicas y su disponibilidad para nuevas evaluaciones.</p>
+            <p class="card-subtitle">Listado de reglas técnicas registradas con su estado actual de vigencia para las auditorías.</p>
 
             <% if (reglas != null && !reglas.isEmpty()) { %>
                 <div class="table-responsive">
@@ -182,7 +260,7 @@
             <% } else { %>
                 <div class="empty-state" style="padding: 2.5rem 1rem; text-align: center;">
                     <p style="color: var(--text-muted); font-size: 1rem; margin-bottom: 1rem;">No se encontraron reglas de evaluación registradas.</p>
-                    <a href="${pageContext.request.contextPath}/regla" class="btn btn-primary">Registrar la primera regla</a>
+                    <button type="button" class="btn btn-primary" onclick="toggleFormularioRegistro()">Registrar la primera regla</button>
                 </div>
             <% } %>
         </div>
@@ -197,6 +275,22 @@
         function confirmarCambioEstado(nombreRegla, accion) {
             var accionTexto = (accion === 'activar') ? 'activar (marcar como VIGENTE)' : 'desactivar (marcar como NO_VIGENTE)';
             return confirm("¿Está seguro de que desea " + accionTexto + " la regla técnica:\n\n\"" + nombreRegla + "\"?");
+        }
+
+        function toggleFormularioRegistro() {
+            var card = document.getElementById('cardRegistroRegla');
+            var btnTexto = document.getElementById('textoToggle');
+            var btnIcono = document.getElementById('iconoToggle');
+            if (card.style.display === 'none' || card.style.display === '') {
+                card.style.display = 'block';
+                if (btnTexto) btnTexto.textContent = 'Ocultar Formulario';
+                if (btnIcono) btnIcono.textContent = '▲';
+                card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            } else {
+                card.style.display = 'none';
+                if (btnTexto) btnTexto.textContent = 'Registrar Nueva Regla';
+                if (btnIcono) btnIcono.textContent = '➕';
+            }
         }
     </script>
 </body>

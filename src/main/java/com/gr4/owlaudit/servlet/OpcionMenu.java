@@ -19,8 +19,8 @@ import java.util.Set;
  */
 public enum OpcionMenu {
 
-    REGISTRAR_REGLA("regla", "CU01", "Registrar Regla de Evaluación", "Reglas de Calidad",
-            "Defina las políticas técnicas que se evaluarán automáticamente en los repositorios.",
+    REGISTRAR_REGLA("regla", "CU01", "Catálogo de Reglas Técnicas", "Reglas de Calidad",
+            "Consulte las políticas técnicas configuradas, configure su vigencia y registre nuevas reglas.",
             "📐", "/regla", true, RolEnum.DOCENTE),
 
     REGISTRAR_PROYECTO("proyecto", "CU02", "Registrar Proyecto Académico", "Registrar Proyecto",
