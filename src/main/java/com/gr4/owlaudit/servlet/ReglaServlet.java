@@ -114,13 +114,18 @@ public class ReglaServlet extends HttpServlet {
         String nombreRegla = request.getParameter("nombreRegla");
         EstadoVigencia nuevoEstado = EstadoVigencia.valueOf(request.getParameter("nuevoEstado"));
 
-        reglaService.cambiarEstadoVigenciaDeUnaRegla(nombreRegla, nuevoEstado);
+        boolean actualizado = reglaService.cambiarEstadoVigenciaDeUnaRegla(nombreRegla, nuevoEstado);
 
-        String mensaje = (nuevoEstado == EstadoVigencia.NO_VIGENTE)
-                ? "La regla fue desactivada para nuevas evaluaciones."
-                : "La regla fue reactivada y vuelve a estar disponible para su aplicación.";
+        if (!actualizado) {
+            String estadoTexto = (nuevoEstado == EstadoVigencia.NO_VIGENTE) ? "no vigente" : "vigente";
+            request.setAttribute("mensajeError", "La regla ya se encuentra en estado " + estadoTexto + ".");
+        } else {
+            String mensaje = (nuevoEstado == EstadoVigencia.NO_VIGENTE)
+                    ? "La regla fue desactivada para nuevas evaluaciones."
+                    : "La regla fue reactivada y vuelve a estar disponible para su aplicación.";
+            request.setAttribute("mensajeExito", mensaje);
+        }
 
-        request.setAttribute("mensajeExito", mensaje);
         request.getRequestDispatcher(VISTA_CATALOGO).forward(request, response);
     }
 }
