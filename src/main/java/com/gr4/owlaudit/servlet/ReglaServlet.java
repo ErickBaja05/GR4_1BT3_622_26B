@@ -6,6 +6,7 @@ import com.gr4.owlaudit.common.exception.ExcepcionNegocio;
 import com.gr4.owlaudit.dao.ReglaDAO;
 import com.gr4.owlaudit.dao.ReglaDAOImpl;
 import com.gr4.owlaudit.dto.NuevaReglaDTO;
+import com.gr4.owlaudit.model.EstadoVigencia;
 import com.gr4.owlaudit.service.ReglaService;
 import com.gr4.owlaudit.service.ReglaServiceImpl;
 
@@ -53,6 +54,19 @@ public class ReglaServlet extends HttpServlet {
             throws ServletException, IOException {
         
         request.setCharacterEncoding("UTF-8");
+
+        if ("cambiarVigencia".equals(request.getParameter("accion"))) {
+            String nombreRegla = request.getParameter("nombreRegla");
+            EstadoVigencia nuevoEstado = EstadoVigencia.valueOf(request.getParameter("nuevoEstado"));
+            reglaService.cambiarEstadoVigenciaDeUnaRegla(nombreRegla, nuevoEstado);
+            if (nuevoEstado == EstadoVigencia.NO_VIGENTE) {
+                request.setAttribute("mensajeExito", "La regla fue desactivada para nuevas evaluaciones.");
+            } else {
+                request.setAttribute("mensajeExito", "La regla fue reactivada y vuelve a estar disponible para su aplicación.");
+            }
+            request.getRequestDispatcher("/WEB-INF/views/catalogoReglas.jsp").forward(request, response);
+            return;
+        }
 
         // 1. Lectura de parámetros desde el formulario
         String tipoMotor = request.getParameter("tipoMotor");

@@ -42,10 +42,6 @@ public class Regla {
     @Column(name = "vigencia", nullable = false, length = 20)
     private EstadoVigencia vigencia = EstadoVigencia.VIGENTE;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "vigencia", nullable = false, length = 20)
-    private EstadoVigencia vigencia;
-
     public Regla() {
         this.vigencia = EstadoVigencia.VIGENTE;
     }
@@ -140,14 +136,6 @@ public class Regla {
         if (vigencia == null) {
             throw new IllegalArgumentException("El estado de vigencia no puede ser nulo.");
         }
-        this.vigencia = vigencia;
-    }
-
-    public EstadoVigencia getVigencia() {
-        return vigencia;
-    }
-
-    public void setVigencia(EstadoVigencia vigencia) {
         this.vigencia = vigencia;
     }
 
