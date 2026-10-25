@@ -44,26 +44,51 @@ public class ReglaDAOImpl implements ReglaDAO {
     @Override
     public List<Regla> consultarReglasDeEvaluacionVigentes() {
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
-            Query<Regla> query = session.createQuery(
+            return session.createQuery(
                 "SELECT r FROM Regla r WHERE r.vigencia = :vigencia",
                 Regla.class
-            );
-            query.setParameter("vigencia", com.gr4.owlaudit.model.EstadoVigencia.VIGENTE);
-            return query.list();
+            ).setParameter("vigencia", EstadoVigencia.VIGENTE).list();
         }
     }
 
-    // En ReglaDAOImpl.java (temporal para que compile el test si Franciel aún no
-    // los sube)
     @Override
     public Regla obtenerPorNombre(String nombre) {
-        return null;
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            // Refactorización: Inline Temp sobre la variable temporal query
+            return session.createQuery(
+                "SELECT r FROM Regla r WHERE r.nombreRepresentativo = :nombre",
+                Regla.class
+            ).setParameter("nombre", nombre).uniqueResult();
+        }
     }
 
     @Override
-
     public boolean actualizarEstadoVigencia(String nombre, EstadoVigencia nuevoEstado) {
-        return false;
+        // Refactorización: Extract Method utilizando esEstadoActivo(...)
+        boolean esActiva = esEstadoActivo(nuevoEstado);
+
+        Transaction tx = null;
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            tx = session.beginTransaction();
+            Query<?> query = session.createQuery(
+                "UPDATE Regla r SET r.vigencia = :vigencia, r.activa = :activa WHERE r.nombreRepresentativo = :nombre"
+            );
+            query.setParameter("vigencia", nuevoEstado);
+            query.setParameter("activa", esActiva);
+            query.setParameter("nombre", nombre);
+            int filasActualizadas = query.executeUpdate();
+            tx.commit();
+            return filasActualizadas > 0;
+        } catch (Exception e) {
+            if (tx != null && tx.isActive()) {
+                tx.rollback();
+            }
+            return false;
+        }
+    }
+
+    private boolean esEstadoActivo(EstadoVigencia estado) {
+        return estado == EstadoVigencia.VIGENTE;
     }
 
 }
