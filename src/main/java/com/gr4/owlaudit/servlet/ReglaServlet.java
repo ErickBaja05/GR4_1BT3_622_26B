@@ -23,8 +23,19 @@ public class ReglaServlet extends HttpServlet {
 
     private static final String VISTA = "/WEB-INF/views/registrarRegla.jsp";
 
-    private final ReglaService reglaService = new ReglaServiceImpl();
-    private final ReglaDAO reglaDAO = new ReglaDAOImpl();
+    private final ReglaService reglaService;
+    private final ReglaDAO reglaDAO;
+
+    /** Constructor que usa Tomcat. */
+    public ReglaServlet() {
+        this(new ReglaServiceImpl(), new ReglaDAOImpl());
+    }
+
+    /** Constructor para inyectar mocks en las pruebas. */
+    ReglaServlet(ReglaService reglaService, ReglaDAO reglaDAO) {
+        this.reglaService = reglaService;
+        this.reglaDAO = reglaDAO;
+    }
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) 
