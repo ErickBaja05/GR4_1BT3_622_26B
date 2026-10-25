@@ -80,35 +80,19 @@ public class AsignacionServlet extends HttpServlet {
             return;
         }
 
-        String nombre = request.getParameter("nombre");
-        String umbralAprobacionStr = request.getParameter("umbralAprobacion");
-        String[] reglasIdsParam = request.getParameterValues("reglasIds");
-
-        Double umbralAprobacion;
         try {
-            if (umbralAprobacionStr == null || umbralAprobacionStr.trim().isEmpty()) {
-                throw new NumberFormatException("El umbral no puede ser vacío");
-            }
-            umbralAprobacion = Double.parseDouble(umbralAprobacionStr.trim());
-        } catch (NumberFormatException e) {
-            request.setAttribute("mensajeError", "El umbral de aprobación debe ser un número válido.");
-            cargarDatosVista(request);
-            request.getRequestDispatcher(VISTA_CREAR).forward(request, response);
-            return;
-        }
+            // Se utiliza el query method directamente en lugar de las variables temporales
+            NuevaAsignacionDTO dto = obtenerNuevaAsignacionDTO(request);
 
-        List<Long> reglasIds = parsearReglasIds(reglasIdsParam);
-        NuevaAsignacionDTO dto = new NuevaAsignacionDTO(nombre, umbralAprobacion, reglasIds);
-
-        try {
-            final boolean fueAsignacionExitosa = asignacionesService != null
-                    && asignacionesService.crearAsignacion(dto) != null;
-
-            if (fueAsignacionExitosa) {
+            // Inline Temp: se reemplaza la variable intermedia fueAsignacionExitosa por la
+            // expresión directa
+            if (asignacionesService != null && asignacionesService.crearAsignacion(dto) != null) {
                 request.setAttribute("mensajeExito", "Asignación creada correctamente.");
             } else {
                 request.setAttribute("mensajeError", "No se pudo crear la asignación.");
             }
+        } catch (NumberFormatException e) {
+            request.setAttribute("mensajeError", "El umbral de aprobación debe ser un número válido.");
         } catch (IllegalArgumentException e) {
             request.setAttribute("mensajeError", e.getMessage());
         }
@@ -116,6 +100,37 @@ public class AsignacionServlet extends HttpServlet {
         cargarDatosVista(request);
         request.getRequestDispatcher(VISTA_CREAR).forward(request, response);
     }
+
+    // --- QUERY METHODS (Replace Temp with Query) ---
+
+    private NuevaAsignacionDTO obtenerNuevaAsignacionDTO(HttpServletRequest request) {
+        String nombre = request.getParameter("nombre");
+        Double umbralAprobacion = obtenerUmbralAprobacion(request);
+        List<Long> reglasIds = parsearReglasIds(request.getParameterValues("reglasIds"));
+
+        return new NuevaAsignacionDTO(nombre, umbralAprobacion, reglasIds);
+    }
+
+    private Double obtenerUmbralAprobacion(HttpServletRequest request) {
+        String umbralAprobacionStr = request.getParameter("umbralAprobacion");
+        if (umbralAprobacionStr == null || umbralAprobacionStr.trim().isEmpty()) {
+            throw new NumberFormatException("El umbral no puede ser vacío");
+        }
+        return Double.parseDouble(umbralAprobacionStr.trim());
+    }
+
+    private Long obtenerUsuarioIdEnSesion(HttpServletRequest request) {
+        HttpSession session = request.getSession(false);
+        if (session != null) {
+            Object usuarioObj = session.getAttribute(LoginServlet.ATRIBUTO_USUARIO);
+            if (usuarioObj instanceof UsuarioDTO usuario) {
+                return usuario.getId();
+            }
+        }
+        return null;
+    }
+
+    // --- MÉTODOS DE SOPORTE ---
 
     private boolean esFlujoEstudianteGet(String idAsignacionParam, String vistaParam) {
         return idAsignacionParam != null || "estudiante".equalsIgnoreCase(vistaParam);
@@ -175,14 +190,7 @@ public class AsignacionServlet extends HttpServlet {
         AuditoriaDTO dto = new AuditoriaDTO();
         dto.setIdAsignacion(idAsignacion);
         dto.setProyectoId(idProyecto);
-
-        HttpSession session = request.getSession(false);
-        if (session != null) {
-            Object usuarioObj = session.getAttribute(LoginServlet.ATRIBUTO_USUARIO);
-            if (usuarioObj instanceof UsuarioDTO) {
-                dto.setUsuarioId(((UsuarioDTO) usuarioObj).getId());
-            }
-        }
+        dto.setUsuarioId(obtenerUsuarioIdEnSesion(request));
         return dto;
     }
 
