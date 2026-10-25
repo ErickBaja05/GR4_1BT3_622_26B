@@ -53,9 +53,12 @@ public class ReglaDAOImpl implements ReglaDAO {
 
     // En ReglaDAOImpl.java (temporal para que compile el test si Franciel aún no
     // los sube)
+    @Override
     public Regla obtenerPorNombre(String nombre) {
         return null;
     }
+
+    @Override
 
     public boolean actualizarEstadoVigencia(String nombre, EstadoVigencia nuevoEstado) {
         return false;

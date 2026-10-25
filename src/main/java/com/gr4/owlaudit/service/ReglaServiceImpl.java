@@ -52,7 +52,22 @@ public class ReglaServiceImpl implements ReglaService {
 
     @Override
     public boolean cambiarEstadoVigenciaDeUnaRegla(String nombreRegla, EstadoVigencia nuevoEstado) {
-        return false; // Aún no hay lógica programada
+        // 1. Obtener la regla actual desde el DAO
+        Regla reglaActual = reglaDAO.obtenerPorNombre(nombreRegla);
+
+        // Validación defensiva: si la regla no existe o el estado enviado es nulo
+        if (reglaActual == null || nuevoEstado == null) {
+            return false;
+        }
+
+        // 2. Validar que el estado solicitado sea distinto al actual (Escenario 1.3)
+        if (reglaActual.getVigencia() == nuevoEstado) {
+            return false;
+        }
+
+        // 3. Actualizar el estado en el objeto de dominio y persistir invocando al DAO
+        reglaActual.setVigencia(nuevoEstado);
+        return reglaDAO.actualizarEstadoVigencia(nombreRegla, nuevoEstado);
     }
 
 }
