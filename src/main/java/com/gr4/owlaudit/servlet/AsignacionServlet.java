@@ -68,7 +68,30 @@ public class AsignacionServlet extends HttpServlet {
             return;
         }
 
-        java.util.List<Long> idsReglas = new java.util.ArrayList<>();
+        // Refactorización 1 (Martin Fowler): Extract Method sobre el procesamiento de identificadores de reglas
+        List<Long> idsReglas = parsearIdsReglas(reglasIdsParam);
+
+        NuevaAsignacionDTO dto = new NuevaAsignacionDTO(nombre, umbral, idsReglas);
+
+        // Refactorización 2 (Martin Fowler): Introduce Explaining Variable para clarificar el resultado de la operación
+        final boolean fueAsignacionExitosa = asignacionesService != null && asignacionesService.crearAsignacion(dto);
+
+        if (fueAsignacionExitosa) {
+            request.setAttribute("mensajeExito", "Asignación creada correctamente.");
+        } else {
+            request.setAttribute("mensajeError", "No se pudo crear la asignación.");
+        }
+
+        request.getRequestDispatcher(VISTA_CREAR).forward(request, response);
+    }
+
+    /**
+     * Refactorización Martin Fowler: Extract Method.
+     * Transforma el arreglo de cadenas recibido desde los checkboxes de la vista
+     * en una lista de identificadores numéricos {@code Long}.
+     */
+    private List<Long> parsearIdsReglas(String[] reglasIdsParam) {
+        List<Long> idsReglas = new ArrayList<>();
         if (reglasIdsParam != null) {
             for (String idStr : reglasIdsParam) {
                 try {
@@ -77,16 +100,6 @@ public class AsignacionServlet extends HttpServlet {
                 }
             }
         }
-
-        com.gr4.owlaudit.dto.NuevaAsignacionDTO dto = new com.gr4.owlaudit.dto.NuevaAsignacionDTO(nombre, umbral, idsReglas);
-        boolean creada = asignacionesService != null && asignacionesService.crearAsignacion(dto);
-
-        if (creada) {
-            request.setAttribute("mensajeExito", "Asignación creada correctamente.");
-        } else {
-            request.setAttribute("mensajeError", "No se pudo crear la asignación.");
-        }
-
-        request.getRequestDispatcher(VISTA_CREAR).forward(request, response);
+        return idsReglas;
     }
 }
