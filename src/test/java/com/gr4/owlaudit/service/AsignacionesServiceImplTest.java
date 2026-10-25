@@ -64,7 +64,7 @@ class AsignacionesServiceImplTest {
                 "Auditoría Calidad S1",
                 umbralValido,
                 List.of(1L, 2L));
-        when(reglaDAO.consultarReglasVigentes()).thenReturn(catalogoReglasVigentes);
+        when(reglaDAO.consultarReglasDeEvaluacionVigentes()).thenReturn(catalogoReglasVigentes);
         when(asignacionesDAO.crearAsignacion(any(Asignacion.class)))
                 .thenAnswer(inv -> inv.getArgument(0));
 
@@ -107,7 +107,7 @@ class AsignacionesServiceImplTest {
                 "Auditoría Con Regla Inactiva",
                 "80",
                 List.of(1L, idNoVigente));
-        when(reglaDAO.consultarReglasVigentes()).thenReturn(catalogoReglasVigentes);
+        when(reglaDAO.consultarReglasDeEvaluacionVigentes()).thenReturn(catalogoReglasVigentes);
 
         IllegalArgumentException ex = assertThrows(
                 IllegalArgumentException.class,
