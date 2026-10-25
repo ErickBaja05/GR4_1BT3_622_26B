@@ -8,6 +8,7 @@ import com.gr4.owlaudit.dao.SolicitudDAO;
 import com.gr4.owlaudit.dto.AuditoriaDTO;
 import com.gr4.owlaudit.dto.NuevoProyectoDTO;
 import com.gr4.owlaudit.model.Auditoria;
+import com.gr4.owlaudit.model.EstadoVigencia;
 import com.gr4.owlaudit.model.NivelSeveridadEnum;
 import com.gr4.owlaudit.model.Proyecto;
 import com.gr4.owlaudit.model.Regla;
@@ -89,7 +90,7 @@ public class AsignacionProyectoUsuarioTest {
         regla.setParametroExacto("README.md");
         regla.setNivelSeveridad(NivelSeveridadEnum.MEDIA);
         regla.setPonderacion(10);
-        regla.setActiva(true);
+        regla.setVigencia(EstadoVigencia.VIGENTE);
         when(reglaDAO.consultarReglasDeEvaluacionVigentes()).thenReturn(List.of(regla));
         when(gitHubClient.obtenerEstructuraDelRepositorio(anyString())).thenReturn(List.of("README.md"));
 

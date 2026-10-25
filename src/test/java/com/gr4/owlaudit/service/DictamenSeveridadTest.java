@@ -5,6 +5,7 @@ import com.gr4.owlaudit.dao.AuditoriaDAO;
 import com.gr4.owlaudit.dao.ReglaDAO;
 import com.gr4.owlaudit.dto.AuditoriaDTO;
 import com.gr4.owlaudit.dto.ResultadoDTO;
+import com.gr4.owlaudit.model.EstadoVigencia;
 import com.gr4.owlaudit.model.NivelSeveridadEnum;
 import com.gr4.owlaudit.model.Regla;
 import com.gr4.owlaudit.model.TipoMotorEnum;
@@ -52,7 +53,7 @@ public class DictamenSeveridadTest {
         reglaAprobada.setParametroExacto("README.md");
         reglaAprobada.setPonderacion(85);
         reglaAprobada.setNivelSeveridad(NivelSeveridadEnum.BAJA);
-        reglaAprobada.setActiva(true);
+        reglaAprobada.setVigencia(EstadoVigencia.VIGENTE);
 
         // Regla 2 (Incumplida, ponderación 15, severidad ALTA)
         Regla reglaFallaAlta = new Regla();
@@ -61,7 +62,7 @@ public class DictamenSeveridadTest {
         reglaFallaAlta.setParametroExacto(".env");
         reglaFallaAlta.setPonderacion(15);
         reglaFallaAlta.setNivelSeveridad(NivelSeveridadEnum.ALTA);
-        reglaFallaAlta.setActiva(true);
+        reglaFallaAlta.setVigencia(EstadoVigencia.VIGENTE);
 
         // Mockeamos la consulta de reglas activas del DAO
         when(reglaDAO.consultarReglasDeEvaluacionVigentes())

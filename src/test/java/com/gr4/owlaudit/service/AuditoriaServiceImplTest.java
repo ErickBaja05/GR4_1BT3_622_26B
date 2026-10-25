@@ -8,6 +8,7 @@ import com.gr4.owlaudit.dto.AuditoriaDTO;
 import com.gr4.owlaudit.dto.ResultadoDTO;
 import com.gr4.owlaudit.dto.ResumenDTO;
 import com.gr4.owlaudit.model.Auditoria;
+import com.gr4.owlaudit.model.EstadoVigencia;
 import com.gr4.owlaudit.model.Hallazgo;
 import com.gr4.owlaudit.model.NivelSeveridadEnum;
 import com.gr4.owlaudit.model.Regla;
@@ -105,7 +106,7 @@ class AuditoriaServiceImplTest {
         regla.setParametroExacto(parametro);
         regla.setPonderacion(ponderacion);
         regla.setNivelSeveridad(severidad);
-        regla.setActiva(true);
+        regla.setVigencia(EstadoVigencia.VIGENTE);
         return regla;
     }
 
