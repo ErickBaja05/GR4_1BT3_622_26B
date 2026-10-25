@@ -41,6 +41,8 @@ public class Regla {
     @Column(name = "activa", nullable = false)
     private boolean activa;
 
+    private EstadoVigencia vigencia;
+
     public Regla() {
     }
 
@@ -122,5 +124,13 @@ public class Regla {
 
     public void setActiva(boolean activa) {
         this.activa = activa;
+    }
+
+    public EstadoVigencia getVigencia() {
+        return vigencia;
+    }
+
+    public void setVigencia(EstadoVigencia vigencia) {
+        this.vigencia = vigencia;
     }
 }
