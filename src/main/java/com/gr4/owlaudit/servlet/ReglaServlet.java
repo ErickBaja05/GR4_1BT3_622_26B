@@ -136,8 +136,7 @@ public class ReglaServlet extends HttpServlet {
         boolean actualizado = reglaService.cambiarEstadoVigenciaDeUnaRegla(nombreRegla, nuevoEstado);
 
         if (!actualizado) {
-            String estadoTexto = (nuevoEstado == EstadoVigencia.NO_VIGENTE) ? "no vigente" : "vigente";
-            request.setAttribute(ATTR_MENSAJE_ERROR, "La regla ya se encuentra en estado " + estadoTexto + ".");
+            request.setAttribute(ATTR_MENSAJE_ERROR, "La regla ya se encuentra en estado " + obtenerDescripcionEstado(nuevoEstado) + ".");
         } else {
             request.setAttribute(ATTR_MENSAJE_EXITO, nuevoEstado.construirMensajeExito());
         }
@@ -148,5 +147,14 @@ public class ReglaServlet extends HttpServlet {
         } catch (Exception ignored) {}
 
         request.getRequestDispatcher(VISTA_CATALOGO).forward(request, response);
+    }
+
+    /**
+     * Refactorización Martin Fowler: Replace Temp with Query.
+     * Reemplaza la variable temporal estadoTexto de procesarCambioVigencia
+     * por un método de consulta reutilizable.
+     */
+    private String obtenerDescripcionEstado(EstadoVigencia estado) {
+        return (estado == EstadoVigencia.NO_VIGENTE) ? "no vigente" : "vigente";
     }
 }
