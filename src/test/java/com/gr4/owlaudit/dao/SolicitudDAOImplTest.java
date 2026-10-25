@@ -3,6 +3,7 @@ package com.gr4.owlaudit.dao;
 import com.gr4.owlaudit.common.config.HibernateUtil;
 import com.gr4.owlaudit.model.Auditoria;
 import com.gr4.owlaudit.model.EstadoRetroEnum;
+import com.gr4.owlaudit.model.EstadoVigencia;
 import com.gr4.owlaudit.model.Hallazgo;
 import com.gr4.owlaudit.model.NivelSeveridadEnum;
 import com.gr4.owlaudit.model.Proyecto;
@@ -46,7 +47,7 @@ class SolicitudDAOImplTest {
         regla.setParametroExacto(".gitignore");
         regla.setNivelSeveridad(NivelSeveridadEnum.ALTA);
         regla.setPonderacion(20);
-        regla.setActiva(false);
+        regla.setVigencia(EstadoVigencia.NO_VIGENTE);
         new ReglaDAOImpl().guardar(regla);
 
         Auditoria auditoria = new Auditoria();

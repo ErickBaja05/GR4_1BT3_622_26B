@@ -46,7 +46,7 @@ public class ReglaServiceImpl implements ReglaService {
 
         // 3. Instanciar entidad y persistir
         Regla regla = new Regla(dto);
-        regla.setActiva(true);
+        regla.setVigencia(EstadoVigencia.VIGENTE);
         reglaDAO.guardar(regla);
     }
 

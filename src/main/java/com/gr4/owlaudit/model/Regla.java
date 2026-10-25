@@ -38,14 +38,16 @@ public class Regla {
     @Column(name = "ponderacion", nullable = false)
     private int ponderacion;
 
-    @Column(name = "activa", nullable = false)
-    private boolean activa;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "vigencia", nullable = false, length = 20)
+    private EstadoVigencia vigencia = EstadoVigencia.VIGENTE;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "vigencia", nullable = false, length = 20)
     private EstadoVigencia vigencia;
 
     public Regla() {
+        this.vigencia = EstadoVigencia.VIGENTE;
     }
 
     public Regla(NuevaReglaDTO dto) {
@@ -60,7 +62,7 @@ public class Regla {
                 this.nivelSeveridad = NivelSeveridadEnum.valueOf(dto.getNivelSeveridad().trim().toUpperCase());
             }
             this.ponderacion = dto.getPonderacion();
-            this.activa = true;
+            this.vigencia = EstadoVigencia.VIGENTE;
         }
     }
 
@@ -120,12 +122,25 @@ public class Regla {
         this.ponderacion = ponderacion;
     }
 
-    public boolean isActiva() {
-        return activa;
+    /**
+     * Determina si la regla se encuentra actualmente vigente.
+     * Patrón Martin Fowler: Introduce Query Method (Tell, Don't Ask).
+     *
+     * @return true si la vigencia es EstadoVigencia.VIGENTE, false en caso contrario.
+     */
+    public boolean esVigente() {
+        return this.vigencia == EstadoVigencia.VIGENTE;
     }
 
-    public void setActiva(boolean activa) {
-        this.activa = activa;
+    public EstadoVigencia getVigencia() {
+        return vigencia;
+    }
+
+    public void setVigencia(EstadoVigencia vigencia) {
+        if (vigencia == null) {
+            throw new IllegalArgumentException("El estado de vigencia no puede ser nulo.");
+        }
+        this.vigencia = vigencia;
     }
 
     public EstadoVigencia getVigencia() {
