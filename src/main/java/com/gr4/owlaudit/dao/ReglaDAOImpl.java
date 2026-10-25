@@ -51,17 +51,43 @@ public class ReglaDAOImpl implements ReglaDAO {
         }
     }
 
-    // En ReglaDAOImpl.java (temporal para que compile el test si Franciel aún no
-    // los sube)
     @Override
     public Regla obtenerPorNombre(String nombre) {
-        return null;
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            Query<Regla> query = session.createQuery(
+                "SELECT r FROM Regla r WHERE r.nombreRepresentativo = :nombre",
+                Regla.class
+            );
+            query.setParameter("nombre", nombre);
+            return query.uniqueResult();
+        }
     }
 
     @Override
-
     public boolean actualizarEstadoVigencia(String nombre, EstadoVigencia nuevoEstado) {
-        return false;
+        boolean esActiva = false;
+        if (nuevoEstado == EstadoVigencia.VIGENTE) {
+            esActiva = true;
+        }
+
+        Transaction tx = null;
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            tx = session.beginTransaction();
+            Query<?> query = session.createQuery(
+                "UPDATE Regla r SET r.vigencia = :vigencia, r.activa = :activa WHERE r.nombreRepresentativo = :nombre"
+            );
+            query.setParameter("vigencia", nuevoEstado);
+            query.setParameter("activa", esActiva);
+            query.setParameter("nombre", nombre);
+            int filasActualizadas = query.executeUpdate();
+            tx.commit();
+            return filasActualizadas > 0;
+        } catch (Exception e) {
+            if (tx != null && tx.isActive()) {
+                tx.rollback();
+            }
+            return false;
+        }
     }
 
 }
