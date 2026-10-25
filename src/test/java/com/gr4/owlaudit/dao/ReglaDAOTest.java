@@ -60,7 +60,6 @@ class ReglaDAOTest {
         reglaPrueba.setParametroExacto("README.md");
         reglaPrueba.setNivelSeveridad(NivelSeveridadEnum.MEDIA);
         reglaPrueba.setPonderacion(10);
-        reglaPrueba.setActiva(true);
         reglaPrueba.setVigencia(EstadoVigencia.VIGENTE);
         reglaDAO.guardar(reglaPrueba);
 
@@ -73,7 +72,7 @@ class ReglaDAOTest {
         Regla reglaConsultada = reglaDAO.obtenerPorNombre(nombreRegla);
         assertNotNull(reglaConsultada, "La regla debe ser encontrada por su nombre representativo");
         assertEquals(EstadoVigencia.NO_VIGENTE, reglaConsultada.getVigencia(), "La regla debe reflejar el nuevo estado NO_VIGENTE");
-        assertFalse(reglaConsultada.isActiva(), "El booleano de activación debe mantenerse consistente (false)");
+        assertFalse(reglaConsultada.esVigente(), "La regla no debe estar vigente");
     }
 
     @Test
@@ -87,7 +86,6 @@ class ReglaDAOTest {
         reglaPrueba.setParametroExacto("pom.xml");
         reglaPrueba.setNivelSeveridad(NivelSeveridadEnum.BAJA);
         reglaPrueba.setPonderacion(5);
-        reglaPrueba.setActiva(false);
         reglaPrueba.setVigencia(EstadoVigencia.NO_VIGENTE);
         reglaDAO.guardar(reglaPrueba);
 

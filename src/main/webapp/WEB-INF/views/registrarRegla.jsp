@@ -182,7 +182,7 @@
                         </thead>
                         <tbody>
                             <% for (Regla r : reglasVigentes) {
-                                boolean esVigente = r.isActiva();
+                                boolean esVigente = r.esVigente();
                                 String nuevoEstado = esVigente ? "NO_VIGENTE" : "VIGENTE";
                                 String s = (r.getNivelSeveridad() != null) ? r.getNivelSeveridad().name() : "BAJA";
                             %>

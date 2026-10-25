@@ -5,6 +5,7 @@ import com.gr4.owlaudit.model.EstadoVigencia;
 import com.gr4.owlaudit.model.Regla;
 import org.hibernate.Session;
 import org.hibernate.Transaction;
+import org.hibernate.query.MutationQuery;
 import org.hibernate.query.Query;
 
 import java.util.List;
@@ -64,31 +65,25 @@ public class ReglaDAOImpl implements ReglaDAO {
 
     @Override
     public boolean actualizarEstadoVigencia(String nombre, EstadoVigencia nuevoEstado) {
-        // Refactorización: Extract Method utilizando esEstadoActivo(...)
-        boolean esActiva = esEstadoActivo(nuevoEstado);
-
         Transaction tx = null;
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
             tx = session.beginTransaction();
-            Query<?> query = session.createQuery(
-                "UPDATE Regla r SET r.vigencia = :vigencia, r.activa = :activa WHERE r.nombreRepresentativo = :nombre"
+            MutationQuery query = session.createMutationQuery(
+                "UPDATE Regla r SET r.vigencia = :vigencia WHERE r.nombreRepresentativo = :nombre"
             );
             query.setParameter("vigencia", nuevoEstado);
-            query.setParameter("activa", esActiva);
             query.setParameter("nombre", nombre);
             int filasActualizadas = query.executeUpdate();
             tx.commit();
             return filasActualizadas > 0;
         } catch (Exception e) {
             if (tx != null && tx.isActive()) {
-                tx.rollback();
+                try {
+                    tx.rollback();
+                } catch (Exception ignored) {
+                }
             }
             return false;
         }
     }
-
-    private boolean esEstadoActivo(EstadoVigencia estado) {
-        return estado == EstadoVigencia.VIGENTE;
-    }
-
 }
