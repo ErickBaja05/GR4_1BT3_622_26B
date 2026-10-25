@@ -8,6 +8,7 @@ import com.gr4.owlaudit.dao.ReglaDAO;
 import com.gr4.owlaudit.dao.ReglaDAOImpl;
 import com.gr4.owlaudit.dto.NuevaAsignacionDTO;
 import com.gr4.owlaudit.service.AsignacionesService;
+import com.gr4.owlaudit.service.AsignacionesServiceImpl;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -28,7 +29,7 @@ public class AsignacionServlet extends HttpServlet {
     private final ReglaDAO reglaDAO;
 
     public AsignacionServlet() {
-        this(null, new ReglaDAOImpl());
+        this(new AsignacionesServiceImpl(), new ReglaDAOImpl());
     }
 
     public AsignacionServlet(AsignacionesService asignacionesService, ReglaDAO reglaDAO) {
@@ -74,7 +75,7 @@ public class AsignacionServlet extends HttpServlet {
         NuevaAsignacionDTO dto = new NuevaAsignacionDTO(nombre, umbral, idsReglas);
 
         // Refactorización 2 (Martin Fowler): Introduce Explaining Variable para clarificar el resultado de la operación
-        final boolean fueAsignacionExitosa = asignacionesService != null && asignacionesService.crearAsignacion(dto);
+        final boolean fueAsignacionExitosa = asignacionesService != null && asignacionesService.crearAsignacion(dto) != null;
 
         if (fueAsignacionExitosa) {
             request.setAttribute("mensajeExito", "Asignación creada correctamente.");

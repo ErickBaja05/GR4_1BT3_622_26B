@@ -5,6 +5,7 @@ import java.util.List;
 
 import com.gr4.owlaudit.dao.ReglaDAO;
 import com.gr4.owlaudit.dto.NuevaAsignacionDTO;
+import com.gr4.owlaudit.model.Asignacion;
 import com.gr4.owlaudit.model.Regla;
 import com.gr4.owlaudit.service.AsignacionesService;
 import jakarta.servlet.RequestDispatcher;
@@ -100,7 +101,7 @@ class AsignacionServletTest {
         when(request.getParameter("nombre")).thenReturn("Examen Final");
         when(request.getParameter("umbralAprobacion")).thenReturn("75.5");
         when(request.getParameterValues("reglasIds")).thenReturn(new String[]{"1", "2"});
-        when(asignacionesService.crearAsignacion(any(NuevaAsignacionDTO.class))).thenReturn(true);
+        when(asignacionesService.crearAsignacion(any(NuevaAsignacionDTO.class))).thenReturn(new Asignacion());
 
         // WHEN
         servlet.doPost(request, response);

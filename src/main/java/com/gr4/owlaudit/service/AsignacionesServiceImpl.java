@@ -1,6 +1,7 @@
 package com.gr4.owlaudit.service;
 
 import com.gr4.owlaudit.dao.AsignacionesDAO;
+import com.gr4.owlaudit.dao.AsignacionesDAOImpl;
 import com.gr4.owlaudit.dao.ReglaDAO;
 import com.gr4.owlaudit.dao.ReglaDAOImpl;
 import com.gr4.owlaudit.dto.NuevaAsignacionDTO;
@@ -19,7 +20,7 @@ public class AsignacionesServiceImpl implements AsignacionesService {
     private final ReglaDAO reglaDAO;
 
     public AsignacionesServiceImpl() {
-        this.asignacionesDAO = new AsignacionesDAO();
+        this.asignacionesDAO = new AsignacionesDAOImpl();
         this.reglaDAO = new ReglaDAOImpl();
     }
 
