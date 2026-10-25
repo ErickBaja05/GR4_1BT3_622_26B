@@ -5,6 +5,7 @@ import com.gr4.owlaudit.dao.AsignacionesDAOImpl;
 import com.gr4.owlaudit.dao.ReglaDAO;
 import com.gr4.owlaudit.dao.ReglaDAOImpl;
 import com.gr4.owlaudit.dto.NuevaAsignacionDTO;
+import com.gr4.owlaudit.dto.ResumenAsignacionDTO;
 import com.gr4.owlaudit.model.Asignacion;
 import com.gr4.owlaudit.model.Regla;
 import com.gr4.owlaudit.service.AsignacionesService;
@@ -110,5 +111,25 @@ public class AsignacionesServiceImpl implements AsignacionesService {
                     return regla;
                 })
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<Asignacion> consultarAsignacionesDisponibles() {
+        return null;
+    }
+
+    @Override
+    public List<Regla> consultarReglasDeAsignacion(Long idAsignacion) {
+        return null;
+    }
+
+    @Override
+    public double consultarUmbralAprobacion(Long idAsignacion) {
+        return 0.0;
+    }
+
+    @Override
+    public ResumenAsignacionDTO generarResumenAsignacion(Long idAsignacion) {
+        return null;
     }
 }

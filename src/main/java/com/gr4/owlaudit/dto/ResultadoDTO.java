@@ -10,6 +10,15 @@ public class ResultadoDTO {
     private double porcentaje;
     private String dictamen;
     private List<DetalleResultadoDTO> detalles = new ArrayList<>();
+    private double umbralAprobacion;
+
+    public double getUmbralAprobacion() {
+        return umbralAprobacion;
+    }
+
+    public void setUmbralAprobacion(double umbralAprobacion) {
+        this.umbralAprobacion = umbralAprobacion;
+    }
 
     public ResultadoDTO() {
     }
@@ -82,7 +91,7 @@ public class ResultadoDTO {
         }
 
         public DetalleResultadoDTO(String nombreRegla, boolean cumple, int puntosObtenidos, int ponderacion,
-                                   NivelSeveridadEnum nivelSeveridad, Long hallazgoId, String evidencia, String recomendacion) {
+                NivelSeveridadEnum nivelSeveridad, Long hallazgoId, String evidencia, String recomendacion) {
             this.nombreRegla = nombreRegla;
             this.cumple = cumple;
             this.puntosObtenidos = puntosObtenidos;
@@ -168,4 +177,3 @@ public class ResultadoDTO {
                 '}';
     }
 }
-

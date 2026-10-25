@@ -4,6 +4,15 @@ public class AuditoriaDTO {
     private Long proyectoId;
     private String url;
     private Long usuarioId;
+    private Long idAsignacion;
+
+    public Long getIdAsignacion() {
+        return idAsignacion;
+    }
+
+    public void setIdAsignacion(Long idAsignacion) {
+        this.idAsignacion = idAsignacion;
+    }
 
     public AuditoriaDTO() {
     }
@@ -56,4 +65,3 @@ public class AuditoriaDTO {
                 '}';
     }
 }
-

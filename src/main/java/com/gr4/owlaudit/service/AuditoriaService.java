@@ -6,5 +6,8 @@ import com.gr4.owlaudit.dto.ResumenDTO;
 
 public interface AuditoriaService {
     ResumenDTO solicitarPreviaDeAuditoria(AuditoriaDTO dto);
+
     ResultadoDTO confirmarEjecucionDeAuditoria(AuditoriaDTO dto);
+
+    public ResultadoDTO ejecutarAuditoriaDeAsignacion(AuditoriaDTO auditoriaDTO);
 }
