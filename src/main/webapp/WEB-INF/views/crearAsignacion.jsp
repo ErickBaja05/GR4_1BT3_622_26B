@@ -18,7 +18,7 @@
 
     // Preservar valores ingresados por el usuario si ocurrió un error de validación
     String nombrePrevio = request.getParameter("nombre") != null ? request.getParameter("nombre") : "";
-    String umbralPrevio = request.getParameter("umbral") != null ? request.getParameter("umbral") : "";
+    String umbralPrevio = request.getParameter("umbralAprobacion") != null ? request.getParameter("umbralAprobacion") : "";
 
     // Obtención de reglas vigentes (provistas por doGet en AsignacionServlet o fallback resiliente)
     @SuppressWarnings("unchecked")
@@ -202,10 +202,10 @@
 
                 <!-- Campo: Umbral de Aprobación (text para permitir validación en backend de escenarios 2.2 y 2.3) -->
                 <div class="form-group">
-                    <label for="umbral" class="form-label">Umbral de Aprobación (%) *</label>
+                    <label for="umbralAprobacion" class="form-label">Umbral de Aprobación (%) *</label>
                     <input type="text" 
-                           id="umbral" 
-                           name="umbral" 
+                           id="umbralAprobacion" 
+                           name="umbralAprobacion" 
                            class="form-control" 
                            placeholder="Ej. 70" 
                            value="<%= HtmlUtil.escape(umbralPrevio) %>" 
@@ -355,7 +355,7 @@
                                        nomAsig = (String) mNom.invoke(objAsig);
                                    } catch (Exception ignored) {}
                                    try {
-                                       java.lang.reflect.Method mUmb = objAsig.getClass().getMethod("getUmbral");
+                                       java.lang.reflect.Method mUmb = objAsig.getClass().getMethod("getUmbralAprobacion");
                                        umbralAsig = mUmb.invoke(objAsig);
                                    } catch (Exception ignored) {}
                                    try {
