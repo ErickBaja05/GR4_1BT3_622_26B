@@ -11,6 +11,7 @@ import org.hibernate.Transaction;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
@@ -24,6 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
  * Historia de Usuario: HU-02 (Crear asignaciones para auditorías específicas).
  * Pruebas unitarias convencionales sin mocks y sin pruebas parametrizadas.
  */
+@Tag("integracion")
 class AsignacionesDAOTest {
 
     private AsignacionesDAO asignacionesDAO;

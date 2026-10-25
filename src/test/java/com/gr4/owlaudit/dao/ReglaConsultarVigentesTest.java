@@ -8,6 +8,7 @@ import com.gr4.owlaudit.model.TipoMotorEnum;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
@@ -21,6 +22,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * - consultarReglasVigentes() en ReglaDAO.
  * - NuevaAsignacionDTO (encapsulamiento de nombre, umbral y reglas seleccionadas).
  */
+@Tag("integracion")
 class ReglaConsultarVigentesTest {
 
     private ReglaDAO reglaDAO;

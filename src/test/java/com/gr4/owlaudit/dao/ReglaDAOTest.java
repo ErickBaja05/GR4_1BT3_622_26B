@@ -11,6 +11,7 @@ import org.hibernate.Transaction;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -23,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * Historia de Usuario: HU-01 (Activar / Desactivar vigencia de reglas).
  * Pruebas unitarias convencionales sin mocks y sin pruebas parametrizadas.
  */
+@Tag("integracion")
 class ReglaDAOTest {
 
     private ReglaDAO reglaDAO;
