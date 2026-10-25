@@ -2,6 +2,8 @@ package com.gr4.owlaudit.service;
 
 import com.gr4.owlaudit.dao.AsignacionesDAO;
 import com.gr4.owlaudit.dao.AsignacionesDAOImpl;
+import com.gr4.owlaudit.dao.ProyectoDAO;
+import com.gr4.owlaudit.dao.ProyectoDAOImpl;
 import com.gr4.owlaudit.dao.ReglaDAO;
 import com.gr4.owlaudit.dao.ReglaDAOImpl;
 import com.gr4.owlaudit.dto.NuevaAsignacionDTO;
@@ -19,18 +21,26 @@ public class AsignacionesServiceImpl implements AsignacionesService {
 
     private final AsignacionesDAO asignacionesDAO;
     private final ReglaDAO reglaDAO;
+    private final ProyectoDAO proyectoDAO;
 
     public AsignacionesServiceImpl() {
-        this.asignacionesDAO = new AsignacionesDAOImpl();
-        this.reglaDAO = new ReglaDAOImpl();
+        this(new AsignacionesDAOImpl(), new ReglaDAOImpl(), new ProyectoDAOImpl());
     }
 
     public AsignacionesServiceImpl(
             AsignacionesDAO asignacionesDAO,
             ReglaDAO reglaDAO) {
+        this(asignacionesDAO, reglaDAO, new ProyectoDAOImpl());
+    }
+
+    public AsignacionesServiceImpl(
+            AsignacionesDAO asignacionesDAO,
+            ReglaDAO reglaDAO,
+            ProyectoDAO proyectoDAO) {
 
         this.asignacionesDAO = asignacionesDAO;
         this.reglaDAO = reglaDAO;
+        this.proyectoDAO = proyectoDAO;
     }
 
     @Override
@@ -115,21 +125,35 @@ public class AsignacionesServiceImpl implements AsignacionesService {
 
     @Override
     public List<Asignacion> consultarAsignacionesDisponibles() {
-        return null;
+        return asignacionesDAO.consultarAsignacionesDisponibles();
     }
 
     @Override
     public List<Regla> consultarReglasDeAsignacion(Long idAsignacion) {
-        return null;
+        return asignacionesDAO.consultarReglasDeAsignacion(idAsignacion);
     }
 
     @Override
     public double consultarUmbralAprobacion(Long idAsignacion) {
-        return 0.0;
+        return asignacionesDAO.consultarUmbralAprobacion(idAsignacion);
     }
 
     @Override
     public ResumenAsignacionDTO generarResumenAsignacion(Long idAsignacion) {
-        return null;
+        ResumenAsignacionDTO resumen = new ResumenAsignacionDTO();
+        resumen.setIdAsignacion(idAsignacion);
+        resumen.setUmbralAprobacion(consultarUmbralAprobacion(idAsignacion));
+        resumen.setReglasAsociadas(consultarReglasDeAsignacion(idAsignacion));
+        resumen.setProyectosEstudiante(proyectoDAO.listarTodos());
+
+        List<Asignacion> asignaciones = consultarAsignacionesDisponibles();
+        if (asignaciones != null) {
+            asignaciones.stream()
+                    .filter(a -> a != null && idAsignacion != null && idAsignacion.equals(a.getId()))
+                    .findFirst()
+                    .ifPresent(a -> resumen.setNombreAsignacion(a.getNombre()));
+        }
+
+        return resumen;
     }
 }

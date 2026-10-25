@@ -50,16 +50,36 @@ public class AsignacionesDAOImpl implements AsignacionesDAO {
 
     @Override
     public List<Asignacion> consultarAsignacionesDisponibles() {
-        return null;
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            return session.createQuery("SELECT DISTINCT a FROM Asignacion a LEFT JOIN FETCH a.reglas", Asignacion.class)
+                    .list();
+        }
     }
 
     @Override
     public List<Regla> consultarReglasDeAsignacion(Long idAsignacion) {
-        return null;
+        if (idAsignacion == null) {
+            return java.util.Collections.emptyList();
+        }
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            return session.createQuery(
+                    "SELECT r FROM Asignacion a JOIN a.reglas r WHERE a.id = :idAsignacion", Regla.class)
+                    .setParameter("idAsignacion", idAsignacion)
+                    .list();
+        }
     }
 
     @Override
     public double consultarUmbralAprobacion(Long idAsignacion) {
-        return 0.0;
+        if (idAsignacion == null) {
+            return 0.0;
+        }
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            Double umbral = session.createQuery(
+                    "SELECT a.umbralAprobacion FROM Asignacion a WHERE a.id = :idAsignacion", Double.class)
+                    .setParameter("idAsignacion", idAsignacion)
+                    .uniqueResult();
+            return umbral != null ? umbral : 0.0;
+        }
     }
 }
