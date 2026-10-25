@@ -42,6 +42,9 @@ public class Regla {
     @Column(name = "vigencia", nullable = false, length = 20)
     private EstadoVigencia vigencia = EstadoVigencia.VIGENTE;
 
+    @Column(name = "activa")
+    private Boolean activa = true;
+
     public Regla() {
         this.vigencia = EstadoVigencia.VIGENTE;
     }

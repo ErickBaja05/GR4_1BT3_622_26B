@@ -10,6 +10,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.Table;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -21,24 +22,27 @@ public class Asignacion {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // Clave candidata en el MER: no nula y única (unique = true)
     @Column(name = "nombre", nullable = false, unique = true, length = 100)
     private String nombre;
 
-    @Column(name = "umbral", nullable = false)
-    private Double umbral;
+    @Column(name = "umbral_aprobacion", nullable = false)
+    private Double umbralAprobacion;
 
-    @ManyToMany(fetch = FetchType.EAGER)
-    @JoinTable(name = "asignacion_regla", joinColumns = @JoinColumn(name = "asignacion_id"), inverseJoinColumns = @JoinColumn(name = "regla_id"))
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+        name = "asignacion_regla",
+        joinColumns = @JoinColumn(name = "asignacion_id"),
+        inverseJoinColumns = @JoinColumn(name = "regla_id")
+    )
     private List<Regla> reglas = new ArrayList<>();
 
     public Asignacion() {
         this.reglas = new ArrayList<>();
     }
 
-    public Asignacion(String nombre, Double umbral, List<Regla> reglas) {
+    public Asignacion(String nombre, Double umbralAprobacion, List<Regla> reglas) {
         this.nombre = nombre;
-        this.umbral = umbral;
+        this.umbralAprobacion = umbralAprobacion;
         this.reglas = (reglas != null) ? new ArrayList<>(reglas) : new ArrayList<>();
     }
 
@@ -58,12 +62,12 @@ public class Asignacion {
         this.nombre = nombre;
     }
 
-    public Double getUmbral() {
-        return umbral;
+    public Double getUmbralAprobacion() {
+        return umbralAprobacion;
     }
 
-    public void setUmbral(Double umbral) {
-        this.umbral = umbral;
+    public void setUmbralAprobacion(Double umbralAprobacion) {
+        this.umbralAprobacion = umbralAprobacion;
     }
 
     public List<Regla> getReglas() {
@@ -72,5 +76,11 @@ public class Asignacion {
 
     public void setReglas(List<Regla> reglas) {
         this.reglas = (reglas != null) ? new ArrayList<>(reglas) : new ArrayList<>();
+    }
+
+    public void agregarRegla(Regla regla) {
+        if (regla != null && !this.reglas.contains(regla)) {
+            this.reglas.add(regla);
+        }
     }
 }

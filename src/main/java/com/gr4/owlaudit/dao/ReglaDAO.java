@@ -11,6 +11,10 @@ public interface ReglaDAO {
 
     List<Regla> consultarReglasDeEvaluacionVigentes();
 
+    default List<Regla> consultarReglasVigentes() {
+        return consultarReglasDeEvaluacionVigentes();
+    }
+
     default Regla obtenerPorNombre(String nombre) {
         return null;
     };

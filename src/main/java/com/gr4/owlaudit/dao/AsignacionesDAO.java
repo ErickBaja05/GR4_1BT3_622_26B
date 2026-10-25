@@ -1,11 +1,9 @@
 package com.gr4.owlaudit.dao;
 
 import com.gr4.owlaudit.model.Asignacion;
+import java.util.List;
 
-public class AsignacionesDAO {
-
-    public Asignacion crearAsignacion(Asignacion asignacion) {
-        // Stub temporal: Mockito lo intercepta y verifica en los tests
-        return null;
-    }
+public interface AsignacionesDAO {
+    Asignacion crearAsignacion(Asignacion asignacion);
+    List<Asignacion> listarAsignaciones();
 }
