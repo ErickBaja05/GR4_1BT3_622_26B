@@ -11,6 +11,12 @@ public class AsignacionesDAOImpl implements AsignacionesDAO {
 
     @Override
     public Asignacion crearAsignacion(Asignacion asignacion) {
+        // Refactorización 1: Introduce Explaining Variable para validación defensiva temprana
+        boolean tieneDatosValidos = asignacion != null && asignacion.getNombre() != null && !asignacion.getNombre().trim().isEmpty();
+        if (!tieneDatosValidos) {
+            throw new IllegalArgumentException("La asignación debe contener un nombre válido para ser persistida.");
+        }
+
         Transaction tx = null;
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
             tx = session.beginTransaction();
@@ -18,9 +24,8 @@ public class AsignacionesDAOImpl implements AsignacionesDAO {
             tx.commit();
             return asignacion;
         } catch (Exception e) {
-            if (tx != null && tx.isActive()) {
-                tx.rollback();
-            }
+            // Refactorización 2: Extract Method para la reversión segura de la transacción
+            revertirTransaccion(tx);
             throw new RuntimeException("Error al persistir la asignación: " + e.getMessage(), e);
         }
     }
@@ -29,6 +34,12 @@ public class AsignacionesDAOImpl implements AsignacionesDAO {
     public List<Asignacion> listarAsignaciones() {
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
             return session.createQuery("FROM Asignacion", Asignacion.class).list();
+        }
+    }
+
+    private void revertirTransaccion(Transaction tx) {
+        if (tx != null && tx.isActive()) {
+            tx.rollback();
         }
     }
 }
