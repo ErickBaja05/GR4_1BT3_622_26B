@@ -139,7 +139,7 @@ public class ReglaServlet extends HttpServlet {
             String estadoTexto = (nuevoEstado == EstadoVigencia.NO_VIGENTE) ? "no vigente" : "vigente";
             request.setAttribute(ATTR_MENSAJE_ERROR, "La regla ya se encuentra en estado " + estadoTexto + ".");
         } else {
-            request.setAttribute(ATTR_MENSAJE_EXITO, construirMensajeExito(nuevoEstado));
+            request.setAttribute(ATTR_MENSAJE_EXITO, nuevoEstado.construirMensajeExito());
         }
 
         try {
@@ -148,11 +148,5 @@ public class ReglaServlet extends HttpServlet {
         } catch (Exception ignored) {}
 
         request.getRequestDispatcher(VISTA_CATALOGO).forward(request, response);
-    }
-
-    private String construirMensajeExito(EstadoVigencia nuevoEstado) {
-        return (nuevoEstado == EstadoVigencia.NO_VIGENTE)
-                ? "La regla fue desactivada para nuevas evaluaciones."
-                : "La regla fue reactivada y vuelve a estar disponible para su aplicación.";
     }
 }
