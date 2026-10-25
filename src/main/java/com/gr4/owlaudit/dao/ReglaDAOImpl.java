@@ -42,6 +42,10 @@ public class ReglaDAOImpl implements ReglaDAO {
         }
     }
 
+    /**
+     * Refactorización Martin Fowler: Substitute Algorithm (Composing Methods)
+     * Sustituye el algoritmo redundante reutilizando directamente consultarReglasVigentes().
+     */
     @Override
     public List<Regla> consultarReglasDeEvaluacionVigentes() {
         return consultarReglasVigentes();
@@ -60,9 +64,9 @@ public class ReglaDAOImpl implements ReglaDAO {
      */
     private List<Regla> ejecutarConsultaReglasVigentes(Session session) {
         return session.createQuery(
-            "FROM Regla r WHERE r.vigencia = :estado ORDER BY r.id ASC",
+            "SELECT r FROM Regla r WHERE r.vigencia = :vigencia ORDER BY r.id ASC",
             Regla.class
-        ).setParameter("estado", EstadoVigencia.VIGENTE).list();
+        ).setParameter("vigencia", EstadoVigencia.VIGENTE).list();
     }
 
     @Override

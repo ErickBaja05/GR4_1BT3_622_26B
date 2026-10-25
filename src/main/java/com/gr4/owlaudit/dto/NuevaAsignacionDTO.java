@@ -6,25 +6,25 @@ import java.util.List;
 
 /**
  * Objeto de transferencia de datos (DTO) para la creación de una nueva asignación de auditoría.
- * Encapsula:
- * - nombre (String): Nombre descriptivo de la asignación.
- * - umbral (String): Umbral recibido desde la interfaz para permitir validación de formatos en el servicio.
- * - reglasIds (List<Long>): Colección de identificadores de las reglas vigentes seleccionadas.
+ * Encapsula el nombre de la asignación, el umbral de aprobación y la colección de identificadores
+ * de las reglas vigentes seleccionadas para la asignación.
+ *
+ * Refactorización Martin Fowler: Encapsulate Collection sobre la lista de idsReglas.
  */
 public class NuevaAsignacionDTO {
 
     private String nombre;
-    private String umbral;
-    private List<Long> reglasIds;
+    private Double umbralAprobacion;
+    private List<Long> idsReglas;
 
     public NuevaAsignacionDTO() {
-        this.reglasIds = new ArrayList<>();
+        this.idsReglas = new ArrayList<>();
     }
 
-    public NuevaAsignacionDTO(String nombre, String umbral, List<Long> reglasIds) {
+    public NuevaAsignacionDTO(String nombre, Double umbralAprobacion, List<Long> idsReglas) {
         this.nombre = nombre;
-        this.umbral = umbral;
-        this.reglasIds = (reglasIds != null) ? new ArrayList<>(reglasIds) : new ArrayList<>();
+        this.umbralAprobacion = umbralAprobacion;
+        this.idsReglas = (idsReglas != null) ? new ArrayList<>(idsReglas) : new ArrayList<>();
     }
 
     public String getNombre() {
@@ -35,29 +35,29 @@ public class NuevaAsignacionDTO {
         this.nombre = nombre;
     }
 
-    public String getUmbral() {
-        return umbral;
+    public Double getUmbralAprobacion() {
+        return umbralAprobacion;
     }
 
-    public void setUmbral(String umbral) {
-        this.umbral = umbral;
+    public void setUmbralAprobacion(Double umbralAprobacion) {
+        this.umbralAprobacion = umbralAprobacion;
     }
 
     /**
      * Refactorización: Encapsulate Collection.
      * Retorna una vista no modificable de los identificadores de reglas seleccionadas.
      */
-    public List<Long> getReglasIds() {
-        return Collections.unmodifiableList(reglasIds);
+    public List<Long> getIdsReglas() {
+        return Collections.unmodifiableList(idsReglas);
     }
 
-    public void setReglasIds(List<Long> reglasIds) {
-        this.reglasIds = (reglasIds != null) ? new ArrayList<>(reglasIds) : new ArrayList<>();
+    public void setIdsReglas(List<Long> idsReglas) {
+        this.idsReglas = (idsReglas != null) ? new ArrayList<>(idsReglas) : new ArrayList<>();
     }
 
     public void agregarReglaId(Long reglaId) {
-        if (reglaId != null && !this.reglasIds.contains(reglaId)) {
-            this.reglasIds.add(reglaId);
+        if (reglaId != null && !this.idsReglas.contains(reglaId)) {
+            this.idsReglas.add(reglaId);
         }
     }
 
@@ -74,30 +74,15 @@ public class NuevaAsignacionDTO {
      * Reemplaza variables temporales de conteo consultando directamente el tamaño de la lista.
      */
     public int obtenerCantidadReglas() {
-        return this.reglasIds.size();
+        return this.idsReglas.size();
     }
 
-    // Métodos alias para compatibilidad y conveniencia adicional
-    public List<Long> getIdsReglas() {
-        return getReglasIds();
+    // Alias de conveniencia para compatibilidad con llamadas alternativas
+    public List<Long> getReglasIds() {
+        return getIdsReglas();
     }
 
-    public void setIdsReglas(List<Long> idsReglas) {
-        setReglasIds(idsReglas);
-    }
-
-    public Double getUmbralAprobacion() {
-        if (this.umbral == null || this.umbral.trim().isEmpty()) {
-            return null;
-        }
-        try {
-            return Double.parseDouble(this.umbral.trim());
-        } catch (NumberFormatException e) {
-            return null;
-        }
-    }
-
-    public void setUmbralAprobacion(Double umbralAprobacion) {
-        this.umbral = (umbralAprobacion != null) ? String.valueOf(umbralAprobacion) : null;
+    public void setReglasIds(List<Long> reglasIds) {
+        setIdsReglas(reglasIds);
     }
 }
