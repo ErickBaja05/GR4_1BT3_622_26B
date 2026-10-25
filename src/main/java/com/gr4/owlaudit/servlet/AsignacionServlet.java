@@ -9,6 +9,8 @@ import com.gr4.owlaudit.dao.ReglaDAOImpl;
 import com.gr4.owlaudit.dto.NuevaAsignacionDTO;
 import com.gr4.owlaudit.service.AsignacionesService;
 import com.gr4.owlaudit.service.AsignacionesServiceImpl;
+import com.gr4.owlaudit.service.AuditoriaService;
+import com.gr4.owlaudit.service.AuditoriaServiceImpl;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -18,6 +20,7 @@ import jakarta.servlet.http.HttpServletResponse;
 
 /**
  * HU-02 · Crear asignaciones para auditorías específicas.
+ * HU-03 · Ejecutar auditoría de proyecto bajo una asignación específica.
  * Boundary: Interfaz de Asignaciones / Control de Asignaciones.
  */
 @WebServlet("/asignaciones")
@@ -27,14 +30,21 @@ public class AsignacionServlet extends HttpServlet {
 
     private final AsignacionesService asignacionesService;
     private final ReglaDAO reglaDAO;
+    private final AuditoriaService auditoriaService;
 
     public AsignacionServlet() {
-        this(new AsignacionesServiceImpl(), new ReglaDAOImpl());
+        this(new AsignacionesServiceImpl(), new ReglaDAOImpl(), new AuditoriaServiceImpl());
     }
 
     public AsignacionServlet(AsignacionesService asignacionesService, ReglaDAO reglaDAO) {
+        this(asignacionesService, reglaDAO, new AuditoriaServiceImpl());
+    }
+
+    public AsignacionServlet(AsignacionesService asignacionesService, ReglaDAO reglaDAO,
+            AuditoriaService auditoriaService) {
         this.asignacionesService = asignacionesService;
         this.reglaDAO = reglaDAO;
+        this.auditoriaService = auditoriaService;
     }
 
     @Override
@@ -66,14 +76,12 @@ public class AsignacionServlet extends HttpServlet {
             return;
         }
 
-        // Refactorización 1 (Martin Fowler): Extract Method sobre el procesamiento de identificadores de reglas
         List<Long> reglasIds = parsearReglasIds(reglasIdsParam);
-
         NuevaAsignacionDTO dto = new NuevaAsignacionDTO(nombre, umbralAprobacion, reglasIds);
 
         try {
-            // Refactorización 2 (Martin Fowler): Introduce Explaining Variable para clarificar el resultado de la operación
-            final boolean fueAsignacionExitosa = asignacionesService != null && asignacionesService.crearAsignacion(dto) != null;
+            final boolean fueAsignacionExitosa = asignacionesService != null
+                    && asignacionesService.crearAsignacion(dto) != null;
 
             if (fueAsignacionExitosa) {
                 request.setAttribute("mensajeExito", "Asignación creada correctamente.");
@@ -104,11 +112,6 @@ public class AsignacionServlet extends HttpServlet {
         }
     }
 
-    /**
-     * Refactorización Martin Fowler: Extract Method.
-     * Transforma el arreglo de cadenas recibido desde los checkboxes de la vista
-     * en una lista de identificadores numéricos {@code Long}.
-     */
     private List<Long> parsearReglasIds(String[] reglasIdsParam) {
         List<Long> reglasIds = new ArrayList<>();
         if (reglasIdsParam != null) {
