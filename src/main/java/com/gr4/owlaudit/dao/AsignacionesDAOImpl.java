@@ -34,12 +34,14 @@ public class AsignacionesDAOImpl implements AsignacionesDAO {
         }
     }
 
+    /**
+     * Refactorización Martin Fowler: Substitute Algorithm (Composing Methods).
+     * Reutiliza la lógica optimizada de consultarAsignacionesDisponibles eliminando
+     * código duplicado.
+     */
     @Override
     public List<Asignacion> listarAsignaciones() {
-        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
-            return session.createQuery("SELECT DISTINCT a FROM Asignacion a LEFT JOIN FETCH a.reglas", Asignacion.class)
-                    .list();
-        }
+        return consultarAsignacionesDisponibles();
     }
 
     private void revertirTransaccion(Transaction tx) {
@@ -62,11 +64,19 @@ public class AsignacionesDAOImpl implements AsignacionesDAO {
             return java.util.Collections.emptyList();
         }
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
-            return session.createQuery(
-                    "SELECT r FROM Asignacion a JOIN a.reglas r WHERE a.id = :idAsignacion", Regla.class)
-                    .setParameter("idAsignacion", idAsignacion)
-                    .list();
+            return ejecutarConsultaReglasAsignacion(session, idAsignacion);
         }
+    }
+
+    /**
+     * Refactorización Martin Fowler: Extract Method (Composing Methods).
+     * Aísla la consulta HQL para obtener las reglas vinculadas a una asignación (CA-1).
+     */
+    private List<Regla> ejecutarConsultaReglasAsignacion(Session session, Long idAsignacion) {
+        return session.createQuery(
+                "SELECT r FROM Asignacion a JOIN a.reglas r WHERE a.id = :idAsignacion", Regla.class)
+                .setParameter("idAsignacion", idAsignacion)
+                .list();
     }
 
     @Override
@@ -75,11 +85,19 @@ public class AsignacionesDAOImpl implements AsignacionesDAO {
             return 0.0;
         }
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
-            Double umbral = session.createQuery(
-                    "SELECT a.umbralAprobacion FROM Asignacion a WHERE a.id = :idAsignacion", Double.class)
-                    .setParameter("idAsignacion", idAsignacion)
-                    .uniqueResult();
-            return umbral != null ? umbral : 0.0;
+            return ejecutarConsultaUmbralAprobacion(session, idAsignacion);
         }
+    }
+
+    /**
+     * Refactorización Martin Fowler: Extract Method (Composing Methods).
+     * Aísla la consulta HQL del umbral numérico de la asignación.
+     */
+    private double ejecutarConsultaUmbralAprobacion(Session session, Long idAsignacion) {
+        Double umbral = session.createQuery(
+                "SELECT a.umbralAprobacion FROM Asignacion a WHERE a.id = :idAsignacion", Double.class)
+                .setParameter("idAsignacion", idAsignacion)
+                .uniqueResult();
+        return umbral != null ? umbral : 0.0;
     }
 }

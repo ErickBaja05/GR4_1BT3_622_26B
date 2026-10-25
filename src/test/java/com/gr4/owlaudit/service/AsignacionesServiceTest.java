@@ -45,31 +45,40 @@ class AsignacionesServiceTest {
 
     @BeforeEach
     void setUp() {
-        reglaVigente = new Regla();
-        reglaVigente.setId(101L);
-        reglaVigente.setNombreRepresentativo("Cobertura de Pruebas Unitarias");
-        reglaVigente.setTipoMotor(TipoMotorEnum.PRESENCIA_ARCHIVO);
-        reglaVigente.setParametroExacto("pom.xml");
-        reglaVigente.setNivelSeveridad(NivelSeveridadEnum.ALTA);
-        reglaVigente.setPonderacion(30);
-        reglaVigente.setVigencia(EstadoVigencia.VIGENTE);
+        reglaVigente = crearReglaFixture(101L, "Cobertura de Pruebas Unitarias", TipoMotorEnum.PRESENCIA_ARCHIVO, "pom.xml", NivelSeveridadEnum.ALTA, 30, EstadoVigencia.VIGENTE);
+        reglaNoVigente = crearReglaFixture(102L, "Regla Histórica Desactivada", TipoMotorEnum.CONVENCION_COMMITS, "feat|fix", NivelSeveridadEnum.MEDIA, 20, EstadoVigencia.NO_VIGENTE);
+        asignacionPrueba = crearAsignacionFixture(1L, "Asignación Proyecto Final 2026", 80.0, List.of(reglaVigente, reglaNoVigente));
+        proyectoPrueba = crearProyectoFixture(501L, "OwlAudit Core Engine", "https://github.com/org/owlaudit-core");
+    }
 
-        reglaNoVigente = new Regla();
-        reglaNoVigente.setId(102L);
-        reglaNoVigente.setNombreRepresentativo("Regla Histórica Desactivada");
-        reglaNoVigente.setTipoMotor(TipoMotorEnum.CONVENCION_COMMITS);
-        reglaNoVigente.setParametroExacto("feat|fix");
-        reglaNoVigente.setNivelSeveridad(NivelSeveridadEnum.MEDIA);
-        reglaNoVigente.setPonderacion(20);
-        reglaNoVigente.setVigencia(EstadoVigencia.NO_VIGENTE);
+    /**
+     * Refactorización Martin Fowler: Extract Method (Composing Methods).
+     * Métodos utilitarios de ensamblado de fixtures de prueba.
+     */
+    private Regla crearReglaFixture(Long id, String nombre, TipoMotorEnum motor, String param, NivelSeveridadEnum severidad, int ponderacion, EstadoVigencia vigencia) {
+        Regla r = new Regla();
+        r.setId(id);
+        r.setNombreRepresentativo(nombre);
+        r.setTipoMotor(motor);
+        r.setParametroExacto(param);
+        r.setNivelSeveridad(severidad);
+        r.setPonderacion(ponderacion);
+        r.setVigencia(vigencia);
+        return r;
+    }
 
-        asignacionPrueba = new Asignacion("Asignación Proyecto Final 2026", 80.0, List.of(reglaVigente, reglaNoVigente));
-        asignacionPrueba.setId(1L);
+    private Asignacion crearAsignacionFixture(Long id, String nombre, double umbral, List<Regla> reglas) {
+        Asignacion a = new Asignacion(nombre, umbral, reglas);
+        a.setId(id);
+        return a;
+    }
 
-        proyectoPrueba = new Proyecto();
-        proyectoPrueba.setId(501L);
-        proyectoPrueba.setNombre("OwlAudit Core Engine");
-        proyectoPrueba.setUrlGithub("https://github.com/org/owlaudit-core");
+    private Proyecto crearProyectoFixture(Long id, String nombre, String url) {
+        Proyecto p = new Proyecto();
+        p.setId(id);
+        p.setNombre(nombre);
+        p.setUrlGithub(url);
+        return p;
     }
 
     @Test
@@ -150,5 +159,27 @@ class AsignacionesServiceTest {
         verify(asignacionesDAO, times(1)).consultarReglasDeAsignacion(idAsignacion);
         verify(asignacionesDAO, times(1)).consultarUmbralAprobacion(idAsignacion);
         verify(proyectoDAO, times(1)).listarTodos();
+    }
+
+    @Test
+    @DisplayName("generarResumenAsignacion cuando la asignación no existe en disponibles debe armar resumen con nombre nulo")
+    void generarResumenAsignacion_cuandoAsignacionNoExisteEnDisponibles_debeArmarResumenConNombreNulo() {
+        // GIVEN
+        Long idAsignacion = 999L;
+        when(asignacionesDAO.consultarReglasDeAsignacion(idAsignacion)).thenReturn(List.of());
+        when(asignacionesDAO.consultarUmbralAprobacion(idAsignacion)).thenReturn(0.0);
+        when(asignacionesDAO.consultarAsignacionesDisponibles()).thenReturn(List.of(asignacionPrueba));
+        when(proyectoDAO.listarTodos()).thenReturn(List.of());
+
+        // WHEN
+        ResumenAsignacionDTO resumen = asignacionesService.generarResumenAsignacion(idAsignacion);
+
+        // THEN
+        assertNotNull(resumen);
+        assertEquals(999L, resumen.getIdAsignacion());
+        assertNull(resumen.getNombreAsignacion(), "El nombre debe ser nulo si la asignación no se encontró en disponibles");
+        assertEquals(0.0, resumen.getUmbralAprobacion());
+        assertTrue(resumen.getReglasAsociadas().isEmpty());
+        assertTrue(resumen.getProyectosEstudiante().isEmpty());
     }
 }

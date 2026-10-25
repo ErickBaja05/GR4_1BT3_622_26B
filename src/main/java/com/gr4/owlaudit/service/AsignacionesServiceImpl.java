@@ -9,6 +9,7 @@ import com.gr4.owlaudit.dao.ReglaDAOImpl;
 import com.gr4.owlaudit.dto.NuevaAsignacionDTO;
 import com.gr4.owlaudit.dto.ResumenAsignacionDTO;
 import com.gr4.owlaudit.model.Asignacion;
+import com.gr4.owlaudit.model.Proyecto;
 import com.gr4.owlaudit.model.Regla;
 import com.gr4.owlaudit.service.AsignacionesService;
 
@@ -138,22 +139,55 @@ public class AsignacionesServiceImpl implements AsignacionesService {
         return asignacionesDAO.consultarUmbralAprobacion(idAsignacion);
     }
 
+    /**
+     * Genera el resumen consolidado de la asignación.
+     * Refactorización Martin Fowler:
+     * - Extract Method (armarResumenAsignacionDTO)
+     * - Replace Temp with Query (obtenerNombreAsignacion)
+     */
     @Override
     public ResumenAsignacionDTO generarResumenAsignacion(Long idAsignacion) {
+        return armarResumenAsignacionDTO(
+                idAsignacion,
+                consultarUmbralAprobacion(idAsignacion),
+                consultarReglasDeAsignacion(idAsignacion),
+                proyectoDAO.listarTodos(),
+                obtenerNombreAsignacion(idAsignacion));
+    }
+
+    /**
+     * Refactorización Martin Fowler: Replace Temp with Query (Composing Methods).
+     * Consulta el nombre de la asignación a partir del catálogo de asignaciones disponibles.
+     */
+    private String obtenerNombreAsignacion(Long idAsignacion) {
+        List<Asignacion> asignaciones = consultarAsignacionesDisponibles();
+        if (asignaciones == null || idAsignacion == null) {
+            return null;
+        }
+        return asignaciones.stream()
+                .filter(a -> a != null && idAsignacion.equals(a.getId()))
+                .map(Asignacion::getNombre)
+                .findFirst()
+                .orElse(null);
+    }
+
+    /**
+     * Refactorización Martin Fowler: Extract Method (Composing Methods).
+     * Construye y mapea el objeto ResumenAsignacionDTO desacoplando su estructura.
+     */
+    private ResumenAsignacionDTO armarResumenAsignacionDTO(
+            Long idAsignacion,
+            double umbral,
+            List<Regla> reglas,
+            List<Proyecto> proyectos,
+            String nombre) {
+
         ResumenAsignacionDTO resumen = new ResumenAsignacionDTO();
         resumen.setIdAsignacion(idAsignacion);
-        resumen.setUmbralAprobacion(consultarUmbralAprobacion(idAsignacion));
-        resumen.setReglasAsociadas(consultarReglasDeAsignacion(idAsignacion));
-        resumen.setProyectosEstudiante(proyectoDAO.listarTodos());
-
-        List<Asignacion> asignaciones = consultarAsignacionesDisponibles();
-        if (asignaciones != null) {
-            asignaciones.stream()
-                    .filter(a -> a != null && idAsignacion != null && idAsignacion.equals(a.getId()))
-                    .findFirst()
-                    .ifPresent(a -> resumen.setNombreAsignacion(a.getNombre()));
-        }
-
+        resumen.setUmbralAprobacion(umbral);
+        resumen.setReglasAsociadas(reglas);
+        resumen.setProyectosEstudiante(proyectos);
+        resumen.setNombreAsignacion(nombre);
         return resumen;
     }
 }
