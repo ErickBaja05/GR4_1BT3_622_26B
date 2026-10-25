@@ -82,7 +82,18 @@
                                                                         </p>
                                                                         <a class="btn btn-primary btn-block"
                                                                             href="<%= ctx %>/vistas?opcion=<%= opcion.getClave() %>">Ingresar</a>
-                                                                        <% } %>
+                                                                        <% if (usuario !=null &&
+                                                                            usuario.getRol()==com.gr4.owlaudit.model.RolEnum.ESTUDIANTE
+                                                                            && opcion==OpcionMenu.EJECUTAR_AUDITORIA) {
+                                                                            %>
+                                                                            <a class="btn btn-secondary btn-block"
+                                                                                style="margin-top: 0.5rem;"
+                                                                                href="<%= ctx %>/asignaciones?vista=estudiante"
+                                                                                id="btnVerAsignaciones">
+                                                                                Ver Asignaciones Disponibles
+                                                                            </a>
+                                                                            <% } %>
+                                                                                <% } %>
                                                             </div>
                                                             <% } %>
                                                     </div>
