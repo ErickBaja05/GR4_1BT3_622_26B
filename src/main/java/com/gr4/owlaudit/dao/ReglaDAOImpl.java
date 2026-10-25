@@ -44,9 +44,14 @@ public class ReglaDAOImpl implements ReglaDAO {
 
     @Override
     public List<Regla> consultarReglasDeEvaluacionVigentes() {
+        return consultarReglasVigentes();
+    }
+
+    @Override
+    public List<Regla> consultarReglasVigentes() {
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
             return session.createQuery(
-                "SELECT r FROM Regla r WHERE r.vigencia = :vigencia",
+                "SELECT r FROM Regla r WHERE r.vigencia = :vigencia ORDER BY r.id ASC",
                 Regla.class
             ).setParameter("vigencia", EstadoVigencia.VIGENTE).list();
         }
