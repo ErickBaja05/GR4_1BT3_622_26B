@@ -31,6 +31,7 @@ public class AuditoriaServiceImpl implements AuditoriaService {
     private final GitHubClient gitHubClient;
     private final EvaluadorReglaFactory evaluadorFactory;
     private final ProyectoDAO proyectoDAO;
+    private AsignacionesService asignacionesService;
 
     public AuditoriaServiceImpl() {
         this(new ReglaDAOImpl(), new AuditoriaDAOImpl(), new GitHubClient(),
@@ -50,6 +51,15 @@ public class AuditoriaServiceImpl implements AuditoriaService {
         this.gitHubClient = gitHubClient;
         this.evaluadorFactory = evaluadorFactory;
         this.proyectoDAO = proyectoDAO;
+    }
+
+    // Mantén los 3 constructores actuales intactos y agrega este 4to para el test
+    // de HU-03:
+    public AuditoriaServiceImpl(ReglaDAO reglaDAO, AuditoriaDAO auditoriaDAO,
+            GitHubClient gitHubClient, EvaluadorReglaFactory evaluadorFactory,
+            ProyectoDAO proyectoDAO, AsignacionesService asignacionesService) {
+        this(reglaDAO, auditoriaDAO, gitHubClient, evaluadorFactory, proyectoDAO);
+        this.asignacionesService = asignacionesService;
     }
 
     @Override
@@ -189,5 +199,10 @@ public class AuditoriaServiceImpl implements AuditoriaService {
         auditoria.setPuntajeObtenido(puntajeObtenido);
         auditoria.setPuntajeMaximo(puntajeMaximo);
         auditoria.setPorcentaje(porcentaje);
+    }
+
+    @Override
+    public ResultadoDTO ejecutarAuditoriaDeAsignacion(AuditoriaDTO auditoriaDTO) {
+        return null;
     }
 }

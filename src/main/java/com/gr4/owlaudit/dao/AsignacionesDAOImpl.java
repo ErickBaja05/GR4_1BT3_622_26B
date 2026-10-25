@@ -2,6 +2,8 @@ package com.gr4.owlaudit.dao;
 
 import com.gr4.owlaudit.common.config.HibernateUtil;
 import com.gr4.owlaudit.model.Asignacion;
+import com.gr4.owlaudit.model.Regla;
+
 import org.hibernate.Session;
 import org.hibernate.Transaction;
 
@@ -11,8 +13,10 @@ public class AsignacionesDAOImpl implements AsignacionesDAO {
 
     @Override
     public Asignacion crearAsignacion(Asignacion asignacion) {
-        // Refactorización 1: Introduce Explaining Variable para validación defensiva temprana
-        boolean tieneDatosValidos = asignacion != null && asignacion.getNombre() != null && !asignacion.getNombre().trim().isEmpty();
+        // Refactorización 1: Introduce Explaining Variable para validación defensiva
+        // temprana
+        boolean tieneDatosValidos = asignacion != null && asignacion.getNombre() != null
+                && !asignacion.getNombre().trim().isEmpty();
         if (!tieneDatosValidos) {
             throw new IllegalArgumentException("La asignación debe contener un nombre válido para ser persistida.");
         }
@@ -33,7 +37,8 @@ public class AsignacionesDAOImpl implements AsignacionesDAO {
     @Override
     public List<Asignacion> listarAsignaciones() {
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
-            return session.createQuery("SELECT DISTINCT a FROM Asignacion a LEFT JOIN FETCH a.reglas", Asignacion.class).list();
+            return session.createQuery("SELECT DISTINCT a FROM Asignacion a LEFT JOIN FETCH a.reglas", Asignacion.class)
+                    .list();
         }
     }
 
@@ -41,5 +46,20 @@ public class AsignacionesDAOImpl implements AsignacionesDAO {
         if (tx != null && tx.isActive()) {
             tx.rollback();
         }
+    }
+
+    @Override
+    public List<Asignacion> consultarAsignacionesDisponibles() {
+        return null;
+    }
+
+    @Override
+    public List<Regla> consultarReglasDeAsignacion(Long idAsignacion) {
+        return null;
+    }
+
+    @Override
+    public double consultarUmbralAprobacion(Long idAsignacion) {
+        return 0.0;
     }
 }
