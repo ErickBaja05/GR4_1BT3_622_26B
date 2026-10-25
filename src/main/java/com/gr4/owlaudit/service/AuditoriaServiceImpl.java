@@ -11,6 +11,7 @@ import com.gr4.owlaudit.dao.ReglaDAOImpl;
 import com.gr4.owlaudit.dto.AuditoriaDTO;
 import com.gr4.owlaudit.dto.ResultadoDTO;
 import com.gr4.owlaudit.dto.ResumenDTO;
+import com.gr4.owlaudit.model.Asignacion;
 import com.gr4.owlaudit.model.Auditoria;
 import com.gr4.owlaudit.model.Proyecto;
 import com.gr4.owlaudit.model.Regla;
@@ -203,6 +204,46 @@ public class AuditoriaServiceImpl implements AuditoriaService {
 
     @Override
     public ResultadoDTO ejecutarAuditoriaDeAsignacion(AuditoriaDTO auditoriaDTO) {
-        return null;
+        // Refactorización 2 (Martin Fowler): Introduce Explaining Variable para clarificar la precondición
+        final boolean esProyectoNoEspecificado = auditoriaDTO == null || auditoriaDTO.getProyectoId() == null;
+        if (esProyectoNoEspecificado) {
+            throw new ExcepcionNegocio("Debe seleccionar un proyecto válido");
+        }
+
+        Proyecto proyecto = proyectoDAO.buscarPorId(auditoriaDTO.getProyectoId());
+        if (proyecto == null) {
+            throw new ExcepcionNegocio("Debe seleccionar un proyecto válido");
+        }
+
+        String urlRepositorio = (proyecto.getUrlGithub() != null && !proyecto.getUrlGithub().isBlank())
+                ? proyecto.getUrlGithub()
+                : auditoriaDTO.getUrl();
+
+        List<String> rutas = gitHubClient.obtenerEstructuraDelRepositorio(urlRepositorio);
+
+        List<Regla> reglasAsignacion = asignacionesService.consultarReglasDeAsignacion(auditoriaDTO.getIdAsignacion());
+        double umbral = asignacionesService.consultarUmbralAprobacion(auditoriaDTO.getIdAsignacion());
+
+        Auditoria auditoria = crearAuditoria(auditoriaDTO);
+        if (auditoriaDTO.getIdAsignacion() != null) {
+            Asignacion asignacion = new Asignacion();
+            asignacion.setId(auditoriaDTO.getIdAsignacion());
+            auditoria.setAsignacion(asignacion);
+        }
+
+        evaluarReglas(auditoria, reglasAsignacion, rutas, urlRepositorio);
+        calcularPuntajesDeLaAuditoria(auditoria);
+
+        // Refactorización 1 (Martin Fowler): Move Method delegado al modelo de dominio Auditoria
+        String dictamen = auditoria.determinarDictamenPorUmbral(umbral);
+        auditoria.setDictamen(dictamen);
+
+        auditoriaDAO.registrarAuditoriaEnElHistorial(auditoria);
+
+        ResultadoDTO resultadoDTO = crearResultadoDTO(auditoria);
+        resultadoDTO.setDictamen(dictamen);
+        resultadoDTO.setUmbralAprobacion(umbral);
+
+        return resultadoDTO;
     }
 }

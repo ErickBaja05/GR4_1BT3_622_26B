@@ -14,6 +14,10 @@ public class AuditoriaDTO {
         this.idAsignacion = idAsignacion;
     }
 
+    public void setIdAsignacion(long idAsignacion) {
+        this.idAsignacion = idAsignacion;
+    }
+
     public AuditoriaDTO() {
     }
 

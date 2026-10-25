@@ -31,6 +31,13 @@ public class Auditoria {
     @JoinColumn(name = "usuario_id")
     private Usuario usuario;
 
+    @ManyToOne
+    @JoinColumn(name = "asignacion_id", nullable = true)
+    private Asignacion asignacion;
+
+    @Column(name = "dictamen", nullable = true)
+    private String dictamen;
+
     @Column(name = "fecha_hora", nullable = false)
     private LocalDateTime fechaHora;
 
@@ -162,6 +169,22 @@ public class Auditoria {
         this.usuario = usuario;
     }
 
+    public Asignacion getAsignacion() {
+        return asignacion;
+    }
+
+    public void setAsignacion(Asignacion asignacion) {
+        this.asignacion = asignacion;
+    }
+
+    public String getDictamen() {
+        return dictamen;
+    }
+
+    public void setDictamen(String dictamen) {
+        this.dictamen = dictamen;
+    }
+
     public static final double UMBRAL_MINIMO_APROBACION = 70.0;
     public static final String DICTAMEN_APROBADA = "APROBADA";
     public static final String DICTAMEN_NO_APROBADA = "NO APROBADA";
@@ -171,6 +194,14 @@ public class Auditoria {
             return DICTAMEN_NO_APROBADA;
         }
         return DICTAMEN_APROBADA;
+    }
+
+    /**
+     * Refactorización Martin Fowler: Move Method (Moving Features Between Objects).
+     * Determina el dictamen de aprobación de la auditoría en función de un umbral específico de asignación.
+     */
+    public String determinarDictamenPorUmbral(double umbral) {
+        return this.porcentaje >= umbral ? DICTAMEN_APROBADA : "NO_APROBADA";
     }
 
     private boolean tieneHallazgosDeSeveridadAlta() {
