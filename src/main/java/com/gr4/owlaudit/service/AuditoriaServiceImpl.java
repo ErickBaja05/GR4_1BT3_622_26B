@@ -204,7 +204,9 @@ public class AuditoriaServiceImpl implements AuditoriaService {
 
     @Override
     public ResultadoDTO ejecutarAuditoriaDeAsignacion(AuditoriaDTO auditoriaDTO) {
-        if (auditoriaDTO == null || auditoriaDTO.getProyectoId() == null) {
+        // Refactorización 2 (Martin Fowler): Introduce Explaining Variable para clarificar la precondición
+        final boolean esProyectoNoEspecificado = auditoriaDTO == null || auditoriaDTO.getProyectoId() == null;
+        if (esProyectoNoEspecificado) {
             throw new ExcepcionNegocio("Debe seleccionar un proyecto válido");
         }
 
@@ -232,7 +234,8 @@ public class AuditoriaServiceImpl implements AuditoriaService {
         evaluarReglas(auditoria, reglasAsignacion, rutas, urlRepositorio);
         calcularPuntajesDeLaAuditoria(auditoria);
 
-        String dictamen = auditoria.getPorcentaje() >= umbral ? "APROBADA" : "NO_APROBADA";
+        // Refactorización 1 (Martin Fowler): Move Method delegado al modelo de dominio Auditoria
+        String dictamen = auditoria.determinarDictamenPorUmbral(umbral);
         auditoria.setDictamen(dictamen);
 
         auditoriaDAO.registrarAuditoriaEnElHistorial(auditoria);

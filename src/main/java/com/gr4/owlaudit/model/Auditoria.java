@@ -196,6 +196,14 @@ public class Auditoria {
         return DICTAMEN_APROBADA;
     }
 
+    /**
+     * Refactorización Martin Fowler: Move Method (Moving Features Between Objects).
+     * Determina el dictamen de aprobación de la auditoría en función de un umbral específico de asignación.
+     */
+    public String determinarDictamenPorUmbral(double umbral) {
+        return this.porcentaje >= umbral ? DICTAMEN_APROBADA : "NO_APROBADA";
+    }
+
     private boolean tieneHallazgosDeSeveridadAlta() {
         if (this.resultados == null) {
             return false;
