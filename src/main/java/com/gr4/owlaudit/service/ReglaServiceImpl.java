@@ -4,6 +4,7 @@ import com.gr4.owlaudit.common.exception.ExcepcionNegocio;
 import com.gr4.owlaudit.dao.ReglaDAO;
 import com.gr4.owlaudit.dao.ReglaDAOImpl;
 import com.gr4.owlaudit.dto.NuevaReglaDTO;
+import com.gr4.owlaudit.model.EstadoVigencia;
 import com.gr4.owlaudit.model.Regla;
 
 public class ReglaServiceImpl implements ReglaService {
@@ -44,7 +45,7 @@ public class ReglaServiceImpl implements ReglaService {
 
         // 3. Instanciar entidad y persistir
         Regla regla = new Regla(dto);
-        regla.setActiva(true);
+        regla.setVigencia(EstadoVigencia.VIGENTE);
         reglaDAO.guardar(regla);
     }
 }

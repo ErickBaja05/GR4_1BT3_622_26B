@@ -7,6 +7,7 @@ import com.gr4.owlaudit.dao.UsuarioDAO;
 import com.gr4.owlaudit.dto.NuevaReglaDTO;
 import com.gr4.owlaudit.dto.NuevoProyectoDTO;
 import com.gr4.owlaudit.dto.UsuarioDTO;
+import com.gr4.owlaudit.model.EstadoVigencia;
 import com.gr4.owlaudit.model.NivelSeveridadEnum;
 import com.gr4.owlaudit.model.Proyecto;
 import com.gr4.owlaudit.model.Regla;
@@ -81,7 +82,7 @@ public class VerificacionBackendTest {
 
         @Override
         public List<Regla> consultarReglasDeEvaluacionVigentes() {
-            return reglas.stream().filter(Regla::isActiva).toList();
+            return reglas.stream().filter(r -> r.getVigencia() == EstadoVigencia.VIGENTE).toList();
         }
     }
 
@@ -172,8 +173,8 @@ public class VerificacionBackendTest {
         assertEquals(TipoMotorEnum.PRESENCIA_ARCHIVO, r.getTipoMotor(), "Tipo motor debe coincidir.");
         assertEquals(NivelSeveridadEnum.ALTA, r.getNivelSeveridad(), "Severidad debe coincidir.");
         assertEquals(5, r.getPonderacion(), "Ponderación debe coincidir.");
-        assertTrue(r.isActiva(), "La regla debe quedar activa.");
-        System.out.println("  [PASS] testRegistrarReglaExitosa: Regla registrada y activada según secuencia.puml.");
+        assertEquals(EstadoVigencia.VIGENTE, r.getVigencia(), "La regla debe quedar vigente.");
+        System.out.println("  [PASS] testRegistrarReglaExitosa: Regla registrada y vigente según secuencia.puml.");
     }
 
     public static void testRegistrarReglaNombreDuplicado() {

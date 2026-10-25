@@ -2,6 +2,7 @@ package com.gr4.owlaudit.dao;
 
 import com.gr4.owlaudit.common.config.HibernateUtil;
 import com.gr4.owlaudit.model.Auditoria;
+import com.gr4.owlaudit.model.EstadoVigencia;
 import com.gr4.owlaudit.model.NivelSeveridadEnum;
 import com.gr4.owlaudit.model.Regla;
 import com.gr4.owlaudit.model.TipoMotorEnum;
@@ -30,7 +31,7 @@ class AuditoriaDAOImplTest {
         regla.setParametroExacto("README.md");
         regla.setNivelSeveridad(NivelSeveridadEnum.BAJA);
         regla.setPonderacion(5);
-        regla.setActiva(false); // inactiva para no afectar auditorías reales
+        regla.setVigencia(EstadoVigencia.NO_VIGENTE); // no vigente para no afectar auditorías reales
         new ReglaDAOImpl().guardar(regla);
 
         Auditoria auditoria = new Auditoria();

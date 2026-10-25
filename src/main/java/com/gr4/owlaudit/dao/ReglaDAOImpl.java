@@ -45,9 +45,10 @@ public class ReglaDAOImpl implements ReglaDAO {
     public List<Regla> consultarReglasDeEvaluacionVigentes() {
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
             Query<Regla> query = session.createQuery(
-                "SELECT r FROM Regla r WHERE r.activa = true",
+                "SELECT r FROM Regla r WHERE r.vigencia = :vigencia",
                 Regla.class
             );
+            query.setParameter("vigencia", com.gr4.owlaudit.model.EstadoVigencia.VIGENTE);
             return query.list();
         }
     }

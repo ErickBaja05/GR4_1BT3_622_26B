@@ -38,12 +38,12 @@ public class Regla {
     @Column(name = "ponderacion", nullable = false)
     private int ponderacion;
 
-    @Column(name = "activa", nullable = false)
-    private boolean activa;
-
-    private EstadoVigencia vigencia;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "vigencia", nullable = false, length = 20)
+    private EstadoVigencia vigencia = EstadoVigencia.VIGENTE;
 
     public Regla() {
+        this.vigencia = EstadoVigencia.VIGENTE;
     }
 
     public Regla(NuevaReglaDTO dto) {
@@ -58,7 +58,7 @@ public class Regla {
                 this.nivelSeveridad = NivelSeveridadEnum.valueOf(dto.getNivelSeveridad().trim().toUpperCase());
             }
             this.ponderacion = dto.getPonderacion();
-            this.activa = true;
+            this.vigencia = EstadoVigencia.VIGENTE;
         }
     }
 
@@ -118,19 +118,14 @@ public class Regla {
         this.ponderacion = ponderacion;
     }
 
-    public boolean isActiva() {
-        return activa;
-    }
-
-    public void setActiva(boolean activa) {
-        this.activa = activa;
-    }
-
     public EstadoVigencia getVigencia() {
         return vigencia;
     }
 
     public void setVigencia(EstadoVigencia vigencia) {
+        if (vigencia == null) {
+            throw new IllegalArgumentException("El estado de vigencia no puede ser nulo.");
+        }
         this.vigencia = vigencia;
     }
 }
