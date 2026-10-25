@@ -40,7 +40,8 @@ public class ReglaServiceImpl implements ReglaService {
 
         // 2. Verificar unicidad por nombre
         if (reglaDAO.existePorNombre(dto.getNombreRepresentativo())) {
-            throw new ExcepcionNegocio("Ya existe una regla de evaluación registrada con el nombre: " + dto.getNombreRepresentativo());
+            throw new ExcepcionNegocio(
+                    "Ya existe una regla de evaluación registrada con el nombre: " + dto.getNombreRepresentativo());
         }
 
         // 3. Instanciar entidad y persistir
@@ -48,5 +49,25 @@ public class ReglaServiceImpl implements ReglaService {
         regla.setVigencia(EstadoVigencia.VIGENTE);
         reglaDAO.guardar(regla);
     }
-}
 
+    @Override
+    public boolean cambiarEstadoVigenciaDeUnaRegla(String nombreRegla, EstadoVigencia nuevoEstado) {
+        // 1. Obtener la regla actual desde el DAO
+        Regla reglaActual = reglaDAO.obtenerPorNombre(nombreRegla);
+
+        // Validación defensiva: si la regla no existe o el estado enviado es nulo
+        if (reglaActual == null || nuevoEstado == null) {
+            return false;
+        }
+
+        // 2. Validar que el estado solicitado sea distinto al actual (Escenario 1.3)
+        if (reglaActual.getVigencia() == nuevoEstado) {
+            return false;
+        }
+
+        // 3. Actualizar el estado en el objeto de dominio y persistir invocando al DAO
+        reglaActual.setVigencia(nuevoEstado);
+        return reglaDAO.actualizarEstadoVigencia(nombreRegla, nuevoEstado);
+    }
+
+}
