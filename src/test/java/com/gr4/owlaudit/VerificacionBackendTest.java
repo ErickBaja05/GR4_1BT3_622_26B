@@ -82,7 +82,7 @@ public class VerificacionBackendTest {
 
         @Override
         public List<Regla> consultarReglasDeEvaluacionVigentes() {
-            return reglas.stream().filter(r -> r.getVigencia() == EstadoVigencia.VIGENTE).toList();
+            return reglas.stream().filter(Regla::esVigente).toList();
         }
     }
 
@@ -174,6 +174,7 @@ public class VerificacionBackendTest {
         assertEquals(NivelSeveridadEnum.ALTA, r.getNivelSeveridad(), "Severidad debe coincidir.");
         assertEquals(5, r.getPonderacion(), "Ponderación debe coincidir.");
         assertEquals(EstadoVigencia.VIGENTE, r.getVigencia(), "La regla debe quedar vigente.");
+        assertTrue(r.esVigente(), "La regla debe encontrarse vigente.");
         System.out.println("  [PASS] testRegistrarReglaExitosa: Regla registrada y vigente según secuencia.puml.");
     }
 

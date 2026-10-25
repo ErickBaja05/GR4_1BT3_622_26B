@@ -118,6 +118,16 @@ public class Regla {
         this.ponderacion = ponderacion;
     }
 
+    /**
+     * Determina si la regla se encuentra actualmente vigente.
+     * Patrón Martin Fowler: Introduce Query Method (Tell, Don't Ask).
+     *
+     * @return true si la vigencia es EstadoVigencia.VIGENTE, false en caso contrario.
+     */
+    public boolean esVigente() {
+        return this.vigencia == EstadoVigencia.VIGENTE;
+    }
+
     public EstadoVigencia getVigencia() {
         return vigencia;
     }

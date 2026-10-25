@@ -94,4 +94,20 @@ class ReglaVigenciaTest {
 
         assertEquals("El estado de vigencia no puede ser nulo.", ex.getMessage());
     }
+
+    @Test
+    @DisplayName("El método de consulta de dominio esVigente() debe reflejar fielmente el enum EstadoVigencia")
+    void regla_esVigente_reflejaEstadoVigencia() {
+        // GIVEN: Una nueva regla
+        Regla regla = new Regla();
+
+        // THEN: Inicialmente es vigente
+        assertEquals(true, regla.esVigente(), "Por defecto una nueva regla debe retornar esVigente() == true");
+
+        // WHEN: Cambia a NO_VIGENTE
+        regla.setVigencia(EstadoVigencia.NO_VIGENTE);
+
+        // THEN: Deja de ser vigente
+        assertEquals(false, regla.esVigente(), "Al pasar a NO_VIGENTE, esVigente() debe retornar false");
+    }
 }
