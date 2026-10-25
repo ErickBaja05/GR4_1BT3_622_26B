@@ -81,8 +81,9 @@ class AuditoriaServiceTest {
     void given_proyectoInvalidoONulo_when_ejecutarAuditoriaDeAsignacion_then_lanzaExcepcionNegocio() {
         // GIVEN: DTO sin proyecto o con proyecto inexistente
         AuditoriaDTO dto = new AuditoriaDTO();
+        Long idAsignacion = 1L;
         dto.setProyectoId(999L);
-        dto.setIdAsignacion(1L);
+        dto.setIdAsignacion(idAsignacion);
 
         when(proyectoDAO.buscarPorId(999L)).thenReturn(null);
 

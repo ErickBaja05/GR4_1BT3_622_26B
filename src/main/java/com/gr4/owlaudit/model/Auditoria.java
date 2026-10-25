@@ -31,6 +31,13 @@ public class Auditoria {
     @JoinColumn(name = "usuario_id")
     private Usuario usuario;
 
+    @ManyToOne
+    @JoinColumn(name = "asignacion_id", nullable = true)
+    private Asignacion asignacion;
+
+    @Column(name = "dictamen", nullable = true)
+    private String dictamen;
+
     @Column(name = "fecha_hora", nullable = false)
     private LocalDateTime fechaHora;
 
@@ -160,6 +167,22 @@ public class Auditoria {
 
     public void setUsuario(Usuario usuario) {
         this.usuario = usuario;
+    }
+
+    public Asignacion getAsignacion() {
+        return asignacion;
+    }
+
+    public void setAsignacion(Asignacion asignacion) {
+        this.asignacion = asignacion;
+    }
+
+    public String getDictamen() {
+        return dictamen;
+    }
+
+    public void setDictamen(String dictamen) {
+        this.dictamen = dictamen;
     }
 
     public static final double UMBRAL_MINIMO_APROBACION = 70.0;
