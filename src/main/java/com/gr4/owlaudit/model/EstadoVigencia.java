@@ -6,5 +6,11 @@ package com.gr4.owlaudit.model;
  */
 public enum EstadoVigencia {
     VIGENTE,
-    NO_VIGENTE
+    NO_VIGENTE;
+
+    public String construirMensajeExito() {
+        return (this == NO_VIGENTE)
+                ? "La regla fue desactivada para nuevas evaluaciones."
+                : "La regla fue reactivada y vuelve a estar disponible para su aplicación.";
+    }
 }
