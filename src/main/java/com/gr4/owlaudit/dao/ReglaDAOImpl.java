@@ -1,6 +1,7 @@
 package com.gr4.owlaudit.dao;
 
 import com.gr4.owlaudit.common.config.HibernateUtil;
+import com.gr4.owlaudit.model.EstadoVigencia;
 import com.gr4.owlaudit.model.Regla;
 import org.hibernate.Session;
 import org.hibernate.Transaction;
@@ -17,9 +18,8 @@ public class ReglaDAOImpl implements ReglaDAO {
         }
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
             Query<Long> query = session.createQuery(
-                "SELECT COUNT(r) FROM Regla r WHERE LOWER(TRIM(r.nombreRepresentativo)) = LOWER(TRIM(:nombre))",
-                Long.class
-            );
+                    "SELECT COUNT(r) FROM Regla r WHERE LOWER(TRIM(r.nombreRepresentativo)) = LOWER(TRIM(:nombre))",
+                    Long.class);
             query.setParameter("nombre", nombre);
             Long count = query.uniqueResult();
             return count != null && count > 0;
@@ -45,10 +45,20 @@ public class ReglaDAOImpl implements ReglaDAO {
     public List<Regla> consultarReglasDeEvaluacionVigentes() {
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
             Query<Regla> query = session.createQuery(
-                "SELECT r FROM Regla r WHERE r.activa = true",
-                Regla.class
-            );
+                    "SELECT r FROM Regla r WHERE r.activa = true",
+                    Regla.class);
             return query.list();
         }
     }
+
+    // En ReglaDAOImpl.java (temporal para que compile el test si Franciel aún no
+    // los sube)
+    public Regla obtenerPorNombre(String nombre) {
+        return null;
+    }
+
+    public boolean actualizarEstadoVigencia(String nombre, EstadoVigencia nuevoEstado) {
+        return false;
+    }
+
 }
