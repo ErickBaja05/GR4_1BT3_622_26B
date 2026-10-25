@@ -138,5 +138,4 @@ public class Regla {
         }
         this.vigencia = vigencia;
     }
-
 }
