@@ -16,9 +16,13 @@
         <a href="<%= navCtx %>/vistas">Inicio</a>
         <% if (navUsuario != null) {
                for (OpcionMenu navOpcion : OpcionMenu.opcionesPara(navUsuario.getRol())) {
-                   if (navOpcion.isDisponible()) { %>
+                   if (navOpcion.isDisponible()) {
+                       if (navUsuario.getRol() == com.gr4.owlaudit.model.RolEnum.DOCENTE && navOpcion == OpcionMenu.EJECUTAR_AUDITORIA) { %>
+            <a href="<%= navCtx %>/asignaciones">Crear Asignación</a>
+                       <% } else { %>
             <a href="<%= navCtx + navOpcion.getRuta() %>"><%= navOpcion.getTituloCorto() %></a>
-        <%         }
+        <%             }
+                   }
                }
            } %>
     </nav>
