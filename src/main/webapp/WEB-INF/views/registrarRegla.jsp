@@ -93,8 +93,17 @@
 
         <!-- Formulario de Registro de Regla -->
         <div class="card">
-            <h1 class="card-title">Configurar Regla de Evaluación Técnica</h1>
-            <p class="card-subtitle">Cree políticas de calidad de código para ser evaluadas automáticamente en los repositorios.</p>
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem; margin-bottom: 1rem;">
+                <div>
+                    <h1 class="card-title" style="margin-bottom: 0.25rem;">Configurar Regla de Evaluación Técnica</h1>
+                    <p class="card-subtitle" style="margin-bottom: 0;">Cree políticas de calidad de código para ser evaluadas automáticamente en los repositorios.</p>
+                </div>
+                <div>
+                    <a href="${pageContext.request.contextPath}/regla?vista=catalogo" class="btn btn-secondary" style="display: inline-flex; align-items: center; gap: 0.4rem;">
+                        <span>📋</span> Ver Catálogo de Reglas
+                    </a>
+                </div>
+            </div>
 
             <form action="${pageContext.request.contextPath}/regla" method="POST">
                 <input type="hidden" name="accion" value="registrar">
@@ -213,7 +222,7 @@
                                     </td>
                                     <td style="padding: 0.65rem 0.5rem; text-align: center;">
                                         <form action="${pageContext.request.contextPath}/regla" method="POST" style="margin: 0; display: inline-block;">
-                                            <input type="hidden" name="accion" value="cambiarEstado">
+                                            <input type="hidden" name="accion" value="cambiarVigencia">
                                             <input type="hidden" name="nombreRegla" value="<%= HtmlUtil.escape(r.getNombreRepresentativo()) %>">
                                             <input type="hidden" name="idRegla" value="<%= r.getId() %>">
                                             <input type="hidden" name="nuevoEstado" value="<%= nuevoEstado %>">

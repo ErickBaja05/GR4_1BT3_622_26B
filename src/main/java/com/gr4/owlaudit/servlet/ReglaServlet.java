@@ -48,9 +48,18 @@ public class ReglaServlet extends HttpServlet {
             throws ServletException, IOException {
         try {
             request.setAttribute("reglasVigentes", reglaDAO.consultarReglasDeEvaluacionVigentes());
+            request.setAttribute("reglas", reglaDAO.consultarTodasLasReglas());
         } catch (Exception e) {
-            System.err.println("[ReglaServlet] Error al consultar reglas vigentes: " + e.getMessage());
+            System.err.println("[ReglaServlet] Error al consultar reglas: " + e.getMessage());
         }
+
+        String vista = request.getParameter("vista");
+        String accion = request.getParameter("accion");
+        if ("catalogo".equalsIgnoreCase(vista) || "catalogo".equalsIgnoreCase(accion)) {
+            request.getRequestDispatcher(VISTA_CATALOGO).forward(request, response);
+            return;
+        }
+
         request.getRequestDispatcher(VISTA).forward(request, response);
     }
 
@@ -124,6 +133,11 @@ public class ReglaServlet extends HttpServlet {
         } else {
             request.setAttribute(ATTR_MENSAJE_EXITO, construirMensajeExito(nuevoEstado));
         }
+
+        try {
+            request.setAttribute("reglas", reglaDAO.consultarTodasLasReglas());
+            request.setAttribute("reglasVigentes", reglaDAO.consultarReglasDeEvaluacionVigentes());
+        } catch (Exception ignored) {}
 
         request.getRequestDispatcher(VISTA_CATALOGO).forward(request, response);
     }

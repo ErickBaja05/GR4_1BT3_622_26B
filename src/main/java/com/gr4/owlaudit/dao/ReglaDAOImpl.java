@@ -86,4 +86,14 @@ public class ReglaDAOImpl implements ReglaDAO {
             return false;
         }
     }
+
+    @Override
+    public List<Regla> consultarTodasLasReglas() {
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            return session.createQuery(
+                "SELECT r FROM Regla r ORDER BY r.id ASC",
+                Regla.class
+            ).list();
+        }
+    }
 }

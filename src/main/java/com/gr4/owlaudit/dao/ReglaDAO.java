@@ -18,4 +18,8 @@ public interface ReglaDAO {
     default boolean actualizarEstadoVigencia(String nombre, EstadoVigencia nuevoEstado) {
         return false;
     };
+
+    default List<Regla> consultarTodasLasReglas() {
+        return consultarReglasDeEvaluacionVigentes();
+    };
 }
