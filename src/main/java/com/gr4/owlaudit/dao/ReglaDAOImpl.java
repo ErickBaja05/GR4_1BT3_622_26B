@@ -44,12 +44,25 @@ public class ReglaDAOImpl implements ReglaDAO {
 
     @Override
     public List<Regla> consultarReglasDeEvaluacionVigentes() {
+        return consultarReglasVigentes();
+    }
+
+    @Override
+    public List<Regla> consultarReglasVigentes() {
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
-            return session.createQuery(
-                "SELECT r FROM Regla r WHERE r.vigencia = :vigencia",
-                Regla.class
-            ).setParameter("vigencia", EstadoVigencia.VIGENTE).list();
+            return ejecutarConsultaReglasVigentes(session);
         }
+    }
+
+    /**
+     * Refactorización Martin Fowler: Extract Method (Composing Methods)
+     * Extrae la construcción y ejecución de la consulta HQL tipada para reglas vigentes.
+     */
+    private List<Regla> ejecutarConsultaReglasVigentes(Session session) {
+        return session.createQuery(
+            "FROM Regla r WHERE r.vigencia = :estado ORDER BY r.id ASC",
+            Regla.class
+        ).setParameter("estado", EstadoVigencia.VIGENTE).list();
     }
 
     @Override
