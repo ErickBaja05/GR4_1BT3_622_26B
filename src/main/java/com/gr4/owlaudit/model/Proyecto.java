@@ -70,6 +70,10 @@ public class Proyecto {
         return urlGithub;
     }
 
+    public String getUrlRepositorio() {
+        return urlGithub;
+    }
+
     public void setUrlGithub(String urlGithub) {
         this.urlGithub = urlGithub;
     }

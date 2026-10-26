@@ -60,7 +60,7 @@ public class AsignacionServlet extends HttpServlet {
         String idAsignacionParam = request.getParameter("idAsignacion");
         String vistaParam = request.getParameter("vista");
 
-        if (esFlujoEstudianteGet(idAsignacionParam, vistaParam)) {
+        if (esFlujoEstudianteGet(request, idAsignacionParam, vistaParam)) {
             procesarGetEstudiante(request, response, idAsignacionParam);
             return;
         }
@@ -132,8 +132,15 @@ public class AsignacionServlet extends HttpServlet {
 
     // --- MÉTODOS DE SOPORTE ---
 
-    private boolean esFlujoEstudianteGet(String idAsignacionParam, String vistaParam) {
-        return idAsignacionParam != null || "estudiante".equalsIgnoreCase(vistaParam);
+    private boolean esFlujoEstudianteGet(HttpServletRequest request, String idAsignacionParam, String vistaParam) {
+        if (idAsignacionParam != null || "estudiante".equalsIgnoreCase(vistaParam)) {
+            return true;
+        }
+        HttpSession session = request.getSession(false);
+        if (session != null && session.getAttribute(LoginServlet.ATRIBUTO_USUARIO) instanceof UsuarioDTO usuario) {
+            return usuario.getRol() == com.gr4.owlaudit.model.RolEnum.ESTUDIANTE;
+        }
+        return false;
     }
 
     private void procesarGetEstudiante(HttpServletRequest request, HttpServletResponse response,
@@ -165,6 +172,10 @@ public class AsignacionServlet extends HttpServlet {
 
         try {
             Long idAsignacion = Long.parseLong(idAsignacionParam.trim());
+            if (asignacionesService != null) {
+                request.setAttribute("resumenAsignacion", asignacionesService.generarResumenAsignacion(idAsignacion));
+            }
+
             String idProyectoParam = request.getParameter("idProyecto");
             Long idProyecto = (idProyectoParam != null && !idProyectoParam.trim().isEmpty())
                     ? Long.parseLong(idProyectoParam.trim())
@@ -173,10 +184,6 @@ public class AsignacionServlet extends HttpServlet {
             AuditoriaDTO auditoriaDTO = construirAuditoriaDTO(request, idAsignacion, idProyecto);
             ResultadoDTO resultado = auditoriaService.ejecutarAuditoriaDeAsignacion(auditoriaDTO);
             request.setAttribute("resultadoAuditoria", resultado);
-
-            if (asignacionesService != null) {
-                request.setAttribute("resumenAsignacion", asignacionesService.generarResumenAsignacion(idAsignacion));
-            }
         } catch (NumberFormatException e) {
             request.setAttribute("mensajeError", "Los identificadores de asignación o proyecto no son válidos.");
         } catch (ExcepcionNegocio | IllegalArgumentException e) {

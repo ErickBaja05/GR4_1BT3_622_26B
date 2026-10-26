@@ -52,6 +52,7 @@ public class AuditoriaServiceImpl implements AuditoriaService {
         this.gitHubClient = gitHubClient;
         this.evaluadorFactory = evaluadorFactory;
         this.proyectoDAO = proyectoDAO;
+        this.asignacionesService = new AsignacionesServiceImpl();
     }
 
     // Mantén los 3 constructores actuales intactos y agrega este 4to para el test
