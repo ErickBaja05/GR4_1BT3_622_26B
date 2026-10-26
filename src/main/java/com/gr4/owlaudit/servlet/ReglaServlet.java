@@ -15,14 +15,15 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.util.Set;
 
 /**
  * CU01 - Registrar regla de evaluación técnica (rol DOCENTE, validado por AutenticacionFilter).
  * HU-01 - Activar / Desactivar vigencia de reglas.
  */
 @WebServlet("/regla")
-public class ReglaServlet extends HttpServlet {
-
+    public class ReglaServlet extends HttpServlet {
+    private static final Set<String> VISTAS_REGISTRO = Set.of("registro", "registrar", "nueva");
     private static final String VISTA = "/WEB-INF/views/registrarRegla.jsp";
     private static final String VISTA_CATALOGO = "/WEB-INF/views/catalogoReglas.jsp";
     private static final String ACCION_CAMBIAR_VIGENCIA = "cambiarVigencia";
@@ -55,8 +56,11 @@ public class ReglaServlet extends HttpServlet {
 
         String vista = request.getParameter("vista");
         String accion = request.getParameter("accion");
-        if ("registro".equalsIgnoreCase(vista) || "registrar".equalsIgnoreCase(vista)
-                || "nueva".equalsIgnoreCase(vista) || "registrar".equalsIgnoreCase(accion)) {
+        // Substitute Algorithm: sustitución de la cadena de || por consulta en VISTAS_REGISTRO
+        boolean esVistaRegistro = (vista != null && VISTAS_REGISTRO.contains(vista.toLowerCase()))
+                || (accion != null && VISTAS_REGISTRO.contains(accion.toLowerCase()));
+
+        if (esVistaRegistro) {
             request.getRequestDispatcher(VISTA).forward(request, response);
             return;
         }

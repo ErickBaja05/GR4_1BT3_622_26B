@@ -61,13 +61,11 @@ public class AsignacionesServiceImpl implements AsignacionesService {
 
         List<Regla> reglasParaAsociar = obtenerReglasVigentes(dto.getReglasIds());
 
-        // 4. Crear y persistir la asignación.
-        Asignacion nuevaAsignacion = new Asignacion(
-                dto.getNombre().trim(),
-                valorUmbral,
-                reglasParaAsociar);
+        // Inline Temp: eliminar variable temporal 'nuevaAsignacion' de único uso
+        return asignacionesDAO.crearAsignacion(
+                new Asignacion(dto.getNombre().trim(), valorUmbral, reglasParaAsociar)
+        );
 
-        return asignacionesDAO.crearAsignacion(nuevaAsignacion);
     }
 
     @Override
