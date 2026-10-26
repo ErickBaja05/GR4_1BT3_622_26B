@@ -207,8 +207,8 @@
                                                                                     <%= resultado.getPuntajeObtenido()
                                                                                         %> / <%=
                                                                                             resultado.getPuntajeMaximo()
-                                                                                            %> pts
-                                                                                            (<%= resultado.getPorcentaje()
+                                                                                            %> pts (<%=
+                                                                                                resultado.getPorcentaje()
                                                                                                 %>%)
                                                                                 </div>
                                                                                 <div>
