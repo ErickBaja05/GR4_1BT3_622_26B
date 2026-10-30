@@ -67,19 +67,57 @@ public class ProyectoServiceImpl implements ProyectoService {
 
     @Override
     public void actualizarProyecto(Long proyectoId, NuevoProyectoDTO dto, Long usuarioId) {
+        if (proyectoId == null || dto == null || usuarioId == null) {
+            throw new ExcepcionNegocio("Los datos para actualizar el proyecto son incompletos.");
+        }
+        if (dto.getNombre() == null || dto.getNombre().trim().isEmpty()) {
+            throw new ExcepcionNegocio("El nombre del proyecto es obligatorio.");
+        }
+        validarEnlace(dto.getUrlGithub());
+
+        Proyecto proyecto = proyectoDAO.buscarPorId(proyectoId);
+        if (proyecto == null) {
+            throw new ExcepcionNegocio("El proyecto especificado no existe.");
+        }
+        if (proyecto.getUsuario() == null || !usuarioId.equals(proyecto.getUsuario().getId())) {
+            throw new ExcepcionNegocio("No tiene permisos para modificar este proyecto. Solo puede gestionar sus propios proyectos.");
+        }
+
+        proyecto.setNombre(dto.getNombre().trim());
+        proyecto.setUrlGithub(dto.getUrlGithub().trim());
+        proyectoDAO.actualizar(proyecto);
     }
 
     @Override
     public void eliminarProyecto(Long proyectoId, Long usuarioId) {
+        if (proyectoId == null || usuarioId == null) {
+            throw new ExcepcionNegocio("Identificador de proyecto o usuario no válido.");
+        }
+        Proyecto proyecto = proyectoDAO.buscarPorId(proyectoId);
+        if (proyecto == null) {
+            throw new ExcepcionNegocio("El proyecto a eliminar no existe.");
+        }
+        if (proyecto.getUsuario() == null || !usuarioId.equals(proyecto.getUsuario().getId())) {
+            throw new ExcepcionNegocio("No tiene permisos para eliminar este proyecto. Solo puede gestionar sus propios proyectos.");
+        }
+
+        proyectoDAO.eliminar(proyectoId);
+        proyectoDAO.resecuenciarIdsEstudiante(usuarioId);
     }
 
     @Override
     public Proyecto buscarPorId(Long proyectoId) {
-        return null;
+        if (proyectoId == null) {
+            return null;
+        }
+        return proyectoDAO.buscarPorId(proyectoId);
     }
 
     @Override
     public java.util.List<Proyecto> listarProyectosDeEstudiante(Long usuarioId) {
-        return java.util.Collections.emptyList();
+        if (usuarioId == null) {
+            return java.util.Collections.emptyList();
+        }
+        return proyectoDAO.listarPorUsuarioId(usuarioId);
     }
 }

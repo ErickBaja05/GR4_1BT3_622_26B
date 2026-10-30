@@ -85,14 +85,71 @@ public class ProyectoDAOImpl implements ProyectoDAO {
 
     @Override
     public void actualizar(Proyecto proyecto) {
+        if (proyecto == null) {
+            return;
+        }
+        Transaction tx = null;
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            tx = session.beginTransaction();
+            session.merge(proyecto);
+            tx.commit();
+        } catch (Exception e) {
+            if (tx != null && tx.isActive()) {
+                tx.rollback();
+            }
+            throw new RuntimeException("Error al actualizar el proyecto: " + e.getMessage(), e);
+        }
     }
 
     @Override
     public void eliminar(Long id) {
+        if (id == null) {
+            return;
+        }
+        Transaction tx = null;
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            tx = session.beginTransaction();
+            Proyecto proyecto = session.get(Proyecto.class, id);
+            if (proyecto != null) {
+                session.createMutationQuery("DELETE FROM Auditoria a WHERE a.proyecto.id = :id")
+                        .setParameter("id", id)
+                        .executeUpdate();
+                session.remove(proyecto);
+            }
+            tx.commit();
+        } catch (Exception e) {
+            if (tx != null && tx.isActive()) {
+                tx.rollback();
+            }
+            throw new RuntimeException("Error al eliminar el proyecto: " + e.getMessage(), e);
+        }
     }
 
     @Override
     public void resecuenciarIdsEstudiante(Long usuarioId) {
+        if (usuarioId == null) {
+            return;
+        }
+        Transaction tx = null;
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            tx = session.beginTransaction();
+            List<Proyecto> restantes = session.createQuery(
+                "SELECT p FROM Proyecto p WHERE p.usuario.id = :usuarioId ORDER BY p.id ASC",
+                Proyecto.class
+            ).setParameter("usuarioId", usuarioId).list();
+
+            long sec = 1L;
+            for (Proyecto p : restantes) {
+                p.setIdEstudiante(sec++);
+                session.merge(p);
+            }
+            tx.commit();
+        } catch (Exception e) {
+            if (tx != null && tx.isActive()) {
+                tx.rollback();
+            }
+            throw new RuntimeException("Error al resecuenciar IDs de proyectos: " + e.getMessage(), e);
+        }
     }
 }
 
