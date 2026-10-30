@@ -1,6 +1,7 @@
 package com.gr4.owlaudit.dto;
 
 public class NuevaReglaDTO {
+    private Long id;
     private String tipoMotor;
     private String nombreRepresentativo;
     private String descripcionDetallada;
@@ -19,6 +20,25 @@ public class NuevaReglaDTO {
         this.parametroExacto = parametroExacto;
         this.nivelSeveridad = nivelSeveridad;
         this.ponderacion = ponderacion;
+    }
+
+    public NuevaReglaDTO(Long id, String tipoMotor, String nombreRepresentativo, String descripcionDetallada,
+                         String parametroExacto, String nivelSeveridad, int ponderacion) {
+        this.id = id;
+        this.tipoMotor = tipoMotor;
+        this.nombreRepresentativo = nombreRepresentativo;
+        this.descripcionDetallada = descripcionDetallada;
+        this.parametroExacto = parametroExacto;
+        this.nivelSeveridad = nivelSeveridad;
+        this.ponderacion = ponderacion;
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
     }
 
     public String getTipoMotor() {

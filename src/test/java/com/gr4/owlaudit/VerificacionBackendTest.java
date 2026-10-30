@@ -84,6 +84,44 @@ public class VerificacionBackendTest {
         public List<Regla> consultarReglasDeEvaluacionVigentes() {
             return reglas.stream().filter(Regla::esVigente).toList();
         }
+
+        @Override
+        public List<Regla> consultarReglasVigentes() {
+            return consultarReglasDeEvaluacionVigentes();
+        }
+
+        @Override
+        public Regla obtenerPorNombre(String nombre) {
+            return reglas.stream().filter(r -> r.getNombreRepresentativo().equalsIgnoreCase(nombre)).findFirst().orElse(null);
+        }
+
+        @Override
+        public boolean actualizarEstadoVigencia(String nombre, com.gr4.owlaudit.model.EstadoVigencia nuevoEstado) {
+            Regla r = obtenerPorNombre(nombre);
+            if (r != null) { r.setVigencia(nuevoEstado); return true; }
+            return false;
+        }
+
+        @Override
+        public List<Regla> consultarTodasLasReglas() {
+            return new ArrayList<>(reglas);
+        }
+
+        @Override
+        public void eliminar(Long id) {
+            reglas.removeIf(r -> r.getId().equals(id));
+        }
+
+        @Override
+        public void actualizar(Regla regla) {
+            eliminar(regla.getId());
+            reglas.add(regla);
+        }
+
+        @Override
+        public Regla buscarPorId(Long id) {
+            return reglas.stream().filter(r -> r.getId().equals(id)).findFirst().orElse(null);
+        }
     }
 
     static class MockProyectoDAO implements ProyectoDAO {

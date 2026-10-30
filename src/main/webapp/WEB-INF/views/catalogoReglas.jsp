@@ -56,6 +56,20 @@
         .btn-deactivate:hover { background-color: #E11D48; color: #FFFFFF; border-color: #E11D48; box-shadow: 0 2px 4px rgba(225, 29, 72, 0.2); }
         .btn-activate { background-color: #F0FDF4; color: #15803D; border-color: #BBF7D0; }
         .btn-activate:hover { background-color: #16A34A; color: #FFFFFF; border-color: #16A34A; box-shadow: 0 2px 4px rgba(225, 29, 72, 0.2); }
+        .btn-edit { background-color: #EFF6FF; color: #1D4ED8; border-color: #BFDBFE; }
+        .btn-edit:hover { background-color: #2563EB; color: #FFFFFF; border-color: #2563EB; box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2); }
+        .btn-delete { background-color: #FEF2F2; color: #B91C1C; border-color: #FECACA; }
+        .btn-delete:hover { background-color: #DC2626; color: #FFFFFF; border-color: #DC2626; box-shadow: 0 2px 4px rgba(220, 38, 38, 0.2); }
+
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px);
+            display: none; align-items: center; justify-content: center; z-index: 1000;
+        }
+        .modal-content {
+            background: #FFFFFF; border-radius: 12px; max-width: 620px; width: 92%;
+            padding: 1.75rem; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
 
         .alert-dismissible {
             position: relative; display: flex; align-items: flex-start; justify-content: space-between;
@@ -231,26 +245,52 @@
                                         <% } %>
                                     </td>
                                     <td style="padding: 0.65rem 0.5rem; text-align: center;">
-                                        <form action="${pageContext.request.contextPath}/regla" method="POST" style="margin: 0; display: inline-block;">
-                                            <input type="hidden" name="accion" value="cambiarVigencia">
-                                            <input type="hidden" name="nombreRegla" value="<%= HtmlUtil.escape(r.getNombreRepresentativo()) %>">
-                                            <input type="hidden" name="idRegla" value="<%= r.getId() %>">
-                                            <input type="hidden" name="nuevoEstado" value="<%= nuevoEstado %>">
+                                        <div style="display: inline-flex; align-items: center; gap: 0.35rem; flex-wrap: wrap; justify-content: center;">
+                                            <form action="${pageContext.request.contextPath}/regla" method="POST" style="margin: 0; display: inline-block;">
+                                                <input type="hidden" name="accion" value="cambiarVigencia">
+                                                <input type="hidden" name="nombreRegla" value="<%= HtmlUtil.escape(r.getNombreRepresentativo()) %>">
+                                                <input type="hidden" name="idRegla" value="<%= r.getId() %>">
+                                                <input type="hidden" name="nuevoEstado" value="<%= nuevoEstado %>">
 
-                                            <% if (esVigente) { %>
-                                                <button type="submit" class="btn-action-status btn-deactivate"
-                                                        title="Haga clic para cambiar a NO_VIGENTE"
-                                                        onclick="return confirmarCambioEstado('<%= HtmlUtil.escape(r.getNombreRepresentativo()) %>', 'desactivar');">
-                                                    <span>🚫</span> Desactivar
+                                                <% if (esVigente) { %>
+                                                    <button type="submit" class="btn-action-status btn-deactivate"
+                                                            title="Haga clic para cambiar a NO_VIGENTE"
+                                                            onclick="return confirmarCambioEstado('<%= HtmlUtil.escape(r.getNombreRepresentativo()) %>', 'desactivar');">
+                                                        <span>🚫</span> Desactivar
+                                                    </button>
+                                                <% } else { %>
+                                                    <button type="submit" class="btn-action-status btn-activate"
+                                                            title="Haga clic para cambiar a VIGENTE"
+                                                            onclick="return confirmarCambioEstado('<%= HtmlUtil.escape(r.getNombreRepresentativo()) %>', 'activar');">
+                                                        <span>✅</span> Activar
+                                                    </button>
+                                                <% } %>
+                                            </form>
+
+                                            <button type="button" class="btn-action-status btn-edit"
+                                                    title="Editar esta regla técnica"
+                                                    onclick="abrirModalEditar(
+                                                        '<%= r.getId() %>',
+                                                        '<%= r.getTipoMotor() != null ? r.getTipoMotor().name() : "" %>',
+                                                        '<%= HtmlUtil.escape(r.getNombreRepresentativo()) %>',
+                                                        '<%= HtmlUtil.escape(r.getDescripcionDetallada() != null ? r.getDescripcionDetallada() : "") %>',
+                                                        '<%= HtmlUtil.escape(r.getParametroExacto()) %>',
+                                                        '<%= r.getNivelSeveridad() != null ? r.getNivelSeveridad().name() : "" %>',
+                                                        '<%= r.getPonderacion() %>'
+                                                    )">
+                                                <span>✏️</span> Editar
+                                            </button>
+
+                                            <form action="${pageContext.request.contextPath}/regla" method="POST" style="margin: 0; display: inline-block;">
+                                                <input type="hidden" name="accion" value="eliminar">
+                                                <input type="hidden" name="idRegla" value="<%= r.getId() %>">
+                                                <button type="submit" class="btn-action-status btn-delete"
+                                                        title="Eliminar permanentemente esta regla"
+                                                        onclick="return confirmarEliminarRegla('<%= HtmlUtil.escape(r.getNombreRepresentativo()) %>');">
+                                                    <span>🗑️</span> Eliminar
                                                 </button>
-                                            <% } else { %>
-                                                <button type="submit" class="btn-action-status btn-activate"
-                                                        title="Haga clic para cambiar a VIGENTE"
-                                                        onclick="return confirmarCambioEstado('<%= HtmlUtil.escape(r.getNombreRepresentativo()) %>', 'activar');">
-                                                    <span>✅</span> Activar
-                                                </button>
-                                            <% } %>
-                                        </form>
+                                            </form>
+                                        </div>
                                     </td>
                                 </tr>
                             <% } %>
@@ -264,6 +304,66 @@
                 </div>
             <% } %>
         </div>
+
+        <!-- Modal para Editar Regla Técnica -->
+        <div id="modalEditarRegla" class="modal-overlay">
+            <div class="modal-content">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.75rem;">
+                    <h3 style="margin: 0; font-size: 1.2rem; color: var(--bg-primary);">Editar Regla Técnica</h3>
+                    <button type="button" class="btn-close" onclick="cerrarModalEditar()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer;">&times;</button>
+                </div>
+                <form action="${pageContext.request.contextPath}/regla" method="POST">
+                    <input type="hidden" name="accion" value="actualizar">
+                    <input type="hidden" id="editIdRegla" name="idRegla" value="">
+
+                    <div class="form-group">
+                        <label for="editTipoMotor" class="form-label">Tipo de Motor de Evaluación</label>
+                        <select id="editTipoMotor" name="tipoMotor" class="form-control" required>
+                            <option value="PRESENCIA_ARCHIVO">Presencia de Archivo</option>
+                            <option value="RESTRICCION_ARCHIVOS">Restricción de Archivos</option>
+                            <option value="ESTRUCTURA_CARPETAS">Estructura de Carpetas</option>
+                            <option value="CONVENCION_COMMITS">Convención de Commits</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="editNombreRepresentativo" class="form-label">Nombre Representativo</label>
+                        <input type="text" id="editNombreRepresentativo" name="nombreRepresentativo" class="form-control" maxlength="100" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="editDescripcionDetallada" class="form-label">Descripción Detallada</label>
+                        <textarea id="editDescripcionDetallada" name="descripcionDetallada" class="form-control" rows="2" maxlength="200" required></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="editParametroExacto" class="form-label">Parámetro Exacto</label>
+                        <input type="text" id="editParametroExacto" name="parametroExacto" class="form-control" maxlength="100" required>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                        <div class="form-group">
+                            <label for="editNivelSeveridad" class="form-label">Nivel de Severidad</label>
+                            <select id="editNivelSeveridad" name="nivelSeveridad" class="form-control" required>
+                                <option value="ALTA">ALTA</option>
+                                <option value="MEDIA">MEDIA</option>
+                                <option value="BAJA">BAJA</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="editPonderacion" class="form-label">Ponderación (Puntos)</label>
+                            <input type="number" id="editPonderacion" name="ponderacion" class="form-control" min="1" max="100" required>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1.25rem;">
+                        <button type="button" class="btn btn-secondary" onclick="cerrarModalEditar()">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+                    </div>
+                </form>
+            </div>
+        </div>
     </main>
 
     <script>
@@ -276,6 +376,32 @@
             var accionTexto = (accion === 'activar') ? 'activar (marcar como VIGENTE)' : 'desactivar (marcar como NO_VIGENTE)';
             return confirm("¿Está seguro de que desea " + accionTexto + " la regla técnica:\n\n\"" + nombreRegla + "\"?");
         }
+
+        function confirmarEliminarRegla(nombreRegla) {
+            return confirm("¿Está seguro de que desea eliminar permanentemente la regla técnica:\n\n\"" + nombreRegla + "\"?\n\nEsta acción no se puede deshacer.");
+        }
+
+        function abrirModalEditar(id, motor, nombre, desc, param, severidad, ponderacion) {
+            document.getElementById('editIdRegla').value = id;
+            document.getElementById('editTipoMotor').value = motor;
+            document.getElementById('editNombreRepresentativo').value = nombre;
+            document.getElementById('editDescripcionDetallada').value = desc;
+            document.getElementById('editParametroExacto').value = param;
+            document.getElementById('editNivelSeveridad').value = severidad;
+            document.getElementById('editPonderacion').value = ponderacion;
+            document.getElementById('modalEditarRegla').style.display = 'flex';
+        }
+
+        function cerrarModalEditar() {
+            document.getElementById('modalEditarRegla').style.display = 'none';
+        }
+
+        window.onclick = function(event) {
+            var modal = document.getElementById('modalEditarRegla');
+            if (event.target === modal) {
+                cerrarModalEditar();
+            }
+        };
 
         function toggleFormularioRegistro() {
             var card = document.getElementById('cardRegistroRegla');

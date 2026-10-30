@@ -5,7 +5,9 @@ import com.gr4.owlaudit.dao.ReglaDAO;
 import com.gr4.owlaudit.dao.ReglaDAOImpl;
 import com.gr4.owlaudit.dto.NuevaReglaDTO;
 import com.gr4.owlaudit.model.EstadoVigencia;
+import com.gr4.owlaudit.model.NivelSeveridadEnum;
 import com.gr4.owlaudit.model.Regla;
+import com.gr4.owlaudit.model.TipoMotorEnum;
 
 public class ReglaServiceImpl implements ReglaService {
 
@@ -68,6 +70,57 @@ public class ReglaServiceImpl implements ReglaService {
         // 3. Actualizar el estado en el objeto de dominio y persistir invocando al DAO
         reglaActual.setVigencia(nuevoEstado);
         return reglaDAO.actualizarEstadoVigencia(nombreRegla, nuevoEstado);
+    }
+
+    @Override
+    public void actualizarRegla(Long id, NuevaReglaDTO dto) {
+        if (id == null) {
+            throw new ExcepcionNegocio("El identificador de la regla es obligatorio.");
+        }
+        if (dto == null) {
+            throw new ExcepcionNegocio("Los datos de la regla no pueden ser nulos.");
+        }
+
+        validadorRegla.validarSintaxisYFormato(dto);
+
+        Regla regla = reglaDAO.buscarPorId(id);
+        if (regla == null) {
+            throw new ExcepcionNegocio("No se encontró la regla con ID: " + id);
+        }
+
+        String nuevoNombre = dto.getNombreRepresentativo().trim();
+        if (!regla.getNombreRepresentativo().equalsIgnoreCase(nuevoNombre) && reglaDAO.existePorNombre(nuevoNombre)) {
+            throw new ExcepcionNegocio("Ya existe una regla de evaluación registrada con el nombre: " + nuevoNombre);
+        }
+
+        regla.setTipoMotor(TipoMotorEnum.valueOf(dto.getTipoMotor().trim().toUpperCase()));
+        regla.setNombreRepresentativo(nuevoNombre);
+        regla.setDescripcionDetallada(dto.getDescripcionDetallada());
+        regla.setParametroExacto(dto.getParametroExacto().trim());
+        regla.setNivelSeveridad(NivelSeveridadEnum.valueOf(dto.getNivelSeveridad().trim().toUpperCase()));
+        regla.setPonderacion(dto.getPonderacion());
+
+        reglaDAO.actualizar(regla);
+    }
+
+    @Override
+    public void eliminarRegla(Long id) {
+        if (id == null) {
+            throw new ExcepcionNegocio("El ID de la regla es obligatorio para eliminar.");
+        }
+        Regla regla = reglaDAO.buscarPorId(id);
+        if (regla == null) {
+            throw new ExcepcionNegocio("No se encontró la regla a eliminar con ID: " + id);
+        }
+        reglaDAO.eliminar(id);
+    }
+
+    @Override
+    public Regla obtenerReglaPorId(Long id) {
+        if (id == null) {
+            return null;
+        }
+        return reglaDAO.buscarPorId(id);
     }
 
 }

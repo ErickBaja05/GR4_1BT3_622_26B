@@ -113,4 +113,59 @@ public class ReglaDAOImpl implements ReglaDAO {
             ).list();
         }
     }
+
+    @Override
+    public Regla buscarPorId(Long id) {
+        if (id == null) {
+            return null;
+        }
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            return session.get(Regla.class, id);
+        } catch (Exception e) {
+            throw new RuntimeException("Error al buscar la regla por ID: " + e.getMessage(), e);
+        }
+    }
+
+    @Override
+    public void actualizar(Regla regla) {
+        Transaction tx = null;
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            tx = session.beginTransaction();
+            session.merge(regla);
+            tx.commit();
+        } catch (Exception e) {
+            if (tx != null && tx.isActive()) {
+                tx.rollback();
+            }
+            throw new RuntimeException("Error al actualizar la regla: " + e.getMessage(), e);
+        }
+    }
+
+    @Override
+    public void eliminar(Long id) {
+        if (id == null) {
+            return;
+        }
+        Transaction tx = null;
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            tx = session.beginTransaction();
+            Regla regla = session.get(Regla.class, id);
+            if (regla != null) {
+                session.createNativeMutationQuery("DELETE FROM asignacion_regla WHERE regla_id = :id")
+                        .setParameter("id", id)
+                        .executeUpdate();
+                session.createMutationQuery("DELETE FROM ResultadoRegla rr WHERE rr.regla.id = :id")
+                        .setParameter("id", id)
+                        .executeUpdate();
+                session.remove(regla);
+            }
+            tx.commit();
+        } catch (Exception e) {
+            if (tx != null && tx.isActive()) {
+                tx.rollback();
+            }
+            throw new RuntimeException("Error al eliminar la regla: " + e.getMessage(), e);
+        }
+    }
 }
+

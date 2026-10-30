@@ -11,27 +11,17 @@ public interface ReglaDAO {
 
     List<Regla> consultarReglasDeEvaluacionVigentes();
 
-    default List<Regla> consultarReglasVigentes() {
-        return consultarReglasDeEvaluacionVigentes();
-    }
+    List<Regla> consultarReglasVigentes();
 
-    default Regla obtenerPorNombre(String nombre) {
-        return null;
-    };
+    Regla obtenerPorNombre(String nombre);
 
-    default boolean actualizarEstadoVigencia(String nombre, EstadoVigencia nuevoEstado) {
-        return false;
-    };
+    boolean actualizarEstadoVigencia(String nombre, EstadoVigencia nuevoEstado);
 
-    default List<Regla> consultarTodasLasReglas() {
-        return consultarReglasDeEvaluacionVigentes();
-    };
+    List<Regla> consultarTodasLasReglas();
 
-    default void eliminar(Long id) {}
+    void eliminar(Long id);
 
-    default void actualizar(Regla regla) {}
+    void actualizar(Regla regla);
 
-    default Regla buscarPorId(Long id) {
-        return null;
-    }
+    Regla buscarPorId(Long id);
 }

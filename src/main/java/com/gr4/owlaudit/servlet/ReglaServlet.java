@@ -27,6 +27,8 @@ import java.util.Set;
     private static final String VISTA = "/WEB-INF/views/registrarRegla.jsp";
     private static final String VISTA_CATALOGO = "/WEB-INF/views/catalogoReglas.jsp";
     private static final String ACCION_CAMBIAR_VIGENCIA = "cambiarVigencia";
+    private static final String ACCION_ELIMINAR = "eliminar";
+    private static final String ACCION_ACTUALIZAR = "actualizar";
     private static final String ATTR_MENSAJE_EXITO = "mensajeExito";
     private static final String ATTR_MENSAJE_ERROR = "mensajeError";
 
@@ -56,6 +58,16 @@ import java.util.Set;
 
         String vista = request.getParameter("vista");
         String accion = request.getParameter("accion");
+        if ("editar".equalsIgnoreCase(accion) || "editar".equalsIgnoreCase(vista)) {
+            String idStr = request.getParameter("id");
+            if (idStr != null && !idStr.isBlank()) {
+                try {
+                    Long id = Long.parseLong(idStr);
+                    request.setAttribute("reglaAEditar", reglaService.obtenerReglaPorId(id));
+                } catch (Exception ignored) {}
+            }
+        }
+
         // Substitute Algorithm: sustitución de la cadena de || por consulta en VISTAS_REGISTRO
         boolean esVistaRegistro = (vista != null && VISTAS_REGISTRO.contains(vista.toLowerCase()))
                 || (accion != null && VISTAS_REGISTRO.contains(accion.toLowerCase()));
@@ -73,9 +85,20 @@ import java.util.Set;
             throws ServletException, IOException {
         
         request.setCharacterEncoding("UTF-8");
+        String accion = request.getParameter("accion");
 
-        if (ACCION_CAMBIAR_VIGENCIA.equals(request.getParameter("accion"))) {
+        if (ACCION_CAMBIAR_VIGENCIA.equals(accion)) {
             procesarCambioVigencia(request, response);
+            return;
+        }
+
+        if (ACCION_ELIMINAR.equals(accion)) {
+            procesarEliminacion(request, response);
+            return;
+        }
+
+        if (ACCION_ACTUALIZAR.equals(accion)) {
+            procesarActualizacion(request, response);
             return;
         }
 
@@ -108,10 +131,7 @@ import java.util.Set;
         try {
             reglaService.registrarReglaEvaluacionTecnica(dto);
             request.setAttribute(ATTR_MENSAJE_EXITO, "Regla '" + dto.getNombreRepresentativo() + "' registrada con éxito y activa para las auditorías.");
-            try {
-                request.setAttribute("reglas", reglaDAO.consultarTodasLasReglas());
-                request.setAttribute("reglasVigentes", reglaDAO.consultarReglasDeEvaluacionVigentes());
-            } catch (Exception ignored) {}
+            recargarListasReglas(request);
             request.getRequestDispatcher(VISTA_CATALOGO).forward(request, response);
             return;
         } catch (ExcepcionNegocio e) {
@@ -121,12 +141,66 @@ import java.util.Set;
             request.setAttribute(ATTR_MENSAJE_ERROR, "Ocurrió un error inesperado al registrar la regla. Intente nuevamente.");
         }
 
-        try {
-            request.setAttribute("reglasVigentes", reglaDAO.consultarReglasDeEvaluacionVigentes());
-            request.setAttribute("reglas", reglaDAO.consultarTodasLasReglas());
-        } catch (Exception ignored) {}
-
+        recargarListasReglas(request);
         request.getRequestDispatcher(VISTA).forward(request, response);
+    }
+
+    private void procesarEliminacion(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        String idStr = request.getParameter("idRegla");
+        if (idStr == null || idStr.isBlank()) {
+            idStr = request.getParameter("id");
+        }
+        try {
+            Long id = Long.parseLong(idStr);
+            reglaService.eliminarRegla(id);
+            request.setAttribute(ATTR_MENSAJE_EXITO, "Regla eliminada exitosamente.");
+        } catch (ExcepcionNegocio e) {
+            request.setAttribute(ATTR_MENSAJE_ERROR, e.getMessage());
+        } catch (Exception e) {
+            request.setAttribute(ATTR_MENSAJE_ERROR, "Error al eliminar la regla: " + e.getMessage());
+        }
+        recargarListasReglas(request);
+        request.getRequestDispatcher(VISTA_CATALOGO).forward(request, response);
+    }
+
+    private void procesarActualizacion(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        String idStr = request.getParameter("idRegla");
+        if (idStr == null || idStr.isBlank()) {
+            idStr = request.getParameter("id");
+        }
+        String tipoMotor = request.getParameter("tipoMotor");
+        String nombreRepresentativo = request.getParameter("nombreRepresentativo");
+        String descripcionDetallada = request.getParameter("descripcionDetallada");
+        String parametroExacto = request.getParameter("parametroExacto");
+        String nivelSeveridad = request.getParameter("nivelSeveridad");
+        int ponderacion = 0;
+        try {
+            ponderacion = Integer.parseInt(request.getParameter("ponderacion"));
+        } catch (NumberFormatException e) {
+            ponderacion = 0;
+        }
+
+        try {
+            Long id = Long.parseLong(idStr);
+            NuevaReglaDTO dto = new NuevaReglaDTO(id, tipoMotor, nombreRepresentativo, descripcionDetallada, parametroExacto, nivelSeveridad, ponderacion);
+            reglaService.actualizarRegla(id, dto);
+            request.setAttribute(ATTR_MENSAJE_EXITO, "Regla '" + dto.getNombreRepresentativo() + "' actualizada con éxito.");
+        } catch (ExcepcionNegocio e) {
+            request.setAttribute(ATTR_MENSAJE_ERROR, e.getMessage());
+        } catch (Exception e) {
+            request.setAttribute(ATTR_MENSAJE_ERROR, "Error al actualizar la regla: " + e.getMessage());
+        }
+        recargarListasReglas(request);
+        request.getRequestDispatcher(VISTA_CATALOGO).forward(request, response);
+    }
+
+    private void recargarListasReglas(HttpServletRequest request) {
+        try {
+            request.setAttribute("reglas", reglaDAO.consultarTodasLasReglas());
+            request.setAttribute("reglasVigentes", reglaDAO.consultarReglasDeEvaluacionVigentes());
+        } catch (Exception ignored) {}
     }
 
     /**

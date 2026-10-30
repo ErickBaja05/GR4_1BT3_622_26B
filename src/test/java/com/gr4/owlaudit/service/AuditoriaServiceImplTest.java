@@ -57,6 +57,39 @@ class AuditoriaServiceImplTest {
         public List<Regla> consultarReglasDeEvaluacionVigentes() {
             return reglas;
         }
+
+        @Override
+        public List<Regla> consultarReglasVigentes() {
+            return reglas;
+        }
+
+        @Override
+        public Regla obtenerPorNombre(String nombre) {
+            return null;
+        }
+
+        @Override
+        public boolean actualizarEstadoVigencia(String nombre, com.gr4.owlaudit.model.EstadoVigencia nuevoEstado) {
+            return false;
+        }
+
+        @Override
+        public List<Regla> consultarTodasLasReglas() {
+            return reglas;
+        }
+
+        @Override
+        public void eliminar(Long id) {
+        }
+
+        @Override
+        public void actualizar(Regla regla) {
+        }
+
+        @Override
+        public Regla buscarPorId(Long id) {
+            return null;
+        }
     }
 
     static class AuditoriaDAOFalso implements AuditoriaDAO {
