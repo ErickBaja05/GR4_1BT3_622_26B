@@ -26,4 +26,12 @@ public interface ReglaDAO {
     default List<Regla> consultarTodasLasReglas() {
         return consultarReglasDeEvaluacionVigentes();
     };
+
+    default void eliminar(Long id) {}
+
+    default void actualizar(Regla regla) {}
+
+    default Regla buscarPorId(Long id) {
+        return null;
+    }
 }
