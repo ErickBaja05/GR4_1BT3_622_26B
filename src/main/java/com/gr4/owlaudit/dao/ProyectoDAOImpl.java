@@ -82,5 +82,17 @@ public class ProyectoDAOImpl implements ProyectoDAO {
             throw new RuntimeException("Error al buscar proyecto académico por ID: " + e.getMessage(), e);
         }
     }
+
+    @Override
+    public void actualizar(Proyecto proyecto) {
+    }
+
+    @Override
+    public void eliminar(Long id) {
+    }
+
+    @Override
+    public void resecuenciarIdsEstudiante(Long usuarioId) {
+    }
 }
 
