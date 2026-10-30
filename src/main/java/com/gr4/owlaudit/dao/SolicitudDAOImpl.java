@@ -1,11 +1,9 @@
 package com.gr4.owlaudit.dao;
 
 import com.gr4.owlaudit.common.config.HibernateUtil;
-import com.gr4.owlaudit.model.Hallazgo;
 import com.gr4.owlaudit.model.SolicitudRetroalimentacion;
 import org.hibernate.Session;
 import org.hibernate.Transaction;
-import java.util.List;
 
 public class SolicitudDAOImpl implements SolicitudDAO {
 

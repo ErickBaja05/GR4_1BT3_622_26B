@@ -11,7 +11,6 @@ import com.gr4.owlaudit.dto.ResumenAsignacionDTO;
 import com.gr4.owlaudit.model.Asignacion;
 import com.gr4.owlaudit.model.Proyecto;
 import com.gr4.owlaudit.model.Regla;
-import com.gr4.owlaudit.service.AsignacionesService;
 
 import java.util.List;
 import java.util.Map;

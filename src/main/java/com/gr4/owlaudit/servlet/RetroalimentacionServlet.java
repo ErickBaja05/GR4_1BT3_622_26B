@@ -15,7 +15,6 @@ import com.gr4.owlaudit.dao.SolicitudDAO;
 import com.gr4.owlaudit.dao.SolicitudDAOImpl;
 import com.gr4.owlaudit.dto.SolicitudDTO;
 import com.gr4.owlaudit.dto.UsuarioDTO;
-import com.gr4.owlaudit.model.Auditoria;
 import com.gr4.owlaudit.model.Hallazgo;
 import com.gr4.owlaudit.model.Proyecto;
 import com.gr4.owlaudit.model.ResultadoRegla;
@@ -46,7 +45,6 @@ public class RetroalimentacionServlet extends HttpServlet {
     private final RetroalimentacionService retroalimentacionService;
     private final SolicitudDAO solicitudDAO;
     private final ProyectoDAO proyectoDAO;
-    private final AuditoriaDAO auditoriaDAO;
 
     public RetroalimentacionServlet() {
         this(new RetroalimentacionServiceImpl(), new SolicitudDAOImpl(), new ProyectoDAOImpl(), new AuditoriaDAOImpl());
@@ -65,7 +63,6 @@ public class RetroalimentacionServlet extends HttpServlet {
         this.retroalimentacionService = retroalimentacionService;
         this.solicitudDAO = solicitudDAO;
         this.proyectoDAO = proyectoDAO;
-        this.auditoriaDAO = auditoriaDAO;
     }
 
     @Override
