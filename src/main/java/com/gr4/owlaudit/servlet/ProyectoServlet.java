@@ -115,12 +115,8 @@ public class ProyectoServlet extends HttpServlet {
             response.sendRedirect(request.getContextPath() + "/login");
             return;
         }
-        String idStr = request.getParameter("idProyecto");
-        if (idStr == null || idStr.isBlank()) {
-            idStr = request.getParameter("id");
-        }
+        Long proyectoId = extraerIdProyecto(request);
         try {
-            Long proyectoId = Long.parseLong(idStr.trim());
             proyectoService.eliminarProyecto(proyectoId, usuario.getId());
             request.setAttribute("mensajeExito", "Proyecto eliminado exitosamente y orden secuencial actualizado.");
         } catch (ExcepcionNegocio e) {
@@ -140,15 +136,11 @@ public class ProyectoServlet extends HttpServlet {
             response.sendRedirect(request.getContextPath() + "/login");
             return;
         }
-        String idStr = request.getParameter("idProyecto");
-        if (idStr == null || idStr.isBlank()) {
-            idStr = request.getParameter("id");
-        }
+        Long proyectoId = extraerIdProyecto(request);
         String nombre = request.getParameter("nombre");
         String urlGithub = request.getParameter("urlGithub");
 
         try {
-            Long proyectoId = Long.parseLong(idStr.trim());
             NuevoProyectoDTO dto = new NuevoProyectoDTO(nombre, urlGithub, usuario.getId());
             proyectoService.actualizarProyecto(proyectoId, dto, usuario.getId());
             request.setAttribute("mensajeExito", "Proyecto '" + dto.getNombre() + "' actualizado exitosamente.");
@@ -160,6 +152,26 @@ public class ProyectoServlet extends HttpServlet {
         }
         recargarProyectos(request, usuario);
         request.getRequestDispatcher(VISTA).forward(request, response);
+    }
+
+    /**
+     * Refactorización Martin Fowler: Replace Temp with Query (Composing Methods).
+     * Reemplaza las variables temporales idStr dispersas en los métodos de acción
+     * por un método de consulta reutilizable y robusto.
+     */
+    private Long extraerIdProyecto(HttpServletRequest request) {
+        String idStr = request.getParameter("idProyecto");
+        if (idStr == null || idStr.isBlank()) {
+            idStr = request.getParameter("id");
+        }
+        if (idStr == null || idStr.isBlank()) {
+            return null;
+        }
+        try {
+            return Long.parseLong(idStr.trim());
+        } catch (NumberFormatException e) {
+            return null;
+        }
     }
 
     private void recargarProyectos(HttpServletRequest request, UsuarioDTO usuario) {
