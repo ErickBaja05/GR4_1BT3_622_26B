@@ -18,8 +18,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OwlAudit - Registrar Proyecto</title>
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/styles.css">
+    <style>
+        .btn-edit { background-color: #EFF6FF; color: #1D4ED8; border: 1px solid #BFDBFE; font-size: 0.82rem; font-weight: 600; padding: 0.35rem 0.75rem; border-radius: 6px; cursor: pointer; transition: all 0.2s; }
+        .btn-edit:hover { background-color: #2563EB; color: #FFFFFF; border-color: #2563EB; }
+        .btn-delete { background-color: #FEF2F2; color: #B91C1C; border: 1px solid #FECACA; font-size: 0.82rem; font-weight: 600; padding: 0.35rem 0.75rem; border-radius: 6px; cursor: pointer; transition: all 0.2s; }
+        .btn-delete:hover { background-color: #DC2626; color: #FFFFFF; border-color: #DC2626; }
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px);
+            display: none; align-items: center; justify-content: center; z-index: 1000;
+        }
+        .modal-content {
+            background: #FFFFFF; border-radius: 12px; max-width: 550px; width: 92%;
+            padding: 1.75rem; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+    </style>
 </head>
 <body>
 
@@ -104,7 +118,21 @@
                                     </a>
                                 </td>
                                 <td style="padding: 0.5rem; text-align: center;">
-                                    <a class="btn btn-sm btn-secondary" href="${pageContext.request.contextPath}/auditoria?proyectoId=<%= p.getId() %>">Auditar</a>
+                                    <div style="display: inline-flex; align-items: center; gap: 0.4rem; justify-content: center; flex-wrap: wrap;">
+                                        <a class="btn btn-sm btn-secondary" href="${pageContext.request.contextPath}/auditoria?proyectoId=<%= p.getId() %>">Auditar</a>
+                                        <button type="button" class="btn-edit"
+                                                onclick="abrirModalEditarProyecto('<%= p.getId() %>', '<%= HtmlUtil.escape(p.getNombre()) %>', '<%= HtmlUtil.escape(p.getUrlGithub()) %>')">
+                                            ✏️ Editar
+                                        </button>
+                                        <form action="${pageContext.request.contextPath}/proyecto" method="POST" style="margin: 0; display: inline-block;">
+                                            <input type="hidden" name="accion" value="eliminar">
+                                            <input type="hidden" name="idProyecto" value="<%= p.getId() %>">
+                                            <button type="submit" class="btn-delete"
+                                                    onclick="return confirmarEliminarProyecto('<%= HtmlUtil.escape(p.getNombre()) %>');">
+                                                🗑️ Eliminar
+                                            </button>
+                                        </form>
+                                    </div>
                                 </td>
                             </tr>
                         <% 
@@ -115,7 +143,59 @@
                 </table>
             </div>
         <% } %>
+
+        <!-- Modal para Editar Proyecto del Estudiante -->
+        <div id="modalEditarProyecto" class="modal-overlay">
+            <div class="modal-content">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.75rem;">
+                    <h3 style="margin: 0; font-size: 1.2rem; color: var(--bg-primary);">Editar Repositorio / Proyecto</h3>
+                    <button type="button" class="btn-close" onclick="cerrarModalEditarProyecto()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer;">&times;</button>
+                </div>
+                <form action="${pageContext.request.contextPath}/proyecto" method="POST">
+                    <input type="hidden" name="accion" value="actualizar">
+                    <input type="hidden" id="editIdProyecto" name="idProyecto" value="">
+
+                    <div class="form-group">
+                        <label for="editNombreProyecto" class="form-label">Nombre del Proyecto</label>
+                        <input type="text" id="editNombreProyecto" name="nombre" class="form-control" maxlength="150" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="editUrlGithub" class="form-label">URL del Repositorio de GitHub</label>
+                        <input type="url" id="editUrlGithub" name="urlGithub" class="form-control" maxlength="255" required>
+                    </div>
+
+                    <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1.25rem;">
+                        <button type="button" class="btn btn-secondary" onclick="cerrarModalEditarProyecto()">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+                    </div>
+                </form>
+            </div>
+        </div>
     </main>
 
+    <script>
+        function abrirModalEditarProyecto(id, nombre, url) {
+            document.getElementById('editIdProyecto').value = id;
+            document.getElementById('editNombreProyecto').value = nombre;
+            document.getElementById('editUrlGithub').value = url;
+            document.getElementById('modalEditarProyecto').style.display = 'flex';
+        }
+
+        function cerrarModalEditarProyecto() {
+            document.getElementById('modalEditarProyecto').style.display = 'none';
+        }
+
+        window.onclick = function(event) {
+            var modal = document.getElementById('modalEditarProyecto');
+            if (event.target === modal) {
+                cerrarModalEditarProyecto();
+            }
+        };
+
+        function confirmarEliminarProyecto(nombre) {
+            return confirm("¿Está seguro de que desea eliminar su proyecto académico:\n\n\"" + nombre + "\"?\n\nEl orden secuencial de sus repositorios se reajustará automáticamente.");
+        }
+    </script>
 </body>
 </html>

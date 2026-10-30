@@ -28,18 +28,24 @@ public class ProyectoServlet extends HttpServlet {
 
     private static final String VISTA = "/WEB-INF/views/registrarProyecto.jsp";
 
-    private final ProyectoService proyectoService = new ProyectoServiceImpl();
-    private final ProyectoDAO proyectoDAO = new ProyectoDAOImpl();
+    private final ProyectoService proyectoService;
+    private final ProyectoDAO proyectoDAO;
+
+    public ProyectoServlet() {
+        this(new ProyectoServiceImpl(), new ProyectoDAOImpl());
+    }
+
+    ProyectoServlet(ProyectoService proyectoService, ProyectoDAO proyectoDAO) {
+        this.proyectoService = proyectoService;
+        this.proyectoDAO = proyectoDAO;
+    }
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) 
             throws ServletException, IOException {
         try {
             UsuarioDTO usuario = (UsuarioDTO) request.getSession().getAttribute(LoginServlet.ATRIBUTO_USUARIO);
-            List<Proyecto> proyectos = (usuario != null && usuario.getRol() == RolEnum.ESTUDIANTE)
-                    ? proyectoDAO.listarPorUsuarioId(usuario.getId())
-                    : proyectoDAO.listarTodos();
-            request.setAttribute("proyectos", proyectos);
+            recargarProyectos(request, usuario);
         } catch (Exception e) {
             System.err.println("[ProyectoServlet] Error al listar proyectos: " + e.getMessage());
         }
@@ -53,6 +59,17 @@ public class ProyectoServlet extends HttpServlet {
         
         // Configura la codificación de caracteres para acentos y caracteres especiales
         request.setCharacterEncoding("UTF-8");
+        String accion = request.getParameter("accion");
+
+        if ("eliminar".equals(accion)) {
+            procesarEliminacion(request, response);
+            return;
+        }
+
+        if ("actualizar".equals(accion)) {
+            procesarActualizacion(request, response);
+            return;
+        }
 
         // 1. Obtención de parámetros del formulario HTML y usuario de sesión
         String nombre = request.getParameter("nombre");
@@ -68,10 +85,9 @@ public class ProyectoServlet extends HttpServlet {
             proyectoService.solicitarRegistroDeNuevoProyecto(dto);
             request.setAttribute("mensajeExito", "Proyecto '" + dto.getNombre() + "' registrado correctamente.");
 
-            List<Proyecto> proyectos = (usuario != null && usuario.getRol() == RolEnum.ESTUDIANTE)
-                    ? proyectoDAO.listarPorUsuarioId(usuario.getId())
-                    : proyectoDAO.listarTodos();
-            request.setAttribute("proyectos", proyectos);
+            recargarProyectos(request, usuario);
+            @SuppressWarnings("unchecked")
+            List<Proyecto> proyectos = (List<Proyecto>) request.getAttribute("proyectos");
             if (proyectos != null && !proyectos.isEmpty() && urlGithub != null) {
                 Proyecto proyectoRegistrado = proyectos.stream()
                         .filter(p -> urlGithub.trim().equalsIgnoreCase(p.getUrlGithub() != null ? p.getUrlGithub().trim() : ""))
@@ -81,24 +97,77 @@ public class ProyectoServlet extends HttpServlet {
             }
         } catch (ExcepcionNegocio e) {
             request.setAttribute("mensajeError", e.getMessage());
-            try {
-                List<Proyecto> proyectos = (usuario != null && usuario.getRol() == RolEnum.ESTUDIANTE)
-                        ? proyectoDAO.listarPorUsuarioId(usuario.getId())
-                        : proyectoDAO.listarTodos();
-                request.setAttribute("proyectos", proyectos);
-            } catch (Exception ignored) {}
+            recargarProyectos(request, usuario);
         } catch (RuntimeException e) {
             System.err.println("[ProyectoServlet] Error técnico: " + e.getMessage());
             request.setAttribute("mensajeError", "Ocurrió un error inesperado al registrar el proyecto. Intente nuevamente.");
-            try {
-                List<Proyecto> proyectos = (usuario != null && usuario.getRol() == RolEnum.ESTUDIANTE)
-                        ? proyectoDAO.listarPorUsuarioId(usuario.getId())
-                        : proyectoDAO.listarTodos();
-                request.setAttribute("proyectos", proyectos);
-            } catch (Exception ignored) {}
+            recargarProyectos(request, usuario);
         }
 
         // 4. Redirección a la vista protegida en WEB-INF/views/
         request.getRequestDispatcher(VISTA).forward(request, response);
+    }
+
+    private void procesarEliminacion(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        UsuarioDTO usuario = (UsuarioDTO) request.getSession().getAttribute(LoginServlet.ATRIBUTO_USUARIO);
+        if (usuario == null) {
+            response.sendRedirect(request.getContextPath() + "/login");
+            return;
+        }
+        String idStr = request.getParameter("idProyecto");
+        if (idStr == null || idStr.isBlank()) {
+            idStr = request.getParameter("id");
+        }
+        try {
+            Long proyectoId = Long.parseLong(idStr.trim());
+            proyectoService.eliminarProyecto(proyectoId, usuario.getId());
+            request.setAttribute("mensajeExito", "Proyecto eliminado exitosamente y orden secuencial actualizado.");
+        } catch (ExcepcionNegocio e) {
+            request.setAttribute("mensajeError", e.getMessage());
+        } catch (Exception e) {
+            System.err.println("[ProyectoServlet] Error al eliminar proyecto: " + e.getMessage());
+            request.setAttribute("mensajeError", "Error al eliminar el proyecto: " + e.getMessage());
+        }
+        recargarProyectos(request, usuario);
+        request.getRequestDispatcher(VISTA).forward(request, response);
+    }
+
+    private void procesarActualizacion(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        UsuarioDTO usuario = (UsuarioDTO) request.getSession().getAttribute(LoginServlet.ATRIBUTO_USUARIO);
+        if (usuario == null) {
+            response.sendRedirect(request.getContextPath() + "/login");
+            return;
+        }
+        String idStr = request.getParameter("idProyecto");
+        if (idStr == null || idStr.isBlank()) {
+            idStr = request.getParameter("id");
+        }
+        String nombre = request.getParameter("nombre");
+        String urlGithub = request.getParameter("urlGithub");
+
+        try {
+            Long proyectoId = Long.parseLong(idStr.trim());
+            NuevoProyectoDTO dto = new NuevoProyectoDTO(nombre, urlGithub, usuario.getId());
+            proyectoService.actualizarProyecto(proyectoId, dto, usuario.getId());
+            request.setAttribute("mensajeExito", "Proyecto '" + dto.getNombre() + "' actualizado exitosamente.");
+        } catch (ExcepcionNegocio e) {
+            request.setAttribute("mensajeError", e.getMessage());
+        } catch (Exception e) {
+            System.err.println("[ProyectoServlet] Error al actualizar proyecto: " + e.getMessage());
+            request.setAttribute("mensajeError", "Error al actualizar el proyecto: " + e.getMessage());
+        }
+        recargarProyectos(request, usuario);
+        request.getRequestDispatcher(VISTA).forward(request, response);
+    }
+
+    private void recargarProyectos(HttpServletRequest request, UsuarioDTO usuario) {
+        try {
+            List<Proyecto> proyectos = (usuario != null && usuario.getRol() == RolEnum.ESTUDIANTE)
+                    ? proyectoDAO.listarPorUsuarioId(usuario.getId())
+                    : proyectoDAO.listarTodos();
+            request.setAttribute("proyectos", proyectos);
+        } catch (Exception ignored) {}
     }
 }
