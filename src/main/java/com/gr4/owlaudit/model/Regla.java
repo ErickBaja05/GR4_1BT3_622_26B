@@ -141,4 +141,27 @@ public class Regla {
         }
         this.vigencia = vigencia;
     }
+
+    /**
+     * Refactorización Martin Fowler: Move Method (Moving Features Between Objects).
+     * Mueve la lógica de actualización de atributos desde ReglaServiceImpl hacia la entidad Regla.
+     */
+    public void actualizarDesdeDTO(NuevaReglaDTO dto) {
+        if (dto != null) {
+            if (dto.getTipoMotor() != null) {
+                this.tipoMotor = TipoMotorEnum.valueOf(dto.getTipoMotor().trim().toUpperCase());
+            }
+            if (dto.getNombreRepresentativo() != null) {
+                this.nombreRepresentativo = dto.getNombreRepresentativo().trim();
+            }
+            this.descripcionDetallada = dto.getDescripcionDetallada();
+            if (dto.getParametroExacto() != null) {
+                this.parametroExacto = dto.getParametroExacto().trim();
+            }
+            if (dto.getNivelSeveridad() != null) {
+                this.nivelSeveridad = NivelSeveridadEnum.valueOf(dto.getNivelSeveridad().trim().toUpperCase());
+            }
+            this.ponderacion = dto.getPonderacion();
+        }
+    }
 }

@@ -147,12 +147,8 @@ import java.util.Set;
 
     private void procesarEliminacion(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        String idStr = request.getParameter("idRegla");
-        if (idStr == null || idStr.isBlank()) {
-            idStr = request.getParameter("id");
-        }
+        Long id = extraerIdRegla(request);
         try {
-            Long id = Long.parseLong(idStr);
             reglaService.eliminarRegla(id);
             request.setAttribute(ATTR_MENSAJE_EXITO, "Regla eliminada exitosamente.");
         } catch (ExcepcionNegocio e) {
@@ -166,10 +162,7 @@ import java.util.Set;
 
     private void procesarActualizacion(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        String idStr = request.getParameter("idRegla");
-        if (idStr == null || idStr.isBlank()) {
-            idStr = request.getParameter("id");
-        }
+        Long id = extraerIdRegla(request);
         String tipoMotor = request.getParameter("tipoMotor");
         String nombreRepresentativo = request.getParameter("nombreRepresentativo");
         String descripcionDetallada = request.getParameter("descripcionDetallada");
@@ -183,7 +176,6 @@ import java.util.Set;
         }
 
         try {
-            Long id = Long.parseLong(idStr);
             NuevaReglaDTO dto = new NuevaReglaDTO(id, tipoMotor, nombreRepresentativo, descripcionDetallada, parametroExacto, nivelSeveridad, ponderacion);
             reglaService.actualizarRegla(id, dto);
             request.setAttribute(ATTR_MENSAJE_EXITO, "Regla '" + dto.getNombreRepresentativo() + "' actualizada con éxito.");
@@ -194,6 +186,26 @@ import java.util.Set;
         }
         recargarListasReglas(request);
         request.getRequestDispatcher(VISTA_CATALOGO).forward(request, response);
+    }
+
+    /**
+     * Refactorización Martin Fowler: Replace Temp with Query (Composing Methods).
+     * Reemplaza las variables temporales idStr dispersas en los métodos de acción
+     * por un método de consulta reutilizable y robusto.
+     */
+    private Long extraerIdRegla(HttpServletRequest request) {
+        String idStr = request.getParameter("idRegla");
+        if (idStr == null || idStr.isBlank()) {
+            idStr = request.getParameter("id");
+        }
+        if (idStr == null || idStr.isBlank()) {
+            return null;
+        }
+        try {
+            return Long.parseLong(idStr.trim());
+        } catch (NumberFormatException e) {
+            return null;
+        }
     }
 
     private void recargarListasReglas(HttpServletRequest request) {

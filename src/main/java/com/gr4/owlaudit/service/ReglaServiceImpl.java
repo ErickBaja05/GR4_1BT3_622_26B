@@ -74,33 +74,47 @@ public class ReglaServiceImpl implements ReglaService {
 
     @Override
     public void actualizarRegla(Long id, NuevaReglaDTO dto) {
+        validarParametrosActualizacion(id, dto);
+        validadorRegla.validarSintaxisYFormato(dto);
+
+        Regla regla = obtenerReglaExistente(id);
+        validarUnicidadNombreAlActualizar(regla, dto.getNombreRepresentativo().trim());
+
+        // Patrón Martin Fowler: Move Method (actualizarDesdeDTO en entidad Regla)
+        regla.actualizarDesdeDTO(dto);
+        reglaDAO.actualizar(regla);
+    }
+
+    /**
+     * Refactorización Martin Fowler: Extract Method (Composing Methods).
+     */
+    private void validarParametrosActualizacion(Long id, NuevaReglaDTO dto) {
         if (id == null) {
             throw new ExcepcionNegocio("El identificador de la regla es obligatorio.");
         }
         if (dto == null) {
             throw new ExcepcionNegocio("Los datos de la regla no pueden ser nulos.");
         }
+    }
 
-        validadorRegla.validarSintaxisYFormato(dto);
-
+    /**
+     * Refactorización Martin Fowler: Extract Method (Composing Methods).
+     */
+    private Regla obtenerReglaExistente(Long id) {
         Regla regla = reglaDAO.buscarPorId(id);
         if (regla == null) {
             throw new ExcepcionNegocio("No se encontró la regla con ID: " + id);
         }
+        return regla;
+    }
 
-        String nuevoNombre = dto.getNombreRepresentativo().trim();
+    /**
+     * Refactorización Martin Fowler: Extract Method (Composing Methods).
+     */
+    private void validarUnicidadNombreAlActualizar(Regla regla, String nuevoNombre) {
         if (!regla.getNombreRepresentativo().equalsIgnoreCase(nuevoNombre) && reglaDAO.existePorNombre(nuevoNombre)) {
             throw new ExcepcionNegocio("Ya existe una regla de evaluación registrada con el nombre: " + nuevoNombre);
         }
-
-        regla.setTipoMotor(TipoMotorEnum.valueOf(dto.getTipoMotor().trim().toUpperCase()));
-        regla.setNombreRepresentativo(nuevoNombre);
-        regla.setDescripcionDetallada(dto.getDescripcionDetallada());
-        regla.setParametroExacto(dto.getParametroExacto().trim());
-        regla.setNivelSeveridad(NivelSeveridadEnum.valueOf(dto.getNivelSeveridad().trim().toUpperCase()));
-        regla.setPonderacion(dto.getPonderacion());
-
-        reglaDAO.actualizar(regla);
     }
 
     @Override
