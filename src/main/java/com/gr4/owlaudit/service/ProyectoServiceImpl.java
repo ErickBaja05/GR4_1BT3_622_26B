@@ -67,24 +67,14 @@ public class ProyectoServiceImpl implements ProyectoService {
 
     @Override
     public void actualizarProyecto(Long proyectoId, NuevoProyectoDTO dto, Long usuarioId) {
-        if (proyectoId == null || dto == null || usuarioId == null) {
-            throw new ExcepcionNegocio("Los datos para actualizar el proyecto son incompletos.");
-        }
-        if (dto.getNombre() == null || dto.getNombre().trim().isEmpty()) {
-            throw new ExcepcionNegocio("El nombre del proyecto es obligatorio.");
-        }
+        validarDatosActualizacion(proyectoId, dto, usuarioId);
         validarEnlace(dto.getUrlGithub());
 
-        Proyecto proyecto = proyectoDAO.buscarPorId(proyectoId);
-        if (proyecto == null) {
-            throw new ExcepcionNegocio("El proyecto especificado no existe.");
-        }
-        if (proyecto.getUsuario() == null || !usuarioId.equals(proyecto.getUsuario().getId())) {
-            throw new ExcepcionNegocio("No tiene permisos para modificar este proyecto. Solo puede gestionar sus propios proyectos.");
-        }
+        Proyecto proyecto = obtenerProyectoValido(proyectoId, "modificar");
+        validarPropietario(proyecto, usuarioId, "modificar");
 
-        proyecto.setNombre(dto.getNombre().trim());
-        proyecto.setUrlGithub(dto.getUrlGithub().trim());
+        // Patrón Martin Fowler: Move Method (actualizarDesdeDTO en Proyecto)
+        proyecto.actualizarDesdeDTO(dto);
         proyectoDAO.actualizar(proyecto);
     }
 
@@ -93,16 +83,43 @@ public class ProyectoServiceImpl implements ProyectoService {
         if (proyectoId == null || usuarioId == null) {
             throw new ExcepcionNegocio("Identificador de proyecto o usuario no válido.");
         }
-        Proyecto proyecto = proyectoDAO.buscarPorId(proyectoId);
-        if (proyecto == null) {
-            throw new ExcepcionNegocio("El proyecto a eliminar no existe.");
-        }
-        if (proyecto.getUsuario() == null || !usuarioId.equals(proyecto.getUsuario().getId())) {
-            throw new ExcepcionNegocio("No tiene permisos para eliminar este proyecto. Solo puede gestionar sus propios proyectos.");
-        }
+        Proyecto proyecto = obtenerProyectoValido(proyectoId, "eliminar");
+        validarPropietario(proyecto, usuarioId, "eliminar");
 
         proyectoDAO.eliminar(proyectoId);
         proyectoDAO.resecuenciarIdsEstudiante(usuarioId);
+    }
+
+    /**
+     * Refactorización Martin Fowler: Extract Method (Composing Methods).
+     */
+    private void validarDatosActualizacion(Long proyectoId, NuevoProyectoDTO dto, Long usuarioId) {
+        if (proyectoId == null || dto == null || usuarioId == null) {
+            throw new ExcepcionNegocio("Los datos para actualizar el proyecto son incompletos.");
+        }
+        if (dto.getNombre() == null || dto.getNombre().trim().isEmpty()) {
+            throw new ExcepcionNegocio("El nombre del proyecto es obligatorio.");
+        }
+    }
+
+    /**
+     * Refactorización Martin Fowler: Extract Method (Composing Methods).
+     */
+    private Proyecto obtenerProyectoValido(Long proyectoId, String accion) {
+        Proyecto proyecto = proyectoDAO.buscarPorId(proyectoId);
+        if (proyecto == null) {
+            throw new ExcepcionNegocio("El proyecto a " + accion + " no existe.");
+        }
+        return proyecto;
+    }
+
+    /**
+     * Refactorización Martin Fowler: Extract Method (Composing Methods).
+     */
+    private void validarPropietario(Proyecto proyecto, Long usuarioId, String accion) {
+        if (proyecto.getUsuario() == null || !usuarioId.equals(proyecto.getUsuario().getId())) {
+            throw new ExcepcionNegocio("No tiene permisos para " + accion + " este proyecto. Solo puede gestionar sus propios proyectos.");
+        }
     }
 
     @Override
