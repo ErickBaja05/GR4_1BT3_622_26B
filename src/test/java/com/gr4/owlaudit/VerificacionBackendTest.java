@@ -152,6 +152,27 @@ public class VerificacionBackendTest {
             return proyectos.stream().filter(p -> id.equals(p.getId())).findFirst().orElse(null);
         }
 
+        @Override
+        public void actualizar(Proyecto proyecto) {
+            eliminar(proyecto.getId());
+            proyectos.add(proyecto);
+        }
+
+        @Override
+        public void eliminar(Long id) {
+            proyectos.removeIf(p -> id.equals(p.getId()));
+        }
+
+        @Override
+        public void resecuenciarIdsEstudiante(Long usuarioId) {
+            long seq = 1L;
+            for (Proyecto p : proyectos) {
+                if (p.getUsuario() != null && usuarioId.equals(p.getUsuario().getId())) {
+                    p.setIdEstudiante(seq++);
+                }
+            }
+        }
+
         public List<Proyecto> getProyectos() {
             return proyectos;
         }

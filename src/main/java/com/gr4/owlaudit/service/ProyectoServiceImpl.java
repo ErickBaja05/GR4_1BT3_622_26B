@@ -64,4 +64,22 @@ public class ProyectoServiceImpl implements ProyectoService {
             throw new ExcepcionNegocio("Enlace no válido");
         }
     }
+
+    @Override
+    public void actualizarProyecto(Long proyectoId, NuevoProyectoDTO dto, Long usuarioId) {
+    }
+
+    @Override
+    public void eliminarProyecto(Long proyectoId, Long usuarioId) {
+    }
+
+    @Override
+    public Proyecto buscarPorId(Long proyectoId) {
+        return null;
+    }
+
+    @Override
+    public java.util.List<Proyecto> listarProyectosDeEstudiante(Long usuarioId) {
+        return java.util.Collections.emptyList();
+    }
 }
