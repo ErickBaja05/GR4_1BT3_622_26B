@@ -5,9 +5,7 @@ import com.gr4.owlaudit.dao.ReglaDAO;
 import com.gr4.owlaudit.dao.ReglaDAOImpl;
 import com.gr4.owlaudit.dto.NuevaReglaDTO;
 import com.gr4.owlaudit.model.EstadoVigencia;
-import com.gr4.owlaudit.model.NivelSeveridadEnum;
 import com.gr4.owlaudit.model.Regla;
-import com.gr4.owlaudit.model.TipoMotorEnum;
 
 public class ReglaServiceImpl implements ReglaService {
 
