@@ -29,16 +29,24 @@ public class ReglaDAOImpl implements ReglaDAO {
 
     @Override
     public void guardar(Regla regla) {
+        Session session = null;
         Transaction tx = null;
-        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+        try {
+            session = HibernateUtil.getSessionFactory().openSession();
             tx = session.beginTransaction();
             session.persist(regla);
             tx.commit();
         } catch (Exception e) {
             if (tx != null && tx.isActive()) {
-                tx.rollback();
+                try {
+                    tx.rollback();
+                } catch (Exception ignored) {}
             }
             throw new RuntimeException("Error al guardar la regla de evaluación: " + e.getMessage(), e);
+        } finally {
+            if (session != null && session.isOpen()) {
+                session.close();
+            }
         }
     }
 
@@ -82,8 +90,10 @@ public class ReglaDAOImpl implements ReglaDAO {
 
     @Override
     public boolean actualizarEstadoVigencia(String nombre, EstadoVigencia nuevoEstado) {
+        Session session = null;
         Transaction tx = null;
-        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+        try {
+            session = HibernateUtil.getSessionFactory().openSession();
             tx = session.beginTransaction();
             MutationQuery query = session.createMutationQuery(
                 "UPDATE Regla r SET r.vigencia = :vigencia WHERE r.nombreRepresentativo = :nombre"
@@ -101,6 +111,10 @@ public class ReglaDAOImpl implements ReglaDAO {
                 }
             }
             return false;
+        } finally {
+            if (session != null && session.isOpen()) {
+                session.close();
+            }
         }
     }
 
@@ -128,16 +142,24 @@ public class ReglaDAOImpl implements ReglaDAO {
 
     @Override
     public void actualizar(Regla regla) {
+        Session session = null;
         Transaction tx = null;
-        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+        try {
+            session = HibernateUtil.getSessionFactory().openSession();
             tx = session.beginTransaction();
             session.merge(regla);
             tx.commit();
         } catch (Exception e) {
             if (tx != null && tx.isActive()) {
-                tx.rollback();
+                try {
+                    tx.rollback();
+                } catch (Exception ignored) {}
             }
             throw new RuntimeException("Error al actualizar la regla: " + e.getMessage(), e);
+        } finally {
+            if (session != null && session.isOpen()) {
+                session.close();
+            }
         }
     }
 
@@ -146,25 +168,51 @@ public class ReglaDAOImpl implements ReglaDAO {
         if (id == null) {
             return;
         }
+        Session session = null;
         Transaction tx = null;
-        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+        try {
+            session = HibernateUtil.getSessionFactory().openSession();
             tx = session.beginTransaction();
             Regla regla = session.get(Regla.class, id);
             if (regla != null) {
-                session.createNativeMutationQuery("DELETE FROM asignacion_regla WHERE regla_id = :id")
-                        .setParameter("id", id)
-                        .executeUpdate();
-                session.createMutationQuery("DELETE FROM ResultadoRegla rr WHERE rr.regla.id = :id")
-                        .setParameter("id", id)
-                        .executeUpdate();
+                // Limpieza en cascada en orden inverso de claves foráneas
+                session.createNativeMutationQuery(
+                    "DELETE FROM solicitudes_retroalimentacion WHERE hallazgo_id IN (" +
+                    "  SELECT h.id FROM hallazgos h " +
+                    "  JOIN resultados_regla rr ON h.resultado_regla_id = rr.id " +
+                    "  WHERE rr.regla_id = :id" +
+                    ")"
+                ).setParameter("id", id).executeUpdate();
+
+                session.createNativeMutationQuery(
+                    "DELETE FROM hallazgos WHERE resultado_regla_id IN (" +
+                    "  SELECT rr.id FROM resultados_regla rr " +
+                    "  WHERE rr.regla_id = :id" +
+                    ")"
+                ).setParameter("id", id).executeUpdate();
+
+                session.createNativeMutationQuery(
+                    "DELETE FROM resultados_regla WHERE regla_id = :id"
+                ).setParameter("id", id).executeUpdate();
+
+                session.createNativeMutationQuery(
+                    "DELETE FROM asignacion_regla WHERE regla_id = :id"
+                ).setParameter("id", id).executeUpdate();
+
                 session.remove(regla);
             }
             tx.commit();
         } catch (Exception e) {
             if (tx != null && tx.isActive()) {
-                tx.rollback();
+                try {
+                    tx.rollback();
+                } catch (Exception ignored) {}
             }
             throw new RuntimeException("Error al eliminar la regla: " + e.getMessage(), e);
+        } finally {
+            if (session != null && session.isOpen()) {
+                session.close();
+            }
         }
     }
 }
