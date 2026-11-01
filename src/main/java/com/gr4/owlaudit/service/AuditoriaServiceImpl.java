@@ -86,7 +86,10 @@ public class AuditoriaServiceImpl implements AuditoriaService {
         calcularPuntajesDeLaAuditoria(auditoria);
         auditoriaDAO.registrarAuditoriaEnElHistorial(auditoria);
 
-        return crearResultadoDTO(auditoria);
+        ResultadoDTO resultadoDTO = crearResultadoDTO(auditoria);
+        // La auditoría general usa el umbral por defecto; se expone para mostrarlo igual que en la asignación
+        resultadoDTO.setUmbralAprobacion(Auditoria.UMBRAL_MINIMO_APROBACION);
+        return resultadoDTO;
     }
 
     private List<Regla> obtenerReglasVigentes() {

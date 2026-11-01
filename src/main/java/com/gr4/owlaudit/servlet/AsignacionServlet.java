@@ -16,6 +16,7 @@ import com.gr4.owlaudit.service.AsignacionesService;
 import com.gr4.owlaudit.service.AsignacionesServiceImpl;
 import com.gr4.owlaudit.service.AuditoriaService;
 import com.gr4.owlaudit.service.AuditoriaServiceImpl;
+import com.gr4.owlaudit.service.CalculadoraDeudaTecnica;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -38,6 +39,7 @@ public class AsignacionServlet extends HttpServlet {
     private final AsignacionesService asignacionesService;
     private final ReglaDAO reglaDAO;
     private final AuditoriaService auditoriaService;
+    private final CalculadoraDeudaTecnica calculadoraDeudaTecnica = new CalculadoraDeudaTecnica();
 
     public AsignacionServlet() {
         this(new AsignacionesServiceImpl(), new ReglaDAOImpl(), new AuditoriaServiceImpl());
@@ -184,6 +186,8 @@ public class AsignacionServlet extends HttpServlet {
             AuditoriaDTO auditoriaDTO = construirAuditoriaDTO(request, idAsignacion, idProyecto);
             ResultadoDTO resultado = auditoriaService.ejecutarAuditoriaDeAsignacion(auditoriaDTO);
             request.setAttribute("resultadoAuditoria", resultado);
+            // Misma salida que la auditoría general: Deuda Técnica Estimada
+            request.setAttribute("deudaTecnica", calculadoraDeudaTecnica.calcularDesdeResultado(resultado));
         } catch (NumberFormatException e) {
             request.setAttribute("mensajeError", "Los identificadores de asignación o proyecto no son válidos.");
         } catch (ExcepcionNegocio | IllegalArgumentException e) {

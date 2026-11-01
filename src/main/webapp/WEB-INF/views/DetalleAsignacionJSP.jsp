@@ -16,6 +16,8 @@
     }
     ResumenAsignacionDTO resumen = (ResumenAsignacionDTO) request.getAttribute("resumenAsignacion");
     ResultadoDTO resultado = (ResultadoDTO) request.getAttribute("resultadoAuditoria");
+    com.gr4.owlaudit.dto.DeudaTecnicaDTO deudaTecnica =
+        (com.gr4.owlaudit.dto.DeudaTecnicaDTO) request.getAttribute("deudaTecnica");
     String mensajeError = (String) request.getAttribute("mensajeError");
 %>
 <!DOCTYPE html>
@@ -139,62 +141,10 @@
             </div>
         <% } %>
 
-        <%
-            if (resultado != null) {
-                boolean aprobada = "APROBADA".equalsIgnoreCase(resultado.getDictamen());
-        %>
+        <% if (resultado != null) { %>
             <div class="card" style="margin-top: 1.5rem;">
                 <h2 class="section-title" style="margin-top: 0;">Resultado de la Evaluación</h2>
-                <div style="display: flex; gap: 1.5rem; align-items: center; margin-bottom: 1rem; flex-wrap: wrap;">
-                    <div>
-                        <strong>Dictamen Final:</strong>
-                        <span class="badge <%= aprobada ? "badge-estudiante" : "alert-error" %>" style="font-size: 1rem; padding: 0.4rem 0.8rem;">
-                            <%= HtmlUtil.escape(resultado.getDictamen()) %>
-                        </span>
-                    </div>
-                    <div>
-                        <strong>Puntaje Obtenido:</strong>
-                        <%= resultado.getPuntajeObtenido() %> / <%= resultado.getPuntajeMaximo() %> pts (<%= resultado.getPorcentaje() %>%)
-                    </div>
-                    <div>
-                        <strong>Umbral Requerido:</strong>
-                        <%= resultado.getUmbralAprobacion() %>%
-                    </div>
-                </div>
-
-                <h3>Desglose de Hallazgos y Cumplimiento Regla por Regla</h3>
-                <div class="table-responsive">
-                    <table class="table data-table" style="width: 100%;">
-                        <thead>
-                            <tr>
-                                <th>Regla</th>
-                                <th>Estado</th>
-                                <th>Puntaje / Ponderación</th>
-                                <th>Severidad</th>
-                                <th>Evidencia / Observación</th>
-                                <th>Recomendación</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <%
-                                if (resultado.getDetalles() != null) {
-                                    for (DetalleResultadoDTO det : resultado.getDetalles()) {
-                            %>
-                                <tr>
-                                    <td><%= HtmlUtil.escape(det.getNombreRegla()) %></td>
-                                    <td><%= det.isCumple() ? "✅ Cumple" : "❌ Incumple" %></td>
-                                    <td><%= det.getPuntosObtenidos() %> / <%= det.getPonderacion() %> pts</td>
-                                    <td><%= det.getNivelSeveridad() != null ? det.getNivelSeveridad() : "-" %></td>
-                                    <td><%= det.getEvidencia() != null ? HtmlUtil.escape(det.getEvidencia()) : "Sin hallazgos" %></td>
-                                    <td><%= det.getRecomendacion() != null ? HtmlUtil.escape(det.getRecomendacion()) : "-" %></td>
-                                </tr>
-                            <%
-                                    }
-                                }
-                            %>
-                        </tbody>
-                    </table>
-                </div>
+                <%@ include file="/WEB-INF/views/fragments/resultadoAuditoria.jspf" %>
             </div>
         <% } %>
     </main>

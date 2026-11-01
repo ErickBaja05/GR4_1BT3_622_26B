@@ -201,7 +201,7 @@ public class Auditoria {
      * Determina el dictamen de aprobación de la auditoría en función de un umbral específico de asignación.
      */
     public String determinarDictamenPorUmbral(double umbral) {
-        return this.porcentaje >= umbral ? DICTAMEN_APROBADA : "NO_APROBADA";
+        return this.porcentaje >= umbral ? DICTAMEN_APROBADA : DICTAMEN_NO_APROBADA;
     }
 
     private boolean tieneHallazgosDeSeveridadAlta() {
