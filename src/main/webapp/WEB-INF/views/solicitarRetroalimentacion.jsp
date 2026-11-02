@@ -1,4 +1,4 @@
-<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+﻿<%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ page import="java.util.List" %>
 <%@ page import="java.util.Map" %>
 <%@ page import="com.gr4.owlaudit.dto.SolicitudDTO" %>
@@ -55,40 +55,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>OwlAudit - Solicitar Retroalimentación (CU05)</title>
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/styles.css">
-    <style>
-        .badge-pendiente {
-            background-color: #FEF3C7;
-            color: #92400E;
-            border: 1px solid #FCD34D;
-        }
-        .badge-atendida {
-            background-color: #DCFCE7;
-            color: #166534;
-            border: 1px solid #86EFAC;
-        }
-        .filter-bar {
-            display: flex;
-            gap: 1rem;
-            align-items: center;
-            margin-bottom: 1.25rem;
-            flex-wrap: wrap;
-        }
-        .filter-bar label {
-            font-weight: 600;
-            color: var(--text-color, #1E293B);
-        }
-        .filter-bar select {
-            padding: 0.5rem 0.75rem;
-            border-radius: 6px;
-            border: 1px solid #CBD5E1;
-            font-size: 0.95rem;
-            min-width: 260px;
-        }
-        .finding-selected {
-            background-color: #EFF6FF !important;
-            border-left: 4px solid var(--brand-blue, #2563EB);
-        }
-    </style>
 </head>
 <body>
 
@@ -385,20 +351,20 @@
                                                     <span class="badge badge-pendiente">⏳ En Revisión</span>
                                                 <% } %>
                                             </td>
-                                            <td style="text-align: center;">
+                                            <td class="text-center">
                                                 <% if (!tieneSol) { %>
                                                     <a href="${pageContext.request.contextPath}/retroalimentacion?accion=solicitar&hallazgoId=<%= hMap.get("hallazgoId") %><%= targetParams %>" 
-                                                       class="btn btn-sm btn-primary">
-                                                        Solicitar Feedback
+                                                       class="btn-feedback">
+                                                        💬 Solicitar Feedback
                                                     </a>
                                                 <% } else if ("ATENDIDA".equalsIgnoreCase(estSol)) { %>
                                                     <a href="${pageContext.request.contextPath}/retroalimentacion?accion=solicitar&hallazgoId=<%= hMap.get("hallazgoId") %><%= targetParams %>" 
-                                                       class="btn btn-sm btn-primary" style="background-color: #059669; border-color: #059669;">
-                                                        💬 Re-consultar Feedback
+                                                       class="btn-feedback btn-feedback-consultar">
+                                                        ✓ Re-consultar Feedback
                                                     </a>
                                                 <% } else { %>
                                                     <a href="${pageContext.request.contextPath}/retroalimentacion?accion=solicitar&hallazgoId=<%= hMap.get("hallazgoId") %><%= targetParams %>" 
-                                                       class="btn btn-sm btn-secondary">
+                                                       class="btn-feedback btn-feedback-revision">
                                                         ⏳ En Revisión
                                                     </a>
                                                 <% } %>

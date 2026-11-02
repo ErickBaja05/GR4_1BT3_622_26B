@@ -1,4 +1,4 @@
-<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+﻿<%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ page import="com.gr4.owlaudit.dto.NuevoProyectoDTO" %>
 <%@ page import="com.gr4.owlaudit.model.Proyecto" %>
 <%@ page import="com.gr4.owlaudit.common.util.HtmlUtil" %>
@@ -19,21 +19,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/styles.css">
-    <style>
-        .btn-edit { background-color: #EFF6FF; color: #1D4ED8; border: 1px solid #BFDBFE; font-size: 0.82rem; font-weight: 600; padding: 0.35rem 0.75rem; border-radius: 6px; cursor: pointer; transition: all 0.2s; }
-        .btn-edit:hover { background-color: #2563EB; color: #FFFFFF; border-color: #2563EB; }
-        .btn-delete { background-color: #FEF2F2; color: #B91C1C; border: 1px solid #FECACA; font-size: 0.82rem; font-weight: 600; padding: 0.35rem 0.75rem; border-radius: 6px; cursor: pointer; transition: all 0.2s; }
-        .btn-delete:hover { background-color: #DC2626; color: #FFFFFF; border-color: #DC2626; }
-        .modal-overlay {
-            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px);
-            display: none; align-items: center; justify-content: center; z-index: 1000;
-        }
-        .modal-content {
-            background: #FFFFFF; border-radius: 12px; max-width: 550px; width: 92%;
-            padding: 1.75rem; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
-        }
-    </style>
 </head>
 <body>
 

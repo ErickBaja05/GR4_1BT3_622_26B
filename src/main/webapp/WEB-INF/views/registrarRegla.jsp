@@ -1,4 +1,4 @@
-<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+﻿<%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ page import="java.util.List" %>
 <%@ page import="com.gr4.owlaudit.dto.NuevaReglaDTO" %>
 <%@ page import="com.gr4.owlaudit.model.Regla" %>
@@ -28,41 +28,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>OwlAudit - Registrar Regla de Calidad</title>
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/styles.css">
-    <style>
-        .badge-vigente {
-            background-color: #DCFCE7; color: #166534; border: 1px solid #BBF7D0;
-            display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.22rem 0.6rem;
-            border-radius: 999px; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.3px;
-        }
-        .badge-no-vigente {
-            background-color: #FEE2E2; color: #991B1B; border: 1px solid #FECACA;
-            display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.22rem 0.6rem;
-            border-radius: 999px; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.3px;
-        }
-        .status-dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; }
-        .badge-vigente .status-dot { background-color: #16A34A; box-shadow: 0 0 0 2px rgba(22, 163, 74, 0.2); }
-        .badge-no-vigente .status-dot { background-color: #DC2626; }
-
-        .btn-action-status {
-            display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.38rem 0.85rem;
-            font-size: 0.82rem; font-weight: 600; border-radius: 6px; border: 1px solid transparent;
-            cursor: pointer; transition: all 0.2s; white-space: nowrap;
-        }
-        .btn-deactivate { background-color: #FFF1F2; color: #BE123C; border-color: #FECDD3; }
-        .btn-deactivate:hover { background-color: #E11D48; color: #FFFFFF; border-color: #E11D48; box-shadow: 0 2px 4px rgba(225, 29, 72, 0.2); }
-        .btn-activate { background-color: #F0FDF4; color: #15803D; border-color: #BBF7D0; }
-        .btn-activate:hover { background-color: #16A34A; color: #FFFFFF; border-color: #16A34A; box-shadow: 0 2px 4px rgba(22, 163, 74, 0.2); }
-
-        .alert-dismissible {
-            position: relative; display: flex; align-items: flex-start; justify-content: space-between;
-            padding: 1rem 1.25rem; border-radius: var(--radius-md); margin-bottom: 1.5rem; box-shadow: var(--shadow-sm);
-        }
-        .alert-dismissible .btn-close {
-            background: transparent; border: none; font-size: 1.4rem; line-height: 1;
-            color: inherit; opacity: 0.6; cursor: pointer; padding: 0 0.25rem; margin-left: 1rem;
-        }
-        .alert-dismissible .btn-close:hover { opacity: 1; }
-    </style>
 </head>
 <body>
 

@@ -1,4 +1,4 @@
-<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+﻿<%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ page import="java.util.List" %>
 <%@ page import="com.gr4.owlaudit.model.Regla" %>
 <%@ page import="com.gr4.owlaudit.model.NivelSeveridadEnum" %>
@@ -62,108 +62,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>OwlAudit - Crear Asignación Académica (HU02)</title>
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/styles.css">
-    <style>
-        .rules-selection-box {
-            background: #ffffff;
-            border: 1px solid var(--border-color);
-            border-radius: var(--radius-md);
-            padding: 1rem;
-            margin-top: 0.5rem;
-            margin-bottom: 1.5rem;
-        }
-        .rules-toolbar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding-bottom: 0.75rem;
-            margin-bottom: 0.75rem;
-            border-bottom: 1px solid var(--border-color);
-            flex-wrap: wrap;
-            gap: 0.5rem;
-        }
-        .rule-item-row {
-            display: flex;
-            align-items: center;
-            gap: 0.85rem;
-            padding: 0.75rem 1rem;
-            border-bottom: 1px solid #F1F5F9;
-            transition: background-color 0.15s;
-        }
-        .rule-item-row:last-child {
-            border-bottom: none;
-        }
-        .rule-item-row:hover {
-            background-color: #F8FAFC;
-        }
-        .rule-checkbox-wrapper {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .rule-checkbox-wrapper input[type="checkbox"] {
-            width: 1.15rem;
-            height: 1.15rem;
-            cursor: pointer;
-            accent-color: var(--brand-blue);
-        }
-        .rule-details {
-            flex: 1;
-        }
-        .rule-title-line {
-            display: flex;
-            align-items: center;
-            gap: 0.65rem;
-            margin-bottom: 0.25rem;
-        }
-        .rule-title-line label {
-            font-weight: 600;
-            font-size: 0.95rem;
-            color: var(--text-main);
-            cursor: pointer;
-        }
-        .rule-desc {
-            font-size: 0.825rem;
-            color: var(--text-muted);
-            margin: 0;
-        }
-        .rule-meta-badges {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-        .btn-link-action {
-            background: none;
-            border: none;
-            color: var(--brand-blue);
-            font-size: 0.85rem;
-            font-weight: 600;
-            cursor: pointer;
-            text-decoration: underline;
-            padding: 0;
-        }
-        .btn-link-action:hover {
-            color: var(--brand-blue-hover);
-        }
-        .input-hint {
-            display: block;
-            margin-top: 0.35rem;
-            font-size: 0.82rem;
-            color: var(--text-muted);
-        }
-        .btn-edit { background-color: #EFF6FF; color: #1D4ED8; border: 1px solid #BFDBFE; font-size: 0.82rem; font-weight: 600; padding: 0.35rem 0.75rem; border-radius: 6px; cursor: pointer; transition: all 0.2s; }
-        .btn-edit:hover { background-color: #2563EB; color: #FFFFFF; border-color: #2563EB; }
-        .btn-delete { background-color: #FEF2F2; color: #B91C1C; border: 1px solid #FECACA; font-size: 0.82rem; font-weight: 600; padding: 0.35rem 0.75rem; border-radius: 6px; cursor: pointer; transition: all 0.2s; }
-        .btn-delete:hover { background-color: #DC2626; color: #FFFFFF; border-color: #DC2626; }
-        .modal-overlay {
-            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px);
-            display: none; align-items: center; justify-content: center; z-index: 1000;
-        }
-        .modal-content {
-            background: #FFFFFF; border-radius: 12px; max-width: 600px; width: 92%;
-            padding: 1.75rem; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
-        }
-    </style>
 </head>
 <body>
 
