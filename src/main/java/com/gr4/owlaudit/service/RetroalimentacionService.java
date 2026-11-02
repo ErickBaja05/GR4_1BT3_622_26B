@@ -12,4 +12,7 @@ public interface RetroalimentacionService {
     default List<Map<String, Object>> obtenerHallazgosDisponibles(Long proyectoId, Long usuarioId) {
         return obtenerHallazgosDisponibles(proyectoId);
     }
+    default List<Map<String, Object>> obtenerHallazgosDisponibles(Long proyectoId, Long usuarioId, String tipoAuditoria, Long asignacionId, Long auditoriaId) {
+        return obtenerHallazgosDisponibles(proyectoId, usuarioId);
+    }
 }

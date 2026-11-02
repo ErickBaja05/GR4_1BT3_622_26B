@@ -66,6 +66,8 @@ public class AuditoriaDAOImpl implements AuditoriaDAO {
             tx = session.beginTransaction();
             List<Auditoria> lista = session.createQuery(
                 "SELECT DISTINCT a FROM Auditoria a " +
+                "LEFT JOIN FETCH a.proyecto " +
+                "LEFT JOIN FETCH a.asignacion " +
                 "LEFT JOIN FETCH a.resultados r " +
                 "LEFT JOIN FETCH r.regla " +
                 "LEFT JOIN FETCH r.hallazgo " +
@@ -433,6 +435,7 @@ public class AuditoriaDAOImpl implements AuditoriaDAO {
             return session.createQuery(
                 "SELECT DISTINCT a FROM Auditoria a " +
                 "LEFT JOIN FETCH a.proyecto " +
+                "LEFT JOIN FETCH a.asignacion " +
                 "LEFT JOIN FETCH a.resultados r " +
                 "LEFT JOIN FETCH r.regla " +
                 "LEFT JOIN FETCH r.hallazgo " +
@@ -451,6 +454,7 @@ public class AuditoriaDAOImpl implements AuditoriaDAO {
             return session.createQuery(
                 "SELECT DISTINCT a FROM Auditoria a " +
                 "LEFT JOIN FETCH a.proyecto " +
+                "LEFT JOIN FETCH a.asignacion " +
                 "LEFT JOIN FETCH a.resultados r " +
                 "LEFT JOIN FETCH r.regla " +
                 "LEFT JOIN FETCH r.hallazgo " +
@@ -473,6 +477,7 @@ public class AuditoriaDAOImpl implements AuditoriaDAO {
             return session.createQuery(
                 "SELECT DISTINCT a FROM Auditoria a " +
                 "LEFT JOIN FETCH a.proyecto " +
+                "LEFT JOIN FETCH a.asignacion " +
                 "LEFT JOIN FETCH a.resultados r " +
                 "LEFT JOIN FETCH r.regla " +
                 "LEFT JOIN FETCH r.hallazgo " +

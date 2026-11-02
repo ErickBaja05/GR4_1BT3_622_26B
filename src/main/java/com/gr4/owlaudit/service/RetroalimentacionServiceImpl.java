@@ -105,18 +105,94 @@ public class RetroalimentacionServiceImpl implements RetroalimentacionService {
      */
     @Override
     public List<Map<String, Object>> obtenerHallazgosDisponibles(Long proyectoId) {
-        return obtenerHallazgosDisponibles(proyectoId, null);
+        return obtenerHallazgosDisponibles(proyectoId, null, null, null, null);
     }
 
     @Override
     public List<Map<String, Object>> obtenerHallazgosDisponibles(Long proyectoId, Long usuarioId) {
+        return obtenerHallazgosDisponibles(proyectoId, usuarioId, null, null, null);
+    }
+
+    @Override
+    public List<Map<String, Object>> obtenerHallazgosDisponibles(Long proyectoId, Long usuarioId, String tipoAuditoria, Long asignacionId, Long auditoriaId) {
         List<Auditoria> auditorias;
-        if (proyectoId != null) {
-            auditorias = auditoriaDAO.consultarHistorialDeAuditorias(proyectoId);
+
+        if (auditoriaId != null) {
+            Auditoria aud = auditoriaDAO.buscarPorId(auditoriaId);
+            if (aud != null) {
+                boolean valido = true;
+                if (usuarioId != null && aud.getProyecto() != null && !aud.getProyecto().esPropietario(usuarioId)) {
+                    valido = false;
+                }
+                if (proyectoId != null && aud.getProyecto() != null && !proyectoId.equals(aud.getProyecto().getId())) {
+                    valido = false;
+                }
+                if ("GENERAL".equalsIgnoreCase(tipoAuditoria) && (aud.getAsignacion() != null || "ASIGNACION".equalsIgnoreCase(aud.getTipoAuditoria()))) {
+                    valido = false;
+                }
+                if ("ASIGNACION".equalsIgnoreCase(tipoAuditoria) && aud.getAsignacion() == null && !"ASIGNACION".equalsIgnoreCase(aud.getTipoAuditoria())) {
+                    valido = false;
+                }
+                if (asignacionId != null && (aud.getAsignacion() == null || !asignacionId.equals(aud.getAsignacion().getId()))) {
+                    valido = false;
+                }
+                auditorias = valido ? new ArrayList<>(List.of(aud)) : new ArrayList<>();
+            } else {
+                auditorias = new ArrayList<>();
+            }
+        } else if (proyectoId != null) {
+            if ("GENERAL".equalsIgnoreCase(tipoAuditoria)) {
+                auditorias = auditoriaDAO.consultarHistorialAuditoriasGenerales(proyectoId);
+            } else if ("ASIGNACION".equalsIgnoreCase(tipoAuditoria) || asignacionId != null) {
+                if (asignacionId != null) {
+                    auditorias = auditoriaDAO.consultarHistorialAuditoriasAsignacion(proyectoId, asignacionId);
+                } else {
+                    List<Auditoria> todasProy = auditoriaDAO.consultarHistorialDeAuditorias(proyectoId);
+                    auditorias = todasProy != null ? todasProy.stream()
+                        .filter(a -> a.getAsignacion() != null || "ASIGNACION".equalsIgnoreCase(a.getTipoAuditoria()))
+                        .collect(java.util.stream.Collectors.toList()) : new ArrayList<>();
+                }
+            } else {
+                auditorias = auditoriaDAO.consultarHistorialDeAuditorias(proyectoId);
+            }
         } else if (usuarioId != null) {
-            auditorias = auditoriaDAO.consultarHistorialDeAuditoriasPorUsuario(usuarioId);
+            List<Auditoria> delUsuario = auditoriaDAO.consultarHistorialDeAuditoriasPorUsuario(usuarioId);
+            if ("GENERAL".equalsIgnoreCase(tipoAuditoria)) {
+                auditorias = delUsuario != null ? delUsuario.stream()
+                    .filter(a -> a.getAsignacion() == null && !"ASIGNACION".equalsIgnoreCase(a.getTipoAuditoria()))
+                    .collect(java.util.stream.Collectors.toList()) : new ArrayList<>();
+            } else if ("ASIGNACION".equalsIgnoreCase(tipoAuditoria) || asignacionId != null) {
+                if (asignacionId != null) {
+                    auditorias = delUsuario != null ? delUsuario.stream()
+                        .filter(a -> a.getAsignacion() != null && asignacionId.equals(a.getAsignacion().getId()))
+                        .collect(java.util.stream.Collectors.toList()) : new ArrayList<>();
+                } else {
+                    auditorias = delUsuario != null ? delUsuario.stream()
+                        .filter(a -> a.getAsignacion() != null || "ASIGNACION".equalsIgnoreCase(a.getTipoAuditoria()))
+                        .collect(java.util.stream.Collectors.toList()) : new ArrayList<>();
+                }
+            } else {
+                auditorias = delUsuario != null ? delUsuario : new ArrayList<>();
+            }
         } else {
-            auditorias = auditoriaDAO.consultarTodas();
+            List<Auditoria> todas = auditoriaDAO.consultarTodas();
+            if ("GENERAL".equalsIgnoreCase(tipoAuditoria)) {
+                auditorias = todas != null ? todas.stream()
+                    .filter(a -> a.getAsignacion() == null && !"ASIGNACION".equalsIgnoreCase(a.getTipoAuditoria()))
+                    .collect(java.util.stream.Collectors.toList()) : new ArrayList<>();
+            } else if ("ASIGNACION".equalsIgnoreCase(tipoAuditoria) || asignacionId != null) {
+                if (asignacionId != null) {
+                    auditorias = todas != null ? todas.stream()
+                        .filter(a -> a.getAsignacion() != null && asignacionId.equals(a.getAsignacion().getId()))
+                        .collect(java.util.stream.Collectors.toList()) : new ArrayList<>();
+                } else {
+                    auditorias = todas != null ? todas.stream()
+                        .filter(a -> a.getAsignacion() != null || "ASIGNACION".equalsIgnoreCase(a.getTipoAuditoria()))
+                        .collect(java.util.stream.Collectors.toList()) : new ArrayList<>();
+                }
+            } else {
+                auditorias = todas != null ? todas : new ArrayList<>();
+            }
         }
 
         List<Map<String, Object>> hallazgosDisponibles = new ArrayList<>();
@@ -138,8 +214,19 @@ public class RetroalimentacionServiceImpl implements RetroalimentacionService {
         Map<String, Object> map = new HashMap<>();
         map.put("hallazgoId", h.getId());
         map.put("auditoriaId", aud.getId());
+        map.put("codigoVisible", aud.getCodigoVisible());
+        map.put("tipoAuditoria", aud.getTipoAuditoria());
+        if (aud.getAsignacion() != null) {
+            map.put("asignacionId", aud.getAsignacion().getId());
+            map.put("asignacionNombre", aud.getAsignacion().getNombre());
+        }
+        if (aud.getProyecto() != null) {
+            map.put("proyectoId", aud.getProyecto().getId());
+            map.put("proyectoNombre", aud.getProyecto().getNombre());
+        } else {
+            map.put("proyectoNombre", "Proyecto Académico");
+        }
         map.put("fechaHora", aud.getFechaHora() != null ? aud.getFechaHora().toString().replace('T', ' ') : "");
-        map.put("proyectoNombre", aud.getProyecto() != null ? aud.getProyecto().getNombre() : "Proyecto Académico");
         map.put("reglaNombre", rr.getRegla() != null ? rr.getRegla().getNombreRepresentativo() : "Regla de Evaluación");
         map.put("severidad", h.getNivelSeveridad() != null ? h.getNivelSeveridad().name() : "MEDIA");
         map.put("evidencia", h.getEvidencia() != null ? h.getEvidencia() : "");

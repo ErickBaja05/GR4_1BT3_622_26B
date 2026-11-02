@@ -15,6 +15,7 @@ public class SolicitudDAOImpl implements SolicitudDAO {
         "LEFT JOIN FETCH r.auditoria a " +
         "LEFT JOIN FETCH a.usuario " +
         "LEFT JOIN FETCH a.proyecto p " +
+        "LEFT JOIN FETCH a.asignacion " +
         "LEFT JOIN FETCH p.usuario ";
 
     @Override
@@ -134,6 +135,7 @@ public class SolicitudDAOImpl implements SolicitudDAO {
                 "LEFT JOIN FETCH r.regla " +
                 "LEFT JOIN FETCH r.auditoria a " +
                 "LEFT JOIN FETCH a.proyecto " +
+                "LEFT JOIN FETCH a.asignacion " +
                 "WHERE h.id = :id",
                 com.gr4.owlaudit.model.Hallazgo.class
             )

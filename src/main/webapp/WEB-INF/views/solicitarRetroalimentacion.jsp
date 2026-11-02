@@ -3,6 +3,8 @@
 <%@ page import="java.util.Map" %>
 <%@ page import="com.gr4.owlaudit.dto.SolicitudDTO" %>
 <%@ page import="com.gr4.owlaudit.model.Proyecto" %>
+<%@ page import="com.gr4.owlaudit.model.Auditoria" %>
+<%@ page import="com.gr4.owlaudit.model.Asignacion" %>
 <%@ page import="com.gr4.owlaudit.model.SolicitudRetroalimentacion" %>
 <%@ page import="com.gr4.owlaudit.model.EstadoRetroEnum" %>
 <%@ page import="com.gr4.owlaudit.common.util.HtmlUtil" %>
@@ -22,11 +24,23 @@
     String urlGithub = (String) request.getAttribute("urlGithub");
     Long auditoriaId = (Long) request.getAttribute("auditoriaId");
     String fechaAuditoria = (String) request.getAttribute("fechaAuditoria");
+    String codigoVisibleAuditoria = (String) request.getAttribute("codigoVisibleAuditoria");
+    String tipoAuditoria = (String) request.getAttribute("tipoAuditoria");
+    String nombreAsignacion = (String) request.getAttribute("nombreAsignacion");
     SolicitudRetroalimentacion solicitudExistente = (SolicitudRetroalimentacion) request.getAttribute("solicitudExistente");
 
     @SuppressWarnings("unchecked")
     List<Proyecto> proyectosDisponibles = (List<Proyecto>) request.getAttribute("proyectosDisponibles");
     Long proyectoIdFiltro = (Long) request.getAttribute("proyectoIdFiltro");
+    String tipoAuditoriaFiltro = (String) request.getAttribute("tipoAuditoriaFiltro");
+    Long asignacionIdFiltro = (Long) request.getAttribute("asignacionIdFiltro");
+    Long auditoriaIdFiltro = (Long) request.getAttribute("auditoriaIdFiltro");
+
+    @SuppressWarnings("unchecked")
+    List<Asignacion> asignacionesDisponibles = (List<Asignacion>) request.getAttribute("asignacionesDisponibles");
+
+    @SuppressWarnings("unchecked")
+    List<Auditoria> auditoriasDisponibles = (List<Auditoria>) request.getAttribute("auditoriasDisponibles");
 
     @SuppressWarnings("unchecked")
     List<Map<String, Object>> hallazgosDisponibles = (List<Map<String, Object>>) request.getAttribute("hallazgosDisponibles");
@@ -127,7 +141,16 @@
                                 </p>
                             <% } %>
                             <% if (auditoriaId != null) { %>
-                                <p style="margin: 0.25rem 0;"><strong>📋 Reporte Auditoría:</strong> #<%= auditoriaId %> <%= fechaAuditoria != null ? "(" + HtmlUtil.escape(fechaAuditoria) + ")" : "" %></p>
+                                <p style="margin: 0.25rem 0;">
+                                    <strong>📋 Reporte Auditoría:</strong> 
+                                    <span class="badge <%= "ASIGNACION".equalsIgnoreCase(tipoAuditoria) ? "badge-alta" : "badge-media" %>">
+                                        <%= codigoVisibleAuditoria != null ? HtmlUtil.escape(codigoVisibleAuditoria) : ("#" + auditoriaId) %>
+                                    </span>
+                                    <% if ("ASIGNACION".equalsIgnoreCase(tipoAuditoria) && nombreAsignacion != null) { %>
+                                        &middot; <strong>📚 Asignación:</strong> <%= HtmlUtil.escape(nombreAsignacion) %>
+                                    <% } %>
+                                    <%= fechaAuditoria != null ? "(" + HtmlUtil.escape(fechaAuditoria) + ")" : "" %>
+                                </p>
                             <% } %>
                             <% if (reglaNombre != null && !reglaNombre.isBlank()) { %>
                                 <p style="margin: 0.25rem 0;"><strong>📐 Regla Evaluada:</strong> <%= HtmlUtil.escape(reglaNombre) %></p>
@@ -140,7 +163,14 @@
                             <% } %>
                         </div>
                         <div>
-                            <a href="${pageContext.request.contextPath}/retroalimentacion?accion=solicitar<%= proyectoIdFiltro != null ? "&proyectoId=" + proyectoIdFiltro : "" %>" 
+                            <%
+                                String returnFilters = "";
+                                if (proyectoIdFiltro != null) returnFilters += "&proyectoId=" + proyectoIdFiltro;
+                                if (tipoAuditoriaFiltro != null && !tipoAuditoriaFiltro.isBlank()) returnFilters += "&tipoAuditoria=" + HtmlUtil.escape(tipoAuditoriaFiltro);
+                                if (asignacionIdFiltro != null) returnFilters += "&asignacionId=" + asignacionIdFiltro;
+                                if (auditoriaIdFiltro != null) returnFilters += "&auditoriaId=" + auditoriaIdFiltro;
+                            %>
+                            <a href="${pageContext.request.contextPath}/retroalimentacion?accion=solicitar<%= returnFilters %>" 
                                class="btn btn-secondary" style="font-size: 0.85rem; padding: 0.4rem 0.8rem;">
                                 🔄 Cambiar de Hallazgo
                             </a>
@@ -217,24 +247,85 @@
                         Seleccione el proyecto y examine los hallazgos generados en sus auditorías de calidad para solicitar la orientación del docente.
                     </p>
 
-                    <!-- Filtro por Proyecto -->
-                    <div class="filter-bar">
-                        <label for="proyectoFiltro">Filtrar por Proyecto:</label>
-                        <select id="proyectoFiltro" onchange="filtrarPorProyecto(this.value)">
-                            <option value="">-- Todos los Proyectos Registrados --</option>
-                            <% if (proyectosDisponibles != null) {
-                                   int idxSol = 1;
-                                   for (Proyecto p : proyectosDisponibles) { 
-                                       boolean sel = proyectoIdFiltro != null && proyectoIdFiltro.equals(p.getId());
-                                       long idMostrado = (p.getIdEstudiante() != null) ? p.getIdEstudiante() : (long) idxSol;
-                            %>
-                                <option value="<%= p.getId() %>" <%= sel ? "selected" : "" %>>
-                                    #<%= idMostrado %> &middot; <%= HtmlUtil.escape(p.getNombre()) %>
-                                </option>
-                            <%         idxSol++;
-                                   }
-                               } %>
-                        </select>
+                    <!-- Barra de Filtros Multicriterio (Proyecto, Tipo de Auditoría, Asignación, Auditoría Específica) -->
+                    <div class="filter-bar" style="background: #F8FAFC; padding: 1rem; border-radius: 8px; border: 1px solid #E2E8F0; margin-bottom: 1.5rem; display: flex; flex-wrap: wrap; gap: 1rem; align-items: flex-end;">
+                        <!-- Filtro 1: Proyecto -->
+                        <div style="display: flex; flex-direction: column; gap: 0.25rem; min-width: 220px; flex: 1;">
+                            <label for="proyectoFiltro" style="font-size: 0.88rem; font-weight: 600; color: #334155;">Proyecto:</label>
+                            <select id="proyectoFiltro" onchange="aplicarFiltros()" style="width: 100%;">
+                                <option value="">-- Todos los Proyectos Registrados --</option>
+                                <% if (proyectosDisponibles != null) {
+                                       int idxSol = 1;
+                                       for (Proyecto p : proyectosDisponibles) { 
+                                           boolean sel = proyectoIdFiltro != null && proyectoIdFiltro.equals(p.getId());
+                                           long idMostrado = (p.getIdEstudiante() != null) ? p.getIdEstudiante() : (long) idxSol;
+                                %>
+                                    <option value="<%= p.getId() %>" <%= sel ? "selected" : "" %>>
+                                        #<%= idMostrado %> &middot; <%= HtmlUtil.escape(p.getNombre()) %>
+                                    </option>
+                                <%         idxSol++;
+                                       }
+                                   } %>
+                            </select>
+                        </div>
+
+                        <!-- Filtro 2: Tipo de Auditoría -->
+                        <div style="display: flex; flex-direction: column; gap: 0.25rem; min-width: 190px;">
+                            <label for="tipoAuditoriaFiltro" style="font-size: 0.88rem; font-weight: 600; color: #334155;">Tipo de Auditoría:</label>
+                            <select id="tipoAuditoriaFiltro" onchange="cambiarTipoAuditoria(this.value)" style="width: 100%;">
+                                <option value="">-- Todos los Tipos --</option>
+                                <option value="GENERAL" <%= "GENERAL".equalsIgnoreCase(tipoAuditoriaFiltro) ? "selected" : "" %>>🌐 Auditorías Generales</option>
+                                <option value="ASIGNACION" <%= "ASIGNACION".equalsIgnoreCase(tipoAuditoriaFiltro) ? "selected" : "" %>>📚 Auditorías por Asignación</option>
+                            </select>
+                        </div>
+
+                        <!-- Filtro 3: Asignación Académica (Dinámico) -->
+                        <div id="grupoAsignacionFiltro" style="display: <%= "ASIGNACION".equalsIgnoreCase(tipoAuditoriaFiltro) ? "flex" : "none" %>; flex-direction: column; gap: 0.25rem; min-width: 220px; flex: 1;">
+                            <label for="asignacionIdFiltro" style="font-size: 0.88rem; font-weight: 600; color: #334155;">Asignación Académica:</label>
+                            <select id="asignacionIdFiltro" onchange="aplicarFiltros()" style="width: 100%;">
+                                <option value="">-- Todas las Asignaciones --</option>
+                                <% if (asignacionesDisponibles != null) {
+                                       for (Asignacion asig : asignacionesDisponibles) {
+                                           boolean sel = asignacionIdFiltro != null && asignacionIdFiltro.equals(asig.getId());
+                                %>
+                                    <option value="<%= asig.getId() %>" <%= sel ? "selected" : "" %>>
+                                        <%= HtmlUtil.escape(asig.getNombre()) %> (Umbral: <%= asig.getUmbralAprobacion() %>%)
+                                    </option>
+                                <%     }
+                                   } %>
+                            </select>
+                        </div>
+
+                        <!-- Filtro 4: Auditoría Específica -->
+                        <div style="display: flex; flex-direction: column; gap: 0.25rem; min-width: 240px; flex: 1.2;">
+                            <label for="auditoriaIdFiltro" style="font-size: 0.88rem; font-weight: 600; color: #334155;">Auditoría Específica:</label>
+                            <select id="auditoriaIdFiltro" onchange="aplicarFiltros()" style="width: 100%;">
+                                <option value="">-- Todas las Auditorías --</option>
+                                <% if (auditoriasDisponibles != null) {
+                                       for (Auditoria audItem : auditoriasDisponibles) {
+                                           boolean sel = auditoriaIdFiltro != null && auditoriaIdFiltro.equals(audItem.getId());
+                                           String cod = audItem.getCodigoVisible();
+                                           String fecha = audItem.getFechaHora() != null ? audItem.getFechaHora().toString().replace('T', ' ') : "";
+                                           if (fecha.length() > 16) fecha = fecha.substring(0, 16);
+                                           String asigBadge = (audItem.getAsignacion() != null) ? " [" + audItem.getAsignacion().getNombre() + "]" : "";
+                                           String proyNom = (audItem.getProyecto() != null) ? " · " + audItem.getProyecto().getNombre() : "";
+                                %>
+                                    <option value="<%= audItem.getId() %>" <%= sel ? "selected" : "" %>>
+                                        <%= cod != null ? cod : ("#" + audItem.getId()) %> &middot; <%= fecha %><%= asigBadge %><%= proyNom %>
+                                    </option>
+                                <%     }
+                                   } %>
+                            </select>
+                        </div>
+
+                        <!-- Botón Limpiar Filtros -->
+                        <% if (proyectoIdFiltro != null || (tipoAuditoriaFiltro != null && !tipoAuditoriaFiltro.isBlank()) || asignacionIdFiltro != null || auditoriaIdFiltro != null) { %>
+                            <div style="display: flex; align-items: flex-end;">
+                                <a href="${pageContext.request.contextPath}/retroalimentacion?accion=solicitar" class="btn btn-secondary" style="font-size: 0.85rem; padding: 0.5rem 0.85rem;">
+                                    ✕ Limpiar Filtros
+                                </a>
+                            </div>
+                        <% } %>
                     </div>
 
                     <!-- Tabla de Hallazgos Disponibles -->
@@ -257,10 +348,23 @@
                                            boolean tieneSol = Boolean.TRUE.equals(hMap.get("tieneSolicitud"));
                                            String estSol = (String) hMap.get("estadoSolicitud");
                                            String sev = (String) hMap.get("severidad");
+                                           String targetParams = "";
+                                           if (proyectoIdFiltro != null) targetParams += "&proyectoId=" + proyectoIdFiltro;
+                                           if (tipoAuditoriaFiltro != null && !tipoAuditoriaFiltro.isBlank()) targetParams += "&tipoAuditoria=" + HtmlUtil.escape(tipoAuditoriaFiltro);
+                                           if (asignacionIdFiltro != null) targetParams += "&asignacionId=" + asignacionIdFiltro;
+                                           if (auditoriaIdFiltro != null) targetParams += "&auditoriaId=" + auditoriaIdFiltro;
                                     %>
                                         <tr>
                                             <td><strong><%= HtmlUtil.escape((String) hMap.get("proyectoNombre")) %></strong></td>
-                                            <td>#<%= hMap.get("auditoriaId") %> &middot; <span style="font-size: 0.8rem; color: #64748B;"><%= HtmlUtil.escape((String) hMap.get("fechaHora")) %></span></td>
+                                            <td>
+                                                <strong><%= hMap.get("codigoVisible") != null ? HtmlUtil.escape((String) hMap.get("codigoVisible")) : ("#" + hMap.get("auditoriaId")) %></strong>
+                                                <% if ("ASIGNACION".equalsIgnoreCase((String) hMap.get("tipoAuditoria")) && hMap.get("asignacionNombre") != null) { %>
+                                                    <br><span class="badge badge-alta" style="font-size: 0.72rem;"><%= HtmlUtil.escape((String) hMap.get("asignacionNombre")) %></span>
+                                                <% } else { %>
+                                                    <br><span class="badge badge-media" style="font-size: 0.72rem;">General</span>
+                                                <% } %>
+                                                <br><span style="font-size: 0.78rem; color: #64748B;"><%= HtmlUtil.escape((String) hMap.get("fechaHora")) %></span>
+                                            </td>
                                             <td><%= HtmlUtil.escape((String) hMap.get("reglaNombre")) %></td>
                                             <td>
                                                 <span class="badge badge-<%= sev != null ? sev.toLowerCase() : "media" %>">
@@ -283,17 +387,17 @@
                                             </td>
                                             <td style="text-align: center;">
                                                 <% if (!tieneSol) { %>
-                                                    <a href="${pageContext.request.contextPath}/retroalimentacion?accion=solicitar&hallazgoId=<%= hMap.get("hallazgoId") %><%= proyectoIdFiltro != null ? "&proyectoId=" + proyectoIdFiltro : "" %>" 
+                                                    <a href="${pageContext.request.contextPath}/retroalimentacion?accion=solicitar&hallazgoId=<%= hMap.get("hallazgoId") %><%= targetParams %>" 
                                                        class="btn btn-sm btn-primary">
                                                         Solicitar Feedback
                                                     </a>
                                                 <% } else if ("ATENDIDA".equalsIgnoreCase(estSol)) { %>
-                                                    <a href="${pageContext.request.contextPath}/retroalimentacion?accion=solicitar&hallazgoId=<%= hMap.get("hallazgoId") %><%= proyectoIdFiltro != null ? "&proyectoId=" + proyectoIdFiltro : "" %>" 
+                                                    <a href="${pageContext.request.contextPath}/retroalimentacion?accion=solicitar&hallazgoId=<%= hMap.get("hallazgoId") %><%= targetParams %>" 
                                                        class="btn btn-sm btn-primary" style="background-color: #059669; border-color: #059669;">
                                                         💬 Re-consultar Feedback
                                                     </a>
                                                 <% } else { %>
-                                                    <a href="${pageContext.request.contextPath}/retroalimentacion?accion=solicitar&hallazgoId=<%= hMap.get("hallazgoId") %><%= proyectoIdFiltro != null ? "&proyectoId=" + proyectoIdFiltro : "" %>" 
+                                                    <a href="${pageContext.request.contextPath}/retroalimentacion?accion=solicitar&hallazgoId=<%= hMap.get("hallazgoId") %><%= targetParams %>" 
                                                        class="btn btn-sm btn-secondary">
                                                         ⏳ En Revisión
                                                     </a>
@@ -306,7 +410,7 @@
                         </div>
                     <% } else { %>
                         <div class="alert alert-info">
-                            <strong>Aviso:</strong> No se encontraron hallazgos técnicos registrados para los proyectos consultados.
+                            <strong>Aviso:</strong> No se encontraron hallazgos técnicos registrados para los criterios de búsqueda seleccionados.
                             Para generar hallazgos sobre los cuales solicitar retroalimentación, primero debe 
                             <a href="${pageContext.request.contextPath}/auditoria"><strong>ejecutar una auditoría de repositorio</strong></a>.
                         </div>
@@ -340,6 +444,9 @@
                                    String pNombre = "Proyecto";
                                    String rNombre = "Regla Técnica";
                                    String sev = "MEDIA";
+                                   String codigoAudSol = null;
+                                   String tipoAudSol = null;
+                                   String asigNomSol = null;
                                    if (sol.getHallazgo() != null) {
                                        if (sol.getHallazgo().getNivelSeveridad() != null) {
                                            sev = sol.getHallazgo().getNivelSeveridad().name();
@@ -348,8 +455,16 @@
                                            if (sol.getHallazgo().getResultadoRegla().getRegla() != null) {
                                                rNombre = sol.getHallazgo().getResultadoRegla().getRegla().getNombreRepresentativo();
                                            }
-                                           if (sol.getHallazgo().getResultadoRegla().getAuditoria() != null && sol.getHallazgo().getResultadoRegla().getAuditoria().getProyecto() != null) {
-                                               pNombre = sol.getHallazgo().getResultadoRegla().getAuditoria().getProyecto().getNombre();
+                                           if (sol.getHallazgo().getResultadoRegla().getAuditoria() != null) {
+                                               Auditoria aRef = sol.getHallazgo().getResultadoRegla().getAuditoria();
+                                               codigoAudSol = aRef.getCodigoVisible();
+                                               tipoAudSol = aRef.getTipoAuditoria();
+                                               if (aRef.getAsignacion() != null) {
+                                                   asigNomSol = aRef.getAsignacion().getNombre();
+                                               }
+                                               if (aRef.getProyecto() != null) {
+                                                   pNombre = aRef.getProyecto().getNombre();
+                                               }
                                            }
                                        }
                                    }
@@ -357,7 +472,14 @@
                                 <tr>
                                     <td><strong>#<%= sol.getId() %></strong></td>
                                     <td>
-                                        <strong><%= HtmlUtil.escape(pNombre) %></strong><br>
+                                        <strong><%= HtmlUtil.escape(pNombre) %></strong>
+                                        <% if (codigoAudSol != null) { %>
+                                            &middot; <span class="badge <%= "ASIGNACION".equalsIgnoreCase(tipoAudSol) ? "badge-alta" : "badge-media" %>" style="font-size: 0.72rem;"><%= HtmlUtil.escape(codigoAudSol) %></span>
+                                        <% } %>
+                                        <% if (asigNomSol != null) { %>
+                                            <span class="badge badge-alta" style="font-size: 0.72rem;"><%= HtmlUtil.escape(asigNomSol) %></span>
+                                        <% } %>
+                                        <br>
                                         <small style="color: #64748B;"><%= HtmlUtil.escape(rNombre) %></small>
                                     </td>
                                     <td>
@@ -411,8 +533,38 @@
             }
         }
 
-        function filtrarPorProyecto(proyectoId) {
+        function cambiarTipoAuditoria(tipo) {
+            const grp = document.getElementById('grupoAsignacionFiltro');
+            if (grp) {
+                grp.style.display = (tipo === 'ASIGNACION') ? 'flex' : 'none';
+            }
+            if (tipo !== 'ASIGNACION') {
+                const asigSel = document.getElementById('asignacionIdFiltro');
+                if (asigSel) asigSel.value = '';
+            }
+            aplicarFiltros();
+        }
+
+        function aplicarFiltros() {
             let url = '${pageContext.request.contextPath}/retroalimentacion?accion=solicitar';
+            const proy = document.getElementById('proyectoFiltro') ? document.getElementById('proyectoFiltro').value : '';
+            const tipo = document.getElementById('tipoAuditoriaFiltro') ? document.getElementById('tipoAuditoriaFiltro').value : '';
+            const asig = document.getElementById('asignacionIdFiltro') ? document.getElementById('asignacionIdFiltro').value : '';
+            const aud = document.getElementById('auditoriaIdFiltro') ? document.getElementById('auditoriaIdFiltro').value : '';
+
+            if (proy) url += '&proyectoId=' + encodeURIComponent(proy);
+            if (tipo) url += '&tipoAuditoria=' + encodeURIComponent(tipo);
+            if (tipo === 'ASIGNACION' && asig) url += '&asignacionId=' + encodeURIComponent(asig);
+            if (aud) url += '&auditoriaId=' + encodeURIComponent(aud);
+
+            window.location.href = url;
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const ta = document.getElementById('justificacion');
+            if (ta) actualizarContador(ta);
+        });
+    </script>
             if (proyectoId && proyectoId !== '') {
                 url += '&proyectoId=' + encodeURIComponent(proyectoId);
             }

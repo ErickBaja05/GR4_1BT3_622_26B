@@ -1,8 +1,10 @@
 package com.gr4.owlaudit.service;
 
 import com.gr4.owlaudit.common.exception.ExcepcionNegocio;
+import com.gr4.owlaudit.dao.AuditoriaDAO;
 import com.gr4.owlaudit.dao.SolicitudDAO;
 import com.gr4.owlaudit.dto.SolicitudDTO;
+import com.gr4.owlaudit.model.Asignacion;
 import com.gr4.owlaudit.model.Auditoria;
 import com.gr4.owlaudit.model.EstadoRetroEnum;
 import com.gr4.owlaudit.model.Hallazgo;
@@ -12,6 +14,7 @@ import com.gr4.owlaudit.model.Regla;
 import com.gr4.owlaudit.model.ResultadoRegla;
 import com.gr4.owlaudit.model.SolicitudRetroalimentacion;
 import com.gr4.owlaudit.model.TipoMotorEnum;
+import com.gr4.owlaudit.model.Usuario;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -24,11 +27,14 @@ import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -43,6 +49,9 @@ class RetroalimentacionServiceImplTest {
 
     @Mock
     private SolicitudDAO solicitudDAO;
+
+    @Mock
+    private AuditoriaDAO auditoriaDAO;
 
     @InjectMocks
     private RetroalimentacionServiceImpl retroService;
@@ -252,5 +261,115 @@ class RetroalimentacionServiceImplTest {
         assertEquals("El identificador del hallazgo no es válido.", ex2.getMessage());
 
         verifyNoInteractions(solicitudDAO);
+    }
+
+    @Test
+    @DisplayName("CU05: Filtrado multicriterio de hallazgos por Asignación")
+    void testObtenerHallazgosDisponiblesFiltroAsignacion() {
+        Usuario usuario = new Usuario();
+        usuario.setId(1L);
+
+        Proyecto proyecto = new Proyecto();
+        proyecto.setId(10L);
+        proyecto.setNombre("Proyecto 1");
+        proyecto.setUsuario(usuario);
+
+        Asignacion asig1 = new Asignacion();
+        asig1.setId(100L);
+        asig1.setNombre("Taller 1");
+
+        Auditoria audAsig = new Auditoria();
+        audAsig.setId(201L);
+        audAsig.setProyecto(proyecto);
+        audAsig.setAsignacion(asig1);
+        audAsig.setTipoAuditoria("ASIGNACION");
+        audAsig.setNumeroEnAsignacion(1L);
+
+        Regla r = new Regla();
+        r.setId(1L);
+        r.setNombreRepresentativo("Regla Taller 1");
+
+        ResultadoRegla rr = new ResultadoRegla(false, 0, r, audAsig);
+        Hallazgo h = new Hallazgo(NivelSeveridadEnum.MEDIA, "Evidencia 1", "Rec 1", rr);
+        h.setId(901L);
+        rr.setHallazgo(h);
+        audAsig.setResultados(List.of(rr));
+
+        when(auditoriaDAO.consultarHistorialAuditoriasAsignacion(10L, 100L)).thenReturn(List.of(audAsig));
+
+        List<Map<String, Object>> hallazgos = retroService.obtenerHallazgosDisponibles(10L, 1L, "ASIGNACION", 100L, null);
+
+        assertNotNull(hallazgos);
+        assertEquals(1, hallazgos.size());
+        assertEquals("AA-1", hallazgos.get(0).get("codigoVisible"));
+        assertEquals("ASIGNACION", hallazgos.get(0).get("tipoAuditoria"));
+        assertEquals("Taller 1", hallazgos.get(0).get("asignacionNombre"));
+    }
+
+    @Test
+    @DisplayName("CU05: Filtrado multicriterio de hallazgos por Auditoría Específica")
+    void testObtenerHallazgosDisponiblesFiltroAuditoriaEspecifica() {
+        Usuario usuario = new Usuario();
+        usuario.setId(1L);
+
+        Proyecto proyecto = new Proyecto();
+        proyecto.setId(10L);
+        proyecto.setUsuario(usuario);
+
+        Auditoria audGeneral = new Auditoria();
+        audGeneral.setId(301L);
+        audGeneral.setProyecto(proyecto);
+        audGeneral.setTipoAuditoria("GENERAL");
+        audGeneral.setNumeroEnProyecto(2L);
+
+        Regla r = new Regla();
+        r.setId(2L);
+        r.setNombreRepresentativo("Regla General 2");
+
+        ResultadoRegla rr = new ResultadoRegla(false, 0, r, audGeneral);
+        Hallazgo h = new Hallazgo(NivelSeveridadEnum.ALTA, "Evidencia General", "Rec General", rr);
+        h.setId(902L);
+        rr.setHallazgo(h);
+        audGeneral.setResultados(List.of(rr));
+
+        when(auditoriaDAO.buscarPorId(301L)).thenReturn(audGeneral);
+
+        List<Map<String, Object>> hallazgos = retroService.obtenerHallazgosDisponibles(10L, 1L, "GENERAL", null, 301L);
+
+        assertNotNull(hallazgos);
+        assertEquals(1, hallazgos.size());
+        assertEquals("AG-2", hallazgos.get(0).get("codigoVisible"));
+        assertEquals("GENERAL", hallazgos.get(0).get("tipoAuditoria"));
+    }
+
+    @Test
+    @DisplayName("CU05: Aislamiento - Estudiante no puede solicitar sobre hallazgos de proyecto ajeno")
+    void testAislamientoEstudianteHallazgoAjeno() {
+        Usuario usuarioAjeno = new Usuario();
+        usuarioAjeno.setId(99L);
+
+        Proyecto proyectoAjeno = new Proyecto();
+        proyectoAjeno.setId(50L);
+        proyectoAjeno.setUsuario(usuarioAjeno);
+
+        Auditoria audAjena = new Auditoria();
+        audAjena.setId(701L);
+        audAjena.setProyecto(proyectoAjeno);
+
+        Regla r = new Regla();
+        r.setId(3L);
+        ResultadoRegla rr = new ResultadoRegla(false, 0, r, audAjena);
+        Hallazgo hAjeno = new Hallazgo(NivelSeveridadEnum.ALTA, "Evidencia Ajena", "Rec", rr);
+        hAjeno.setId(999L);
+        rr.setHallazgo(hAjeno);
+
+        when(solicitudDAO.buscarHallazgoPorId(999L)).thenReturn(hAjeno);
+
+        SolicitudDTO dto = new SolicitudDTO(999L, "Intento de solicitud sobre proyecto ajeno");
+        dto.setUsuarioId(1L); // Usuario actual (distinto del dueño 99L)
+
+        ExcepcionNegocio ex = assertThrows(ExcepcionNegocio.class, () ->
+                retroService.solicitarRetroalimentacionDeHallazgo(dto));
+        assertEquals("No tiene permisos para solicitar retroalimentación sobre proyectos de otro estudiante.", ex.getMessage());
     }
 }
