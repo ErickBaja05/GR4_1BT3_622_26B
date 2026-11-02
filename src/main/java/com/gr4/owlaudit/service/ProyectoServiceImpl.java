@@ -37,6 +37,9 @@ public class ProyectoServiceImpl implements ProyectoService {
         // Validación del enlace según secuencia2.puml
         validarEnlace(dto.getUrlGithub());
 
+        // Validación de unicidad de nombre y URL para el mismo estudiante
+        validarUnicidadParaEstudiante(dto.getUsuarioId(), dto.getNombre(), dto.getUrlGithub(), null);
+
         // Instanciación y persistencia
         Proyecto proyecto = new Proyecto(dto);
         if (dto.getUsuarioId() != null) {
@@ -69,6 +72,7 @@ public class ProyectoServiceImpl implements ProyectoService {
     public void actualizarProyecto(Long proyectoId, NuevoProyectoDTO dto, Long usuarioId) {
         validarDatosActualizacion(proyectoId, dto, usuarioId);
         validarEnlace(dto.getUrlGithub());
+        validarUnicidadParaEstudiante(usuarioId, dto.getNombre(), dto.getUrlGithub(), proyectoId);
 
         Proyecto proyecto = obtenerProyectoValido(proyectoId, usuarioId, "modificar");
         validarPropietario(proyecto, usuarioId, "modificar");
@@ -76,6 +80,39 @@ public class ProyectoServiceImpl implements ProyectoService {
         // Patrón Martin Fowler: Move Method (actualizarDesdeDTO en Proyecto)
         proyecto.actualizarDesdeDTO(dto);
         proyectoDAO.actualizar(proyecto);
+    }
+
+    private void validarUnicidadParaEstudiante(Long usuarioId, String nombre, String urlGithub, Long proyectoIdExcluir) {
+        if (usuarioId == null) return;
+        java.util.List<Proyecto> existentes = proyectoDAO.listarPorUsuarioId(usuarioId);
+        if (existentes == null || existentes.isEmpty()) return;
+
+        String nombreTrim = nombre != null ? nombre.trim() : "";
+        String urlNorm = normalizarUrl(urlGithub);
+
+        for (Proyecto p : existentes) {
+            if (proyectoIdExcluir != null && p.getId() != null && p.getId().equals(proyectoIdExcluir)) {
+                continue;
+            }
+            if (p.getNombre() != null && p.getNombre().trim().equalsIgnoreCase(nombreTrim)) {
+                throw new ExcepcionNegocio("Ya tiene un proyecto registrado con este nombre.");
+            }
+            if (p.getUrlGithub() != null && normalizarUrl(p.getUrlGithub()).equalsIgnoreCase(urlNorm)) {
+                throw new ExcepcionNegocio("Ya tiene un proyecto registrado con este enlace de repositorio.");
+            }
+        }
+    }
+
+    private String normalizarUrl(String url) {
+        if (url == null) return "";
+        String norm = url.trim().toLowerCase();
+        while (norm.endsWith("/")) {
+            norm = norm.substring(0, norm.length() - 1);
+        }
+        if (norm.endsWith(".git")) {
+            norm = norm.substring(0, norm.length() - 4);
+        }
+        return norm;
     }
 
     @Override
