@@ -94,9 +94,14 @@ public class AuditoriaServiceImpl implements AuditoriaService {
         List<Regla> reglas = obtenerReglasVigentes();
 
         Auditoria auditoria = crearAuditoria(dto);
+        auditoria.setTipoAuditoria("GENERAL");
+        if (dto != null && dto.getProyectoId() != null) {
+            auditoria.setNumeroEnProyecto(auditoriaDAO.obtenerSiguienteNumeroGeneralEnProyecto(dto.getProyectoId()));
+        }
         evaluarReglas(auditoria, reglas, rutas, urlRepositorio);
 
         calcularPuntajesDeLaAuditoria(auditoria);
+        auditoria.setDictamen(auditoria.determinarDictamen());
         auditoriaDAO.registrarAuditoriaEnElHistorial(auditoria);
 
         return crearResultadoDTO(auditoria);
@@ -178,7 +183,11 @@ public class AuditoriaServiceImpl implements AuditoriaService {
                 detalles);
         resultadoDTO.setIdAuditoria(auditoria.getId());
         resultadoDTO.setNumeroEnProyecto(auditoria.getNumeroEnProyecto());
-        resultadoDTO.setDictamen(auditoria.determinarDictamen());
+        resultadoDTO.setNumeroEnAsignacion(auditoria.getNumeroEnAsignacion());
+        resultadoDTO.setTipoAuditoria(auditoria.getTipoAuditoria());
+        resultadoDTO.setCodigoVisible(auditoria.getCodigoVisible());
+        resultadoDTO.setEtiquetaVisible(auditoria.getEtiquetaVisible());
+        resultadoDTO.setDictamen(auditoria.getDictamen() != null ? auditoria.getDictamen() : auditoria.determinarDictamen());
 
         return resultadoDTO;
     }
@@ -247,10 +256,12 @@ public class AuditoriaServiceImpl implements AuditoriaService {
         double umbral = asignacionesService.consultarUmbralAprobacion(auditoriaDTO.getIdAsignacion());
 
         Auditoria auditoria = crearAuditoria(auditoriaDTO);
+        auditoria.setTipoAuditoria("ASIGNACION");
         if (auditoriaDTO.getIdAsignacion() != null) {
             Asignacion asignacion = new Asignacion();
             asignacion.setId(auditoriaDTO.getIdAsignacion());
             auditoria.setAsignacion(asignacion);
+            auditoria.setNumeroEnAsignacion(auditoriaDAO.obtenerSiguienteNumeroEnAsignacion(auditoriaDTO.getProyectoId(), auditoriaDTO.getIdAsignacion()));
         }
 
         evaluarReglas(auditoria, reglasAsignacion, rutas, urlRepositorio);
@@ -266,6 +277,24 @@ public class AuditoriaServiceImpl implements AuditoriaService {
         resultadoDTO.setUmbralAprobacion(umbral);
 
         return resultadoDTO;
+    }
+
+    @Override
+    public ResultadoDTO obtenerDetalleAuditoria(Long auditoriaId) {
+        if (auditoriaId == null) return null;
+        Auditoria aud = auditoriaDAO.buscarPorId(auditoriaId);
+        if (aud == null) return null;
+        return convertirAuditoriaAResultadoDTO(aud);
+    }
+
+    @Override
+    public ResultadoDTO convertirAuditoriaAResultadoDTO(Auditoria auditoria) {
+        if (auditoria == null) return null;
+        ResultadoDTO dto = crearResultadoDTO(auditoria);
+        if (auditoria.getAsignacion() != null && auditoria.getAsignacion().getUmbralAprobacion() != null) {
+            dto.setUmbralAprobacion(auditoria.getAsignacion().getUmbralAprobacion());
+        }
+        return dto;
     }
 
     @Override

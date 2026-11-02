@@ -50,8 +50,14 @@ public class Auditoria {
     @Column(name = "porcentaje", nullable = false)
     private double porcentaje;
 
+    @Column(name = "tipo_auditoria", length = 30)
+    private String tipoAuditoria;
+
     @Column(name = "numero_en_proyecto")
     private Long numeroEnProyecto;
+
+    @Column(name = "numero_en_asignacion")
+    private Long numeroEnAsignacion;
 
     // Composición: al guardar la Auditoria se guardan sus ResultadoRegla (y sus Hallazgo)
     @OneToMany(mappedBy = "auditoria", cascade = CascadeType.ALL, orphanRemoval = true)
@@ -188,6 +194,17 @@ public class Auditoria {
         this.dictamen = dictamen;
     }
 
+    public String getTipoAuditoria() {
+        if (tipoAuditoria != null && !tipoAuditoria.isBlank()) {
+            return tipoAuditoria;
+        }
+        return asignacion != null ? "ASIGNACION" : "GENERAL";
+    }
+
+    public void setTipoAuditoria(String tipoAuditoria) {
+        this.tipoAuditoria = tipoAuditoria;
+    }
+
     public Long getNumeroEnProyecto() {
         return numeroEnProyecto;
     }
@@ -196,8 +213,44 @@ public class Auditoria {
         this.numeroEnProyecto = numeroEnProyecto;
     }
 
+    public Long getNumeroEnAsignacion() {
+        return numeroEnAsignacion;
+    }
+
+    public void setNumeroEnAsignacion(Long numeroEnAsignacion) {
+        this.numeroEnAsignacion = numeroEnAsignacion;
+    }
+
+    public boolean esAuditoriaGeneral() {
+        return "GENERAL".equalsIgnoreCase(getTipoAuditoria()) || asignacion == null;
+    }
+
+    public boolean esAuditoriaAsignacion() {
+        return "ASIGNACION".equalsIgnoreCase(getTipoAuditoria()) || asignacion != null;
+    }
+
     public Long getIdVisible() {
+        if (esAuditoriaAsignacion()) {
+            return numeroEnAsignacion != null ? numeroEnAsignacion : (numeroEnProyecto != null ? numeroEnProyecto : id);
+        }
         return numeroEnProyecto != null ? numeroEnProyecto : id;
+    }
+
+    public String getCodigoVisible() {
+        Long vis = getIdVisible();
+        if (esAuditoriaAsignacion()) {
+            return "AA-" + (vis != null ? vis : (id != null ? id : "?"));
+        }
+        return "AG-" + (vis != null ? vis : (id != null ? id : "?"));
+    }
+
+    public String getEtiquetaVisible() {
+        Long vis = getIdVisible();
+        if (esAuditoriaAsignacion()) {
+            String nom = (asignacion != null && asignacion.getNombre() != null) ? " (" + asignacion.getNombre() + ")" : "";
+            return "Auditoría Asignación #" + (vis != null ? vis : "?") + nom;
+        }
+        return "Auditoría General #" + (vis != null ? vis : "?");
     }
 
     public static final double UMBRAL_MINIMO_APROBACION = 70.0;

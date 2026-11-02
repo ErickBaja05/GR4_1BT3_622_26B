@@ -17,12 +17,28 @@ public class AuditoriaDAOImpl implements AuditoriaDAO {
         try {
             session = HibernateUtil.getSessionFactory().openSession();
             tx = session.beginTransaction();
-            if (auditoria.getNumeroEnProyecto() == null && auditoria.getProyecto() != null && auditoria.getProyecto().getId() != null) {
-                Long nextNum = session.createQuery(
-                    "SELECT COALESCE(MAX(a.numeroEnProyecto), 0) + 1 FROM Auditoria a WHERE a.proyecto.id = :pid", Long.class)
-                    .setParameter("pid", auditoria.getProyecto().getId())
-                    .uniqueResult();
-                auditoria.setNumeroEnProyecto(nextNum != null ? nextNum : 1L);
+            if (auditoria.getProyecto() != null && auditoria.getProyecto().getId() != null) {
+                Long pid = auditoria.getProyecto().getId();
+                if (auditoria.esAuditoriaAsignacion()) {
+                    auditoria.setTipoAuditoria("ASIGNACION");
+                    if (auditoria.getNumeroEnAsignacion() == null && auditoria.getAsignacion() != null && auditoria.getAsignacion().getId() != null) {
+                        Long nextNum = session.createQuery(
+                            "SELECT COALESCE(MAX(a.numeroEnAsignacion), 0) + 1 FROM Auditoria a WHERE a.proyecto.id = :pid AND a.asignacion.id = :asigId", Long.class)
+                            .setParameter("pid", pid)
+                            .setParameter("asigId", auditoria.getAsignacion().getId())
+                            .uniqueResult();
+                        auditoria.setNumeroEnAsignacion(nextNum != null ? nextNum : 1L);
+                    }
+                } else {
+                    auditoria.setTipoAuditoria("GENERAL");
+                    if (auditoria.getNumeroEnProyecto() == null) {
+                        Long nextNum = session.createQuery(
+                            "SELECT COALESCE(MAX(a.numeroEnProyecto), 0) + 1 FROM Auditoria a WHERE a.proyecto.id = :pid AND a.asignacion IS NULL", Long.class)
+                            .setParameter("pid", pid)
+                            .uniqueResult();
+                        auditoria.setNumeroEnProyecto(nextNum != null ? nextNum : 1L);
+                    }
+                }
             }
             // Por cascade se guardan también sus ResultadoRegla y Hallazgo
             session.persist(auditoria);
@@ -105,6 +121,104 @@ public class AuditoriaDAOImpl implements AuditoriaDAO {
     }
 
     @Override
+    public Long obtenerSiguienteNumeroGeneralEnProyecto(Long proyectoId) {
+        if (proyectoId == null) return 1L;
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            Long count = session.createQuery(
+                "SELECT COALESCE(MAX(a.numeroEnProyecto), 0) + 1 FROM Auditoria a WHERE a.proyecto.id = :pid AND a.asignacion IS NULL", Long.class)
+                .setParameter("pid", proyectoId)
+                .uniqueResult();
+            return count != null ? count : 1L;
+        } catch (Exception e) {
+            return 1L;
+        }
+    }
+
+    @Override
+    public Long obtenerSiguienteNumeroEnAsignacion(Long proyectoId, Long asignacionId) {
+        if (proyectoId == null) return 1L;
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            Long count = session.createQuery(
+                "SELECT COALESCE(MAX(a.numeroEnAsignacion), 0) + 1 FROM Auditoria a WHERE a.proyecto.id = :pid AND a.asignacion.id = :asigId", Long.class)
+                .setParameter("pid", proyectoId)
+                .setParameter("asigId", asignacionId)
+                .uniqueResult();
+            return count != null ? count : 1L;
+        } catch (Exception e) {
+            return 1L;
+        }
+    }
+
+    @Override
+    public List<Auditoria> consultarHistorialAuditoriasGenerales(Long proyectoId) {
+        if (proyectoId == null) return java.util.Collections.emptyList();
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            return session.createQuery(
+                "SELECT DISTINCT a FROM Auditoria a " +
+                "LEFT JOIN FETCH a.proyecto " +
+                "LEFT JOIN FETCH a.resultados r " +
+                "LEFT JOIN FETCH r.regla " +
+                "LEFT JOIN FETCH r.hallazgo " +
+                "WHERE a.proyecto.id = :proyectoId AND a.asignacion IS NULL " +
+                "ORDER BY a.fechaHora ASC, a.id ASC",
+                Auditoria.class
+            ).setParameter("proyectoId", proyectoId).getResultList();
+        } catch (Exception e) {
+            throw new RuntimeException("Error al consultar historial de auditorías generales: " + e.getMessage(), e);
+        }
+    }
+
+    @Override
+    public List<Auditoria> consultarHistorialAuditoriasAsignacion(Long proyectoId, Long asignacionId) {
+        if (proyectoId == null) return java.util.Collections.emptyList();
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            return session.createQuery(
+                "SELECT DISTINCT a FROM Auditoria a " +
+                "LEFT JOIN FETCH a.proyecto " +
+                "LEFT JOIN FETCH a.asignacion " +
+                "LEFT JOIN FETCH a.resultados r " +
+                "LEFT JOIN FETCH r.regla " +
+                "LEFT JOIN FETCH r.hallazgo " +
+                "WHERE a.proyecto.id = :proyectoId AND a.asignacion.id = :asigId " +
+                "ORDER BY a.fechaHora ASC, a.id ASC",
+                Auditoria.class
+            )
+            .setParameter("proyectoId", proyectoId)
+            .setParameter("asigId", asignacionId)
+            .getResultList();
+        } catch (Exception e) {
+            throw new RuntimeException("Error al consultar historial de auditorías de asignación: " + e.getMessage(), e);
+        }
+    }
+
+    @Override
+    public List<Auditoria> consultarAuditoriasDeAsignacionPorUsuario(Long asignacionId, Long usuarioId) {
+        if (asignacionId == null) return java.util.Collections.emptyList();
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            String hql = "SELECT DISTINCT a FROM Auditoria a " +
+                "LEFT JOIN FETCH a.proyecto p " +
+                "LEFT JOIN FETCH a.asignacion " +
+                "LEFT JOIN FETCH a.resultados r " +
+                "LEFT JOIN FETCH r.regla " +
+                "LEFT JOIN FETCH r.hallazgo " +
+                "WHERE a.asignacion.id = :asigId ";
+            if (usuarioId != null) {
+                hql += "AND (p.usuario.id = :uid OR a.usuario.id = :uid) ";
+            }
+            hql += "ORDER BY a.fechaHora DESC, a.id DESC";
+
+            var query = session.createQuery(hql, Auditoria.class)
+                .setParameter("asigId", asignacionId);
+            if (usuarioId != null) {
+                query.setParameter("uid", usuarioId);
+            }
+            return query.getResultList();
+        } catch (Exception e) {
+            throw new RuntimeException("Error al consultar auditorías de asignación por usuario: " + e.getMessage(), e);
+        }
+    }
+
+    @Override
     public void resecuenciarAuditoriasDeProyecto(Long proyectoId) {
         if (proyectoId == null) return;
         Session session = null;
@@ -112,16 +226,35 @@ public class AuditoriaDAOImpl implements AuditoriaDAO {
         try {
             session = HibernateUtil.getSessionFactory().openSession();
             tx = session.beginTransaction();
-            List<Auditoria> auditorias = session.createQuery(
-                "SELECT a FROM Auditoria a WHERE a.proyecto.id = :proyectoId ORDER BY a.fechaHora ASC, a.id ASC",
+            List<Auditoria> generales = session.createQuery(
+                "SELECT a FROM Auditoria a WHERE a.proyecto.id = :proyectoId AND a.asignacion IS NULL ORDER BY a.fechaHora ASC, a.id ASC",
                 Auditoria.class
             ).setParameter("proyectoId", proyectoId).list();
 
-            long seq = 1L;
-            for (Auditoria a : auditorias) {
-                a.setNumeroEnProyecto(seq++);
+            long seqGen = 1L;
+            for (Auditoria a : generales) {
+                a.setNumeroEnProyecto(seqGen++);
                 session.merge(a);
             }
+
+            List<Long> asignacionesIds = session.createQuery(
+                "SELECT DISTINCT a.asignacion.id FROM Auditoria a WHERE a.proyecto.id = :proyectoId AND a.asignacion IS NOT NULL",
+                Long.class
+            ).setParameter("proyectoId", proyectoId).list();
+
+            for (Long asigId : asignacionesIds) {
+                List<Auditoria> asignadas = session.createQuery(
+                    "SELECT a FROM Auditoria a WHERE a.proyecto.id = :proyectoId AND a.asignacion.id = :asigId ORDER BY a.fechaHora ASC, a.id ASC",
+                    Auditoria.class
+                ).setParameter("proyectoId", proyectoId).setParameter("asigId", asigId).list();
+
+                long seqAsig = 1L;
+                for (Auditoria a : asignadas) {
+                    a.setNumeroEnAsignacion(seqAsig++);
+                    session.merge(a);
+                }
+            }
+
             tx.commit();
         } catch (Exception e) {
             if (tx != null && tx.isActive()) {

@@ -5,20 +5,37 @@
 <%@ page import="com.gr4.owlaudit.dto.EvolucionFinalDTO" %>
 <%@ page import="com.gr4.owlaudit.dto.EvolucionFinalDTO.ComparacionRegla" %>
 <%@ page import="com.gr4.owlaudit.model.Proyecto" %>
+<%@ page import="com.gr4.owlaudit.model.Asignacion" %>
 <%@ page import="com.gr4.owlaudit.common.util.HtmlUtil" %>
 <%@ page import="java.util.List" %>
 <%
     String mensajeExito = (String) request.getAttribute("mensajeExito");
     String mensajeError = (String) request.getAttribute("mensajeError");
+    String mensajeInfo = (String) request.getAttribute("mensajeInfo");
     EvolucionDTO evolucionDTO = (EvolucionDTO) request.getAttribute("evolucionDTO");
     ResumenHistorialDTO resumenHistorial = (ResumenHistorialDTO) request.getAttribute("resumenHistorialDTO");
     EvolucionFinalDTO evolucionFinal = (EvolucionFinalDTO) request.getAttribute("evolucionFinalDTO");
     @SuppressWarnings("unchecked")
     List<Proyecto> listaProyectos = (List<Proyecto>) request.getAttribute("listaProyectos");
+    @SuppressWarnings("unchecked")
+    List<Asignacion> listaAsignaciones = (List<Asignacion>) request.getAttribute("listaAsignaciones");
 
     Long proyectoIdActual = evolucionDTO != null && evolucionDTO.getProyectoId() != null ? evolucionDTO.getProyectoId() : null;
     Long baseIdActual = evolucionDTO != null ? evolucionDTO.getBaseId() : null;
     Long comparadaIdActual = evolucionDTO != null ? evolucionDTO.getComparadaId() : null;
+
+    String tipoAuditoriaActual = (String) request.getAttribute("tipoAuditoria");
+    if (tipoAuditoriaActual == null && evolucionDTO != null) {
+        tipoAuditoriaActual = evolucionDTO.getTipoAuditoria();
+    }
+    if (tipoAuditoriaActual == null) {
+        tipoAuditoriaActual = "GENERAL";
+    }
+
+    Long asignacionIdActual = (Long) request.getAttribute("asignacionId");
+    if (asignacionIdActual == null && evolucionDTO != null) {
+        asignacionIdActual = evolucionDTO.getAsignacionId();
+    }
 %>
 <!DOCTYPE html>
 <html lang="es">
@@ -43,16 +60,19 @@
             <% if (mensajeExito != null) { %>
                 <div class="alert alert-success"><%= HtmlUtil.escape(mensajeExito) %></div>
             <% } %>
+            <% if (mensajeInfo != null) { %>
+                <div class="alert alert-info"><%= HtmlUtil.escape(mensajeInfo) %></div>
+            <% } %>
             <% if (mensajeError != null) { %>
                 <div class="alert alert-error"><%= HtmlUtil.escape(mensajeError) %></div>
             <% } %>
 
-            <!-- Paso 1: Selección del Proyecto -->
-            <form action="${pageContext.request.contextPath}/evolucion" method="GET" style="display: flex; gap: 1rem; align-items: flex-end; margin-bottom: 0.5rem;">
-                <div class="form-group" style="flex: 1; margin-bottom: 0;">
+            <!-- Paso 1: Selección del Proyecto y Ámbito de Auditoría -->
+            <form action="${pageContext.request.contextPath}/evolucion" method="GET" style="display: flex; gap: 1rem; align-items: flex-end; margin-bottom: 0.5rem; flex-wrap: wrap;">
+                <div class="form-group" style="flex: 2; min-width: 220px; margin-bottom: 0;">
                     <label for="proyectoId" class="form-label">Proyecto Académico</label>
                     <% if (listaProyectos != null && !listaProyectos.isEmpty()) { %>
-                        <select id="proyectoId" name="proyectoId" class="form-control" onchange="this.form.submit()" required>
+                        <select id="proyectoId" name="proyectoId" class="form-control" required>
                             <% 
                                int idxEvol = 1;
                                for (Proyecto p : listaProyectos) { 
@@ -72,6 +92,34 @@
                                value="<%= proyectoIdActual != null ? proyectoIdActual : "" %>" min="1" required>
                     <% } %>
                 </div>
+
+                <div class="form-group" style="flex: 1.5; min-width: 200px; margin-bottom: 0;">
+                    <label for="tipoAuditoria" class="form-label">Tipo de Auditoría</label>
+                    <select id="tipoAuditoria" name="tipoAuditoria" class="form-control" onchange="toggleAsignacionSelector(this.value)">
+                        <option value="GENERAL" <%= !"ASIGNACION".equalsIgnoreCase(tipoAuditoriaActual) ? "selected" : "" %>>🌐 Auditorías Generales</option>
+                        <option value="ASIGNACION" <%= "ASIGNACION".equalsIgnoreCase(tipoAuditoriaActual) ? "selected" : "" %>>📚 Auditorías por Asignación</option>
+                    </select>
+                </div>
+
+                <div class="form-group" id="grupoAsignacion" style="flex: 2; min-width: 220px; margin-bottom: 0; display: <%= "ASIGNACION".equalsIgnoreCase(tipoAuditoriaActual) ? "block" : "none" %>;">
+                    <label for="asignacionId" class="form-label">Asignación Académica</label>
+                    <select id="asignacionId" name="asignacionId" class="form-control">
+                        <option value="">-- Seleccionar Asignación --</option>
+                        <%
+                            if (listaAsignaciones != null) {
+                                for (Asignacion asig : listaAsignaciones) {
+                                    boolean sel = (asignacionIdActual != null && asignacionIdActual.equals(asig.getId()));
+                        %>
+                            <option value="<%= asig.getId() %>" <%= sel ? "selected" : "" %>>
+                                <%= HtmlUtil.escape(asig.getNombre()) %> (Umbral: <%= asig.getUmbralAprobacion() %>%)
+                            </option>
+                        <%
+                                }
+                            }
+                        %>
+                    </select>
+                </div>
+
                 <button type="submit" class="btn btn-secondary">Cargar Historial</button>
             </form>
         </div>
@@ -79,7 +127,7 @@
         <!-- Paso 2: Historial de Auditorías y Formulario de Selección para Comparar -->
         <% if (resumenHistorial != null && resumenHistorial.getAuditorias() != null && !resumenHistorial.getAuditorias().isEmpty()) { %>
             <div class="card">
-                <h3 style="margin-bottom: 0.25rem;">📋 Historial de Auditorías Registradas</h3>
+                <h3 style="margin-bottom: 0.25rem;">📋 Historial de Auditorías Registradas (<%= "ASIGNACION".equalsIgnoreCase(tipoAuditoriaActual) ? "Por Asignación" : "Generales" %>)</h3>
                 <p class="card-subtitle" style="margin-bottom: 1rem;">
                     Proyecto ID: <strong><%= resumenHistorial.getProyectoId() != null ? resumenHistorial.getProyectoId() : proyectoIdActual %></strong> &middot; 
                     Total registradas: <%= resumenHistorial.getAuditorias().size() %>
@@ -90,16 +138,19 @@
                     <table class="data-table">
                         <thead>
                             <tr>
-                                <th>ID Auditoría</th>
+                                <th># ID Auditoría</th>
                                 <th>Fecha y Hora</th>
                                 <th>Puntaje Obtenido</th>
                                 <th>Cumplimiento</th>
+                                <% if ("ASIGNACION".equalsIgnoreCase(tipoAuditoriaActual)) { %>
+                                    <th>Asignación / Dictamen</th>
+                                <% } %>
                             </tr>
                         </thead>
                         <tbody>
                             <% for (AuditoriaResumenDTO item : resumenHistorial.getAuditorias()) { %>
                                 <tr>
-                                    <td><strong>Auditoría #<%= item.getIdVisible() %></strong></td>
+                                    <td><strong><%= item.getCodigoVisible() != null ? item.getCodigoVisible() : ("Auditoría #" + item.getIdVisible()) %></strong></td>
                                     <td><%= HtmlUtil.escape(item.getFechaFormateada()) %></td>
                                     <td><%= item.getPuntajeObtenido() %> / <%= item.getPuntajeMaximo() %> pts</td>
                                     <td>
@@ -107,6 +158,16 @@
                                             <%= item.getPorcentaje() %>%
                                         </span>
                                     </td>
+                                    <% if ("ASIGNACION".equalsIgnoreCase(tipoAuditoriaActual)) { %>
+                                        <td>
+                                            <%= item.getNombreAsignacion() != null ? HtmlUtil.escape(item.getNombreAsignacion()) : "" %>
+                                            <% if (item.getDictamen() != null) { %>
+                                                <span class="badge <%= "APROBADA".equalsIgnoreCase(item.getDictamen()) ? "badge-estudiante" : "alert-error" %>" style="margin-left: 0.5rem;">
+                                                    <%= HtmlUtil.escape(item.getDictamen()) %>
+                                                </span>
+                                            <% } %>
+                                        </td>
+                                    <% } %>
                                 </tr>
                             <% } %>
                         </tbody>
@@ -116,6 +177,10 @@
                 <!-- Formulario para Indicar Dos Auditorías a Comparar (secuencia4.puml) -->
                 <form action="${pageContext.request.contextPath}/evolucion" method="POST">
                     <input type="hidden" name="proyectoId" value="<%= proyectoIdActual != null ? proyectoIdActual : resumenHistorial.getProyectoId() %>">
+                    <input type="hidden" name="tipoAuditoria" value="<%= tipoAuditoriaActual %>">
+                    <% if (asignacionIdActual != null) { %>
+                        <input type="hidden" name="asignacionId" value="<%= asignacionIdActual %>">
+                    <% } %>
 
                     <h4 style="margin: 1.5rem 0 1rem; color: var(--bg-primary);">Seleccione las dos auditorías a comparar:</h4>
 
@@ -130,7 +195,7 @@
                                     <% for (AuditoriaResumenDTO item : resumenHistorial.getAuditorias()) { %>
                                         <option value="<%= item.getId() %>" 
                                             <%= (baseIdActual != null && baseIdActual.equals(item.getId())) ? "selected" : "" %>>
-                                            Auditoría #<%= item.getIdVisible() %> &middot; <%= item.getFechaFormateada() %> (<%= item.getPorcentaje() %>%)
+                                            <%= item.getCodigoVisible() != null ? item.getCodigoVisible() : ("Auditoría #" + item.getIdVisible()) %> &middot; <%= item.getFechaFormateada() %> (<%= item.getPorcentaje() %>%)
                                         </option>
                                     <% } %>
                                 </select>
@@ -147,7 +212,7 @@
                                     <% for (AuditoriaResumenDTO item : resumenHistorial.getAuditorias()) { %>
                                         <option value="<%= item.getId() %>" 
                                             <%= (comparadaIdActual != null && comparadaIdActual.equals(item.getId())) ? "selected" : "" %>>
-                                            Auditoría #<%= item.getIdVisible() %> &middot; <%= item.getFechaFormateada() %> (<%= item.getPorcentaje() %>%)
+                                            <%= item.getCodigoVisible() != null ? item.getCodigoVisible() : ("Auditoría #" + item.getIdVisible()) %> &middot; <%= item.getFechaFormateada() %> (<%= item.getPorcentaje() %>%)
                                         </option>
                                     <% } %>
                                 </select>
@@ -166,6 +231,14 @@
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
                     <div>
                         <h2 style="color: var(--bg-primary); font-size: 1.4rem;">🎯 Reporte Comparativo de Calidad</h2>
+                        <p class="card-subtitle" style="margin-bottom: 0;">
+                            Auditoría Base <strong><%= evolucionFinal.getCodigoVisibleBase() != null ? evolucionFinal.getCodigoVisibleBase() : ("#" + evolucionFinal.getIdVisibleBase()) %></strong> (<%= evolucionFinal.getFechaBaseFormateada() %>) vs 
+                            Auditoría Comparada <strong><%= evolucionFinal.getCodigoVisibleComparada() != null ? evolucionFinal.getCodigoVisibleComparada() : ("#" + evolucionFinal.getIdVisibleComparada()) %></strong> (<%= evolucionFinal.getFechaComparadaFormateada() %>)
+                            <% if (evolucionFinal.getNombreAsignacion() != null) { %>
+                                &middot; Asignación: <strong><%= HtmlUtil.escape(evolucionFinal.getNombreAsignacion()) %></strong>
+                            <% } %>
+                        </p>
+                    </div>
                         <p class="card-subtitle" style="margin-bottom: 0;">
                             Auditoría Base <strong>#<%= evolucionFinal.getIdVisibleBase() %></strong> (<%= evolucionFinal.getFechaBaseFormateada() %>) vs 
                             Auditoría Comparada <strong>#<%= evolucionFinal.getIdVisibleComparada() %></strong> (<%= evolucionFinal.getFechaComparadaFormateada() %>)
@@ -286,5 +359,13 @@
         <% } %>
     </main>
 
+    <script>
+        function toggleAsignacionSelector(valor) {
+            var grupo = document.getElementById('grupoAsignacion');
+            if (grupo) {
+                grupo.style.display = (valor === 'ASIGNACION') ? 'block' : 'none';
+            }
+        }
+    </script>
 </body>
 </html>

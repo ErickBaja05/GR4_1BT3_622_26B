@@ -7,6 +7,10 @@ import java.util.List;
 public class ResultadoDTO {
     private Long idAuditoria;
     private Long numeroEnProyecto;
+    private Long numeroEnAsignacion;
+    private String tipoAuditoria;
+    private String codigoVisible;
+    private String etiquetaVisible;
     private int puntajeObtenido;
     private int puntajeMaximo;
     private double porcentaje;
@@ -30,7 +34,42 @@ public class ResultadoDTO {
         this.numeroEnProyecto = numeroEnProyecto;
     }
 
+    public String getTipoAuditoria() {
+        return tipoAuditoria;
+    }
+
+    public void setTipoAuditoria(String tipoAuditoria) {
+        this.tipoAuditoria = tipoAuditoria;
+    }
+
+    public String getCodigoVisible() {
+        return codigoVisible;
+    }
+
+    public void setCodigoVisible(String codigoVisible) {
+        this.codigoVisible = codigoVisible;
+    }
+
+    public String getEtiquetaVisible() {
+        return etiquetaVisible;
+    }
+
+    public void setEtiquetaVisible(String etiquetaVisible) {
+        this.etiquetaVisible = etiquetaVisible;
+    }
+
+    public Long getNumeroEnAsignacion() {
+        return numeroEnAsignacion;
+    }
+
+    public void setNumeroEnAsignacion(Long numeroEnAsignacion) {
+        this.numeroEnAsignacion = numeroEnAsignacion;
+    }
+
     public Long getIdVisible() {
+        if ("ASIGNACION".equalsIgnoreCase(tipoAuditoria)) {
+            return numeroEnAsignacion != null ? numeroEnAsignacion : (numeroEnProyecto != null ? numeroEnProyecto : idAuditoria);
+        }
         return numeroEnProyecto != null ? numeroEnProyecto : idAuditoria;
     }
 
@@ -145,8 +184,16 @@ public class ResultadoDTO {
             return regla;
         }
 
+        public String getNombreRegla() {
+            return regla;
+        }
+
         public void setRegla(String regla) {
             this.regla = regla;
+        }
+
+        public Long getIdHallazgo() {
+            return hallazgoId;
         }
 
         public boolean isCumple() {

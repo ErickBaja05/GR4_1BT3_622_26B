@@ -20,6 +20,21 @@ public interface AuditoriaDAO {
     default Long obtenerSiguienteNumeroEnProyecto(Long proyectoId) {
         return 1L;
     }
+    default Long obtenerSiguienteNumeroGeneralEnProyecto(Long proyectoId) {
+        return obtenerSiguienteNumeroEnProyecto(proyectoId);
+    }
+    default Long obtenerSiguienteNumeroEnAsignacion(Long proyectoId, Long asignacionId) {
+        return 1L;
+    }
+    default List<Auditoria> consultarHistorialAuditoriasGenerales(Long proyectoId) {
+        return consultarHistorialDeAuditorias(proyectoId);
+    }
+    default List<Auditoria> consultarHistorialAuditoriasAsignacion(Long proyectoId, Long asignacionId) {
+        return java.util.Collections.emptyList();
+    }
+    default List<Auditoria> consultarAuditoriasDeAsignacionPorUsuario(Long asignacionId, Long usuarioId) {
+        return java.util.Collections.emptyList();
+    }
     default void resecuenciarAuditoriasDeProyecto(Long proyectoId) {}
     default List<Auditoria> buscarPorAsignacionId(Long asignacionId) {
         return java.util.Collections.emptyList();

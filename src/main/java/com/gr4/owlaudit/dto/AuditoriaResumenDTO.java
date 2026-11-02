@@ -9,6 +9,13 @@ public class AuditoriaResumenDTO {
 
     private Long id;
     private Long numeroEnProyecto;
+    private Long numeroEnAsignacion;
+    private String tipoAuditoria;
+    private String codigoVisible;
+    private String etiquetaVisible;
+    private String nombreAsignacion;
+    private String dictamen;
+    private Double umbral;
     private LocalDateTime fechaHora;
     private int puntajeObtenido;
     private int puntajeMaximo;
@@ -32,6 +39,38 @@ public class AuditoriaResumenDTO {
         this.porcentaje = porcentaje;
     }
 
+    public String getTipoAuditoria() {
+        return tipoAuditoria;
+    }
+
+    public void setTipoAuditoria(String tipoAuditoria) {
+        this.tipoAuditoria = tipoAuditoria;
+    }
+
+    public String getCodigoVisible() {
+        return codigoVisible;
+    }
+
+    public void setCodigoVisible(String codigoVisible) {
+        this.codigoVisible = codigoVisible;
+    }
+
+    public String getEtiquetaVisible() {
+        return etiquetaVisible;
+    }
+
+    public void setEtiquetaVisible(String etiquetaVisible) {
+        this.etiquetaVisible = etiquetaVisible;
+    }
+
+    public String getNombreAsignacion() {
+        return nombreAsignacion;
+    }
+
+    public void setNombreAsignacion(String nombreAsignacion) {
+        this.nombreAsignacion = nombreAsignacion;
+    }
+
     public Long getId() {
         return id;
     }
@@ -48,7 +87,34 @@ public class AuditoriaResumenDTO {
         this.numeroEnProyecto = numeroEnProyecto;
     }
 
+    public Long getNumeroEnAsignacion() {
+        return numeroEnAsignacion;
+    }
+
+    public void setNumeroEnAsignacion(Long numeroEnAsignacion) {
+        this.numeroEnAsignacion = numeroEnAsignacion;
+    }
+
+    public String getDictamen() {
+        return dictamen;
+    }
+
+    public void setDictamen(String dictamen) {
+        this.dictamen = dictamen;
+    }
+
+    public Double getUmbral() {
+        return umbral;
+    }
+
+    public void setUmbral(Double umbral) {
+        this.umbral = umbral;
+    }
+
     public Long getIdVisible() {
+        if ("ASIGNACION".equalsIgnoreCase(tipoAuditoria)) {
+            return numeroEnAsignacion != null ? numeroEnAsignacion : (numeroEnProyecto != null ? numeroEnProyecto : id);
+        }
         return numeroEnProyecto != null ? numeroEnProyecto : id;
     }
 
