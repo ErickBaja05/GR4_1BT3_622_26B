@@ -1,4 +1,4 @@
-<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+﻿<%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ page import="com.gr4.owlaudit.dto.EvolucionDTO" %>
 <%@ page import="com.gr4.owlaudit.dto.ResumenHistorialDTO" %>
 <%@ page import="com.gr4.owlaudit.dto.AuditoriaResumenDTO" %>
@@ -340,14 +340,10 @@
                                                 <span class="badge badge-muted"><%= HtmlUtil.escape(r.getEstado()) %></span>
                                             <% } %>
                                         </td>
-                                        <td><%= HtmlUtil.escape(r.getEvidencia() != null && !r.getEvidencia().isBlank() ? r.getEvidencia() : "—") %></td>
-                                        <td><%= HtmlUtil.escape(r.getRecomendacion() != null && !r.getRecomendacion().isBlank() ? r.getRecomendacion() : "—") %></td>
+                                        <td class="col-evidence"><%= HtmlUtil.escape(r.getEvidencia() != null && !r.getEvidencia().isBlank() ? r.getEvidencia() : "—") %></td>`n                                        <td class="col-recommendation"><%= HtmlUtil.escape(r.getRecomendacion() != null && !r.getRecomendacion().isBlank() ? r.getRecomendacion() : "—") %></td>
                                         <td style="text-align: center;">
                                             <% if (r.getHallazgoId() != null && ("Nuevo".equalsIgnoreCase(r.getEstado()) || "Persistente".equalsIgnoreCase(r.getEstado()))) { %>
-                                                <a href="${pageContext.request.contextPath}/retroalimentacion?accion=solicitar&hallazgoId=<%= r.getHallazgoId() %>" 
-                                                   class="btn btn-sm btn-primary">
-                                                    Solicitar Feedback
-                                                </a>
+                                                <a href="${pageContext.request.contextPath}/retroalimentacion?accion=solicitar&hallazgoId=<%= r.getHallazgoId() %>" class="btn-feedback">💬 Solicitar Feedback</a>
                                             <% } else { %>
                                                 <span style="color: var(--text-muted);">—</span>
                                             <% } %>
