@@ -5,6 +5,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.gr4.owlaudit.common.exception.ExcepcionNegocio;
+import com.gr4.owlaudit.dao.AuditoriaDAO;
+import com.gr4.owlaudit.dao.AuditoriaDAOImpl;
 import com.gr4.owlaudit.dao.ProyectoDAO;
 import com.gr4.owlaudit.dao.ProyectoDAOImpl;
 import com.gr4.owlaudit.dao.ReglaDAO;
@@ -14,6 +16,7 @@ import com.gr4.owlaudit.dto.NuevaAsignacionDTO;
 import com.gr4.owlaudit.dto.ResultadoDTO;
 import com.gr4.owlaudit.dto.ResumenAsignacionDTO;
 import com.gr4.owlaudit.dto.UsuarioDTO;
+import com.gr4.owlaudit.model.Auditoria;
 import com.gr4.owlaudit.model.Proyecto;
 import com.gr4.owlaudit.model.RolEnum;
 import com.gr4.owlaudit.service.AsignacionesService;
@@ -42,26 +45,33 @@ public class AsignacionServlet extends HttpServlet {
     private final ReglaDAO reglaDAO;
     private final AuditoriaService auditoriaService;
     private final ProyectoDAO proyectoDAO;
+    private final AuditoriaDAO auditoriaDAO;
 
     public AsignacionServlet() {
-        this(new AsignacionesServiceImpl(), new ReglaDAOImpl(), new AuditoriaServiceImpl(), new ProyectoDAOImpl());
+        this(new AsignacionesServiceImpl(), new ReglaDAOImpl(), new AuditoriaServiceImpl(), new ProyectoDAOImpl(), new AuditoriaDAOImpl());
     }
 
     public AsignacionServlet(AsignacionesService asignacionesService, ReglaDAO reglaDAO) {
-        this(asignacionesService, reglaDAO, new AuditoriaServiceImpl(), new ProyectoDAOImpl());
+        this(asignacionesService, reglaDAO, new AuditoriaServiceImpl(), new ProyectoDAOImpl(), new AuditoriaDAOImpl());
     }
 
     public AsignacionServlet(AsignacionesService asignacionesService, ReglaDAO reglaDAO,
             AuditoriaService auditoriaService) {
-        this(asignacionesService, reglaDAO, auditoriaService, new ProyectoDAOImpl());
+        this(asignacionesService, reglaDAO, auditoriaService, new ProyectoDAOImpl(), new AuditoriaDAOImpl());
     }
 
     public AsignacionServlet(AsignacionesService asignacionesService, ReglaDAO reglaDAO,
             AuditoriaService auditoriaService, ProyectoDAO proyectoDAO) {
+        this(asignacionesService, reglaDAO, auditoriaService, proyectoDAO, new AuditoriaDAOImpl());
+    }
+
+    public AsignacionServlet(AsignacionesService asignacionesService, ReglaDAO reglaDAO,
+            AuditoriaService auditoriaService, ProyectoDAO proyectoDAO, AuditoriaDAO auditoriaDAO) {
         this.asignacionesService = asignacionesService;
         this.reglaDAO = reglaDAO;
         this.auditoriaService = auditoriaService;
         this.proyectoDAO = proyectoDAO;
+        this.auditoriaDAO = auditoriaDAO;
     }
 
     @Override
@@ -214,8 +224,20 @@ public class AsignacionServlet extends HttpServlet {
                         ? asignacionesService.generarResumenAsignacion(idAsignacion, usuarioId)
                         : asignacionesService.generarResumenAsignacion(idAsignacion);
                 request.setAttribute("resumenAsignacion", resumen);
+
+                if (auditoriaDAO != null) {
+                    List<Auditoria> historial = auditoriaDAO.consultarAuditoriasDeAsignacionPorUsuario(idAsignacion, usuarioId);
+                    request.setAttribute("historialAuditoriasAsignacion", historial);
+                }
+
+                String detalleAuditoriaIdParam = request.getParameter("detalleAuditoriaId");
+                if (detalleAuditoriaIdParam != null && !detalleAuditoriaIdParam.trim().isEmpty() && auditoriaService != null) {
+                    Long detalleId = Long.parseLong(detalleAuditoriaIdParam.trim());
+                    ResultadoDTO resultado = auditoriaService.obtenerDetalleAuditoria(detalleId);
+                    request.setAttribute("resultadoAuditoria", resultado);
+                }
             } catch (NumberFormatException e) {
-                request.setAttribute("mensajeError", "El identificador de la asignación no es válido.");
+                request.setAttribute("mensajeError", "El identificador de la asignación o auditoría no es válido.");
             } catch (ExcepcionNegocio | IllegalArgumentException e) {
                 request.setAttribute("mensajeError", e.getMessage());
             }
@@ -258,6 +280,11 @@ public class AsignacionServlet extends HttpServlet {
             AuditoriaDTO auditoriaDTO = construirAuditoriaDTO(request, idAsignacion, idProyecto);
             ResultadoDTO resultado = auditoriaService.ejecutarAuditoriaDeAsignacion(auditoriaDTO);
             request.setAttribute("resultadoAuditoria", resultado);
+
+            if (auditoriaDAO != null) {
+                List<Auditoria> historial = auditoriaDAO.consultarAuditoriasDeAsignacionPorUsuario(idAsignacion, usuarioId);
+                request.setAttribute("historialAuditoriasAsignacion", historial);
+            }
         } catch (NumberFormatException e) {
             request.setAttribute("mensajeError", "Los identificadores de asignación o proyecto no son válidos.");
         } catch (ExcepcionNegocio | IllegalArgumentException e) {
