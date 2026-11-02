@@ -9,5 +9,7 @@ public interface AuditoriaService {
 
     ResultadoDTO confirmarEjecucionDeAuditoria(AuditoriaDTO dto);
 
-    public ResultadoDTO ejecutarAuditoriaDeAsignacion(AuditoriaDTO auditoriaDTO);
+    ResultadoDTO ejecutarAuditoriaDeAsignacion(AuditoriaDTO auditoriaDTO);
+
+    void revalorizarAuditoriasDeAsignacion(Long asignacionId);
 }

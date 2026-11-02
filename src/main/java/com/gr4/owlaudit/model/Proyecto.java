@@ -106,6 +106,10 @@ public class Proyecto {
         return idEstudiante != null ? idEstudiante : id;
     }
 
+    public boolean esPropietario(Long usuarioId) {
+        return usuarioId != null && this.usuario != null && usuarioId.equals(this.usuario.getId());
+    }
+
     /**
      * Refactorización Martin Fowler: Move Method (Moving Features Between Objects).
      * Mueve la lógica de actualización de atributos desde ProyectoServiceImpl hacia la entidad Proyecto.

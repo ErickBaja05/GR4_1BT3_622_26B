@@ -14,6 +14,7 @@ public class EvolucionFinalDTO {
 
     // Datos de auditoría base
     private Long baseId;
+    private Long numeroBase;
     private LocalDateTime fechaHoraBase;
     private int puntajeObtenidoBase;
     private int puntajeMaximoBase;
@@ -21,6 +22,7 @@ public class EvolucionFinalDTO {
 
     // Datos de auditoría comparada
     private Long comparadaId;
+    private Long numeroComparada;
     private LocalDateTime fechaHoraComparada;
     private int puntajeObtenidoComparada;
     private int puntajeMaximoComparada;
@@ -41,10 +43,8 @@ public class EvolucionFinalDTO {
     // Mensaje para escenarios alternativos (p. ej. "No existen hallazgos en las auditorías comparadas")
     private String mensaje;
 
-
     // Clasificación evolutiva global del repositorio (MEJORA, REGRESION, ESTABLE)
     private EvolucionGlobalEnum evolucionGlobal;
-
 
     public EvolucionFinalDTO() {
         this.comparaciones = new ArrayList<>();
@@ -64,6 +64,18 @@ public class EvolucionFinalDTO {
 
     public void setBaseId(Long baseId) {
         this.baseId = baseId;
+    }
+
+    public Long getNumeroBase() {
+        return numeroBase;
+    }
+
+    public void setNumeroBase(Long numeroBase) {
+        this.numeroBase = numeroBase;
+    }
+
+    public Long getIdVisibleBase() {
+        return numeroBase != null ? numeroBase : baseId;
     }
 
     public LocalDateTime getFechaHoraBase() {
@@ -104,6 +116,18 @@ public class EvolucionFinalDTO {
 
     public void setComparadaId(Long comparadaId) {
         this.comparadaId = comparadaId;
+    }
+
+    public Long getNumeroComparada() {
+        return numeroComparada;
+    }
+
+    public void setNumeroComparada(Long numeroComparada) {
+        this.numeroComparada = numeroComparada;
+    }
+
+    public Long getIdVisibleComparada() {
+        return numeroComparada != null ? numeroComparada : comparadaId;
     }
 
     public LocalDateTime getFechaHoraComparada() {

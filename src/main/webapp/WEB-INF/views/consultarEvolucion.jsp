@@ -99,7 +99,7 @@
                         <tbody>
                             <% for (AuditoriaResumenDTO item : resumenHistorial.getAuditorias()) { %>
                                 <tr>
-                                    <td><strong>#<%= item.getId() %></strong></td>
+                                    <td><strong>Auditoría #<%= item.getIdVisible() %></strong></td>
                                     <td><%= HtmlUtil.escape(item.getFechaFormateada()) %></td>
                                     <td><%= item.getPuntajeObtenido() %> / <%= item.getPuntajeMaximo() %> pts</td>
                                     <td>
@@ -130,7 +130,7 @@
                                     <% for (AuditoriaResumenDTO item : resumenHistorial.getAuditorias()) { %>
                                         <option value="<%= item.getId() %>" 
                                             <%= (baseIdActual != null && baseIdActual.equals(item.getId())) ? "selected" : "" %>>
-                                            #<%= item.getId() %> &middot; <%= item.getFechaFormateada() %> (<%= item.getPorcentaje() %>%)
+                                            Auditoría #<%= item.getIdVisible() %> &middot; <%= item.getFechaFormateada() %> (<%= item.getPorcentaje() %>%)
                                         </option>
                                     <% } %>
                                 </select>
@@ -147,7 +147,7 @@
                                     <% for (AuditoriaResumenDTO item : resumenHistorial.getAuditorias()) { %>
                                         <option value="<%= item.getId() %>" 
                                             <%= (comparadaIdActual != null && comparadaIdActual.equals(item.getId())) ? "selected" : "" %>>
-                                            #<%= item.getId() %> &middot; <%= item.getFechaFormateada() %> (<%= item.getPorcentaje() %>%)
+                                            Auditoría #<%= item.getIdVisible() %> &middot; <%= item.getFechaFormateada() %> (<%= item.getPorcentaje() %>%)
                                         </option>
                                     <% } %>
                                 </select>
@@ -167,8 +167,8 @@
                     <div>
                         <h2 style="color: var(--bg-primary); font-size: 1.4rem;">🎯 Reporte Comparativo de Calidad</h2>
                         <p class="card-subtitle" style="margin-bottom: 0;">
-                            Auditoría Base <strong>#<%= evolucionFinal.getBaseId() %></strong> (<%= evolucionFinal.getFechaBaseFormateada() %>) vs 
-                            Auditoría Comparada <strong>#<%= evolucionFinal.getComparadaId() %></strong> (<%= evolucionFinal.getFechaComparadaFormateada() %>)
+                            Auditoría Base <strong>#<%= evolucionFinal.getIdVisibleBase() %></strong> (<%= evolucionFinal.getFechaBaseFormateada() %>) vs 
+                            Auditoría Comparada <strong>#<%= evolucionFinal.getIdVisibleComparada() %></strong> (<%= evolucionFinal.getFechaComparadaFormateada() %>)
                         </p>
                     </div>
                     <div style="text-align: right;">

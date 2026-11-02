@@ -53,7 +53,6 @@ public class AuditoriaServlet extends HttpServlet {
         this.calculadoraDeudaTecnica = calculadoraDeudaTecnica;
     }
 
-    // 1. Previa de Auditoría (doGet) según secuencia3.puml
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) 
             throws ServletException, IOException {
@@ -71,23 +70,32 @@ public class AuditoriaServlet extends HttpServlet {
         if (proyectoIdParam != null && !proyectoIdParam.isBlank()) {
             try {
                 proyectoId = Long.parseLong(proyectoIdParam.trim());
-                final Long finalPid = proyectoId;
                 if (usuario != null && usuario.getRol() == RolEnum.ESTUDIANTE) {
-                    boolean pertenece = proyectos != null && proyectos.stream().anyMatch(p -> p.getId().equals(finalPid));
-                    if (!pertenece) {
+                    final Long finalPid = proyectoId;
+                    Proyecto miProyecto = null;
+                    if (proyectos != null) {
+                        for (Proyecto p : proyectos) {
+                            if (finalPid.equals(p.getId()) || (p.getIdEstudiante() != null && finalPid.equals(p.getIdEstudiante()))) {
+                                miProyecto = p;
+                                break;
+                            }
+                        }
+                    }
+                    if (miProyecto == null) {
                         request.setAttribute("mensajeError", "No tiene permisos para auditar el proyecto seleccionado o no existe.");
                         request.getRequestDispatcher(VISTA).forward(request, response);
                         return;
                     }
-                }
-                if (urlRepo == null || urlRepo.isBlank()) {
+                    proyectoId = miProyecto.getId();
+                    urlRepo = miProyecto.getUrlGithub();
+                } else if (urlRepo == null || urlRepo.isBlank()) {
                     for (Proyecto p : proyectos) {
                         if (p.getId().equals(proyectoId)) {
                             urlRepo = p.getUrlGithub();
                             break;
                         }
                     }
-                    if (urlRepo == null && (usuario == null || usuario.getRol() != RolEnum.ESTUDIANTE)) {
+                    if (urlRepo == null) {
                         Proyecto p = proyectoDAO.buscarPorId(proyectoId);
                         if (p != null) {
                             urlRepo = p.getUrlGithub();
@@ -99,7 +107,6 @@ public class AuditoriaServlet extends HttpServlet {
         }
 
         if (urlRepo != null && !urlRepo.isBlank()) {
-            // Si vino URL pero no proyectoId, intentar inferirlo de la lista de proyectos
             if (proyectoId == null) {
                 for (Proyecto p : proyectos) {
                     if (p.getUrlGithub() != null && p.getUrlGithub().trim().equalsIgnoreCase(urlRepo.trim())) {
@@ -131,7 +138,6 @@ public class AuditoriaServlet extends HttpServlet {
         request.getRequestDispatcher(VISTA).forward(request, response);
     }
 
-    // 2. Ejecución Definitiva de Auditoría (doPost) según secuencia3.puml
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) 
             throws ServletException, IOException {
@@ -165,12 +171,22 @@ public class AuditoriaServlet extends HttpServlet {
 
         if (usuario != null && usuario.getRol() == RolEnum.ESTUDIANTE) {
             final Long finalPid = proyectoId;
-            boolean pertenece = finalPid != null && proyectos != null && proyectos.stream().anyMatch(p -> p.getId().equals(finalPid));
-            if (!pertenece) {
+            Proyecto miProyecto = null;
+            if (proyectos != null && finalPid != null) {
+                for (Proyecto p : proyectos) {
+                    if (finalPid.equals(p.getId()) || (p.getIdEstudiante() != null && finalPid.equals(p.getIdEstudiante()))) {
+                        miProyecto = p;
+                        break;
+                    }
+                }
+            }
+            if (miProyecto == null) {
                 request.setAttribute("mensajeError", "No tiene permisos para auditar el proyecto seleccionado o no existe.");
                 request.getRequestDispatcher(VISTA).forward(request, response);
                 return;
             }
+            proyectoId = miProyecto.getId();
+            urlRepo = miProyecto.getUrlGithub();
         }
 
         AuditoriaDTO dto = new AuditoriaDTO(proyectoId, urlRepo == null ? null : urlRepo.trim(), usuario != null ? usuario.getId() : null);
@@ -181,8 +197,6 @@ public class AuditoriaServlet extends HttpServlet {
             request.setAttribute("resultadoDTO", resultadoDTO);
             request.setAttribute("mensajeExito", "Auditoría ejecutada y registrada en el historial correctamente.");
 
-            // --- Calcular Deuda Técnica Estimada ---
-            // Se consideran únicamente los detalles que incumplieron (hallazgos reales)
             List<NivelSeveridadEnum> severidades = new ArrayList<>();
             if (resultadoDTO.getDetalles() != null) {
                 for (ResultadoDTO.DetalleResultadoDTO detalle : resultadoDTO.getDetalles()) {
@@ -193,7 +207,6 @@ public class AuditoriaServlet extends HttpServlet {
             }
             DeudaTecnicaDTO deudaTecnica = calculadoraDeudaTecnica.calcular(severidades);
             request.setAttribute("deudaTecnica", deudaTecnica);
-            // --- Fin Deuda Técnica ---
 
         } catch (ExcepcionNegocio e) {
             request.setAttribute("mensajeError", e.getMessage());

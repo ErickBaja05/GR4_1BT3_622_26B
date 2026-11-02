@@ -63,9 +63,12 @@ public class EvolucionServiceImpl implements EvolucionService {
         historial.sort(Comparator.comparing(Auditoria::getFechaHora));
 
         List<AuditoriaResumenDTO> items = new ArrayList<>();
+        long seq = 1L;
         for (Auditoria a : historial) {
+            Long num = a.getNumeroEnProyecto() != null ? a.getNumeroEnProyecto() : seq++;
             items.add(new AuditoriaResumenDTO(
                 a.getId(),
+                num,
                 a.getFechaHora(),
                 a.getPuntajeObtenido(),
                 a.getPuntajeMaximo(),
@@ -130,6 +133,7 @@ public class EvolucionServiceImpl implements EvolucionService {
             ctx.evolucionFinalDTO = new EvolucionFinalDTO();
             if (ctx.auditoriaBase != null) {
                 ctx.evolucionFinalDTO.setBaseId(ctx.auditoriaBase.getId());
+                ctx.evolucionFinalDTO.setNumeroBase(ctx.auditoriaBase.getNumeroEnProyecto());
                 ctx.evolucionFinalDTO.setFechaHoraBase(ctx.auditoriaBase.getFechaHora());
                 ctx.evolucionFinalDTO.setPuntajeObtenidoBase(ctx.auditoriaBase.getPuntajeObtenido());
                 ctx.evolucionFinalDTO.setPuntajeMaximoBase(ctx.auditoriaBase.getPuntajeMaximo());
@@ -137,10 +141,28 @@ public class EvolucionServiceImpl implements EvolucionService {
             }
             if (ctx.auditoriaComparada != null) {
                 ctx.evolucionFinalDTO.setComparadaId(ctx.auditoriaComparada.getId());
+                ctx.evolucionFinalDTO.setNumeroComparada(ctx.auditoriaComparada.getNumeroEnProyecto());
                 ctx.evolucionFinalDTO.setFechaHoraComparada(ctx.auditoriaComparada.getFechaHora());
                 ctx.evolucionFinalDTO.setPuntajeObtenidoComparada(ctx.auditoriaComparada.getPuntajeObtenido());
                 ctx.evolucionFinalDTO.setPuntajeMaximoComparada(ctx.auditoriaComparada.getPuntajeMaximo());
                 ctx.evolucionFinalDTO.setPorcentajeComparada(ctx.auditoriaComparada.getPorcentaje());
+            }
+
+            if (dto.getProyectoId() != null && (ctx.evolucionFinalDTO.getNumeroBase() == null || ctx.evolucionFinalDTO.getNumeroComparada() == null)) {
+                List<Auditoria> historial = auditoriaDAO.consultarHistorialDeAuditorias(dto.getProyectoId());
+                if (historial != null) {
+                    historial.sort(Comparator.comparing(Auditoria::getFechaHora));
+                    for (int i = 0; i < historial.size(); i++) {
+                        Auditoria ha = historial.get(i);
+                        long num = ha.getNumeroEnProyecto() != null ? ha.getNumeroEnProyecto() : (i + 1L);
+                        if (ha.getId().equals(dto.getBaseId()) && ctx.evolucionFinalDTO.getNumeroBase() == null) {
+                            ctx.evolucionFinalDTO.setNumeroBase(num);
+                        }
+                        if (ha.getId().equals(dto.getComparadaId()) && ctx.evolucionFinalDTO.getNumeroComparada() == null) {
+                            ctx.evolucionFinalDTO.setNumeroComparada(num);
+                        }
+                    }
+                }
             }
 
             // 3. Calcular variación de puntajes

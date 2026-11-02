@@ -110,7 +110,7 @@
         <!-- Paso 3: resultado final con desglose y retroalimentación -->
         <% if (resultado != null) { %>
             <div class="card" style="background: #F0FDF4; border: 1px solid #BBF7D0;">
-                <h2 style="color: #166534; margin-bottom: 1rem;">🎯 Resultado de la Evaluación</h2>
+                <h2 style="color: #166534; margin-bottom: 1rem;">🎯 Resultado de la Evaluación <%= resultado.getIdVisible() != null ? "(Auditoría #" + resultado.getIdVisible() + ")" : "" %></h2>
                 <p style="font-size: 1.1rem; margin-bottom: 0.5rem;">
                     <strong>Repositorio:</strong> <%= HtmlUtil.escape(urlActual) %>
                 </p>

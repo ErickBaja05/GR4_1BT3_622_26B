@@ -12,36 +12,228 @@ public class AuditoriaDAOImpl implements AuditoriaDAO {
 
     @Override
     public void registrarAuditoriaEnElHistorial(Auditoria auditoria) {
+        Session session = null;
         Transaction tx = null;
-        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+        try {
+            session = HibernateUtil.getSessionFactory().openSession();
             tx = session.beginTransaction();
+            if (auditoria.getNumeroEnProyecto() == null && auditoria.getProyecto() != null && auditoria.getProyecto().getId() != null) {
+                Long nextNum = session.createQuery(
+                    "SELECT COALESCE(MAX(a.numeroEnProyecto), 0) + 1 FROM Auditoria a WHERE a.proyecto.id = :pid", Long.class)
+                    .setParameter("pid", auditoria.getProyecto().getId())
+                    .uniqueResult();
+                auditoria.setNumeroEnProyecto(nextNum != null ? nextNum : 1L);
+            }
             // Por cascade se guardan también sus ResultadoRegla y Hallazgo
             session.persist(auditoria);
             tx.commit();
         } catch (Exception e) {
             if (tx != null && tx.isActive()) {
-                tx.rollback();
+                try {
+                    tx.rollback();
+                } catch (Exception ignored) {}
             }
             throw new RuntimeException("Error al registrar la auditoría en el historial: " + e.getMessage(), e);
+        } finally {
+            if (session != null && session.isOpen()) {
+                session.close();
+            }
         }
     }
 
     @Override
     public List<Auditoria> consultarHistorialDeAuditorias(Long proyectoId) {
-        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
-            return session.createQuery(
+        Session session = null;
+        Transaction tx = null;
+        try {
+            session = HibernateUtil.getSessionFactory().openSession();
+            tx = session.beginTransaction();
+            List<Auditoria> lista = session.createQuery(
                 "SELECT DISTINCT a FROM Auditoria a " +
                 "LEFT JOIN FETCH a.resultados r " +
                 "LEFT JOIN FETCH r.regla " +
                 "LEFT JOIN FETCH r.hallazgo " +
                 "WHERE a.proyecto.id = :proyectoId " +
-                "ORDER BY a.fechaHora ASC",
+                "ORDER BY a.fechaHora ASC, a.id ASC",
                 Auditoria.class
             )
             .setParameter("proyectoId", proyectoId)
             .getResultList();
+
+            long sec = 1L;
+            boolean necesitaUpdate = false;
+            for (Auditoria a : lista) {
+                if (a.getNumeroEnProyecto() == null) {
+                    a.setNumeroEnProyecto(sec);
+                    session.merge(a);
+                    necesitaUpdate = true;
+                }
+                sec++;
+            }
+            if (necesitaUpdate) {
+                tx.commit();
+            } else {
+                tx.rollback();
+            }
+            return lista;
         } catch (Exception e) {
+            if (tx != null && tx.isActive()) {
+                try {
+                    tx.rollback();
+                } catch (Exception ignored) {}
+            }
             throw new RuntimeException("Error al consultar el historial de auditorías: " + e.getMessage(), e);
+        } finally {
+            if (session != null && session.isOpen()) {
+                session.close();
+            }
+        }
+    }
+
+    @Override
+    public Long obtenerSiguienteNumeroEnProyecto(Long proyectoId) {
+        if (proyectoId == null) return 1L;
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            Long count = session.createQuery(
+                "SELECT COALESCE(MAX(a.numeroEnProyecto), 0) + 1 FROM Auditoria a WHERE a.proyecto.id = :pid", Long.class)
+                .setParameter("pid", proyectoId)
+                .uniqueResult();
+            return count != null ? count : 1L;
+        } catch (Exception e) {
+            return 1L;
+        }
+    }
+
+    @Override
+    public void resecuenciarAuditoriasDeProyecto(Long proyectoId) {
+        if (proyectoId == null) return;
+        Session session = null;
+        Transaction tx = null;
+        try {
+            session = HibernateUtil.getSessionFactory().openSession();
+            tx = session.beginTransaction();
+            List<Auditoria> auditorias = session.createQuery(
+                "SELECT a FROM Auditoria a WHERE a.proyecto.id = :proyectoId ORDER BY a.fechaHora ASC, a.id ASC",
+                Auditoria.class
+            ).setParameter("proyectoId", proyectoId).list();
+
+            long seq = 1L;
+            for (Auditoria a : auditorias) {
+                a.setNumeroEnProyecto(seq++);
+                session.merge(a);
+            }
+            tx.commit();
+        } catch (Exception e) {
+            if (tx != null && tx.isActive()) {
+                try { tx.rollback(); } catch (Exception ignored) {}
+            }
+            throw new RuntimeException("Error al resecuenciar auditorías del proyecto: " + e.getMessage(), e);
+        } finally {
+            if (session != null && session.isOpen()) {
+                session.close();
+            }
+        }
+    }
+
+    @Override
+    public List<Auditoria> buscarPorAsignacionId(Long asignacionId) {
+        if (asignacionId == null) return java.util.Collections.emptyList();
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            return session.createQuery(
+                "SELECT DISTINCT a FROM Auditoria a " +
+                "LEFT JOIN FETCH a.proyecto " +
+                "LEFT JOIN FETCH a.resultados r " +
+                "LEFT JOIN FETCH r.regla " +
+                "LEFT JOIN FETCH r.hallazgo " +
+                "WHERE a.asignacion.id = :asignacionId",
+                Auditoria.class
+            ).setParameter("asignacionId", asignacionId).list();
+        } catch (Exception e) {
+            throw new RuntimeException("Error al buscar auditorías por asignación: " + e.getMessage(), e);
+        }
+    }
+
+    @Override
+    public void actualizarAuditoria(Auditoria auditoria) {
+        if (auditoria == null) return;
+        Session session = null;
+        Transaction tx = null;
+        try {
+            session = HibernateUtil.getSessionFactory().openSession();
+            tx = session.beginTransaction();
+            session.merge(auditoria);
+            tx.commit();
+        } catch (Exception e) {
+            if (tx != null && tx.isActive()) {
+                try { tx.rollback(); } catch (Exception ignored) {}
+            }
+            throw new RuntimeException("Error al actualizar la auditoría: " + e.getMessage(), e);
+        } finally {
+            if (session != null && session.isOpen()) {
+                session.close();
+            }
+        }
+    }
+
+    @Override
+    public void eliminarAuditoriasDeAsignacion(Long asignacionId) {
+        if (asignacionId == null) return;
+        Session session = null;
+        Transaction tx = null;
+        try {
+            session = HibernateUtil.getSessionFactory().openSession();
+            tx = session.beginTransaction();
+
+            List<Long> proyectosIds = session.createQuery(
+                "SELECT DISTINCT a.proyecto.id FROM Auditoria a WHERE a.asignacion.id = :asigId AND a.proyecto IS NOT NULL",
+                Long.class
+            ).setParameter("asigId", asignacionId).list();
+
+            // 1. Limpieza de solicitudes_retroalimentacion vinculadas
+            session.createNativeMutationQuery(
+                "DELETE FROM solicitudes_retroalimentacion WHERE hallazgo_id IN (" +
+                "  SELECT h.id FROM hallazgos h " +
+                "  JOIN resultados_regla rr ON h.resultado_regla_id = rr.id " +
+                "  JOIN auditorias a ON rr.auditoria_id = a.id " +
+                "  WHERE a.asignacion_id = :asigId" +
+                ")"
+            ).setParameter("asigId", asignacionId).executeUpdate();
+
+            // 2. Limpieza de hallazgos
+            session.createNativeMutationQuery(
+                "DELETE FROM hallazgos WHERE resultado_regla_id IN (" +
+                "  SELECT rr.id FROM resultados_regla rr " +
+                "  JOIN auditorias a ON rr.auditoria_id = a.id " +
+                "  WHERE a.asignacion_id = :asigId" +
+                ")"
+            ).setParameter("asigId", asignacionId).executeUpdate();
+
+            // 3. Limpieza de resultados_regla
+            session.createNativeMutationQuery(
+                "DELETE FROM resultados_regla WHERE auditoria_id IN (" +
+                "  SELECT a.id FROM auditorias a WHERE a.asignacion_id = :asigId" +
+                ")"
+            ).setParameter("asigId", asignacionId).executeUpdate();
+
+            // 4. Limpieza de auditorias
+            session.createNativeMutationQuery(
+                "DELETE FROM auditorias WHERE asignacion_id = :asigId"
+            ).setParameter("asigId", asignacionId).executeUpdate();
+
+            tx.commit();
+
+            for (Long pid : proyectosIds) {
+                resecuenciarAuditoriasDeProyecto(pid);
+            }
+        } catch (Exception e) {
+            if (tx != null && tx.isActive()) {
+                try { tx.rollback(); } catch (Exception ignored) {}
+            }
+            throw new RuntimeException("Error al eliminar auditorías de la asignación: " + e.getMessage(), e);
+        } finally {
+            if (session != null && session.isOpen()) {
+                session.close();
+            }
         }
     }
 

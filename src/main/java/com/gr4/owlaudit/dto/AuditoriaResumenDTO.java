@@ -8,6 +8,7 @@ public class AuditoriaResumenDTO {
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
 
     private Long id;
+    private Long numeroEnProyecto;
     private LocalDateTime fechaHora;
     private int puntajeObtenido;
     private int puntajeMaximo;
@@ -18,7 +19,13 @@ public class AuditoriaResumenDTO {
 
     public AuditoriaResumenDTO(Long id, LocalDateTime fechaHora, int puntajeObtenido,
                                int puntajeMaximo, double porcentaje) {
+        this(id, null, fechaHora, puntajeObtenido, puntajeMaximo, porcentaje);
+    }
+
+    public AuditoriaResumenDTO(Long id, Long numeroEnProyecto, LocalDateTime fechaHora,
+                               int puntajeObtenido, int puntajeMaximo, double porcentaje) {
         this.id = id;
+        this.numeroEnProyecto = numeroEnProyecto;
         this.fechaHora = fechaHora;
         this.puntajeObtenido = puntajeObtenido;
         this.puntajeMaximo = puntajeMaximo;
@@ -31,6 +38,18 @@ public class AuditoriaResumenDTO {
 
     public void setId(Long id) {
         this.id = id;
+    }
+
+    public Long getNumeroEnProyecto() {
+        return numeroEnProyecto;
+    }
+
+    public void setNumeroEnProyecto(Long numeroEnProyecto) {
+        this.numeroEnProyecto = numeroEnProyecto;
+    }
+
+    public Long getIdVisible() {
+        return numeroEnProyecto != null ? numeroEnProyecto : id;
     }
 
     public LocalDateTime getFechaHora() {

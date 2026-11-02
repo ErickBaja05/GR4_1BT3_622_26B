@@ -70,7 +70,7 @@ public class ProyectoServiceImpl implements ProyectoService {
         validarDatosActualizacion(proyectoId, dto, usuarioId);
         validarEnlace(dto.getUrlGithub());
 
-        Proyecto proyecto = obtenerProyectoValido(proyectoId, "modificar");
+        Proyecto proyecto = obtenerProyectoValido(proyectoId, usuarioId, "modificar");
         validarPropietario(proyecto, usuarioId, "modificar");
 
         // Patrón Martin Fowler: Move Method (actualizarDesdeDTO en Proyecto)
@@ -83,10 +83,10 @@ public class ProyectoServiceImpl implements ProyectoService {
         if (proyectoId == null || usuarioId == null) {
             throw new ExcepcionNegocio("Identificador de proyecto o usuario no válido.");
         }
-        Proyecto proyecto = obtenerProyectoValido(proyectoId, "eliminar");
+        Proyecto proyecto = obtenerProyectoValido(proyectoId, usuarioId, "eliminar");
         validarPropietario(proyecto, usuarioId, "eliminar");
 
-        proyectoDAO.eliminar(proyectoId);
+        proyectoDAO.eliminar(proyecto.getId());
         proyectoDAO.resecuenciarIdsEstudiante(usuarioId);
     }
 
@@ -105,12 +105,16 @@ public class ProyectoServiceImpl implements ProyectoService {
     /**
      * Refactorización Martin Fowler: Extract Method (Composing Methods).
      */
-    private Proyecto obtenerProyectoValido(Long proyectoId, String accion) {
-        Proyecto proyecto = proyectoDAO.buscarPorId(proyectoId);
-        if (proyecto == null) {
-            throw new ExcepcionNegocio("El proyecto a " + accion + " no existe.");
+    private Proyecto obtenerProyectoValido(Long proyectoId, Long usuarioId, String accion) {
+        Proyecto proyecto = proyectoDAO.buscarPorIdYUsuarioId(proyectoId, usuarioId);
+        if (proyecto != null) {
+            return proyecto;
         }
-        return proyecto;
+        Proyecto ajeno = proyectoDAO.buscarPorId(proyectoId);
+        if (ajeno != null) {
+            return ajeno;
+        }
+        throw new ExcepcionNegocio("El proyecto a " + accion + " no existe.");
     }
 
     /**

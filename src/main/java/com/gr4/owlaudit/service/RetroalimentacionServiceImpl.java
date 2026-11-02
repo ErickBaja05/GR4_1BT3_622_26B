@@ -46,6 +46,16 @@ public class RetroalimentacionServiceImpl implements RetroalimentacionService {
 
         verificarEstadoDeRevisionDelHallazgo(dto.getHallazgoId());
 
+        if (dto.getUsuarioId() != null) {
+            Hallazgo hallazgo = solicitudDAO.buscarHallazgoPorId(dto.getHallazgoId());
+            if (hallazgo != null && hallazgo.getResultadoRegla() != null && hallazgo.getResultadoRegla().getAuditoria() != null) {
+                Auditoria aud = hallazgo.getResultadoRegla().getAuditoria();
+                if (aud.getProyecto() != null && !aud.getProyecto().esPropietario(dto.getUsuarioId())) {
+                    throw new ExcepcionNegocio("No tiene permisos para solicitar retroalimentación sobre proyectos de otro estudiante.");
+                }
+            }
+        }
+
         SolicitudRetroalimentacion solicitud = new SolicitudRetroalimentacion(dto);
         if (solicitud.getHallazgo() == null) {
             com.gr4.owlaudit.model.Hallazgo h = new com.gr4.owlaudit.model.Hallazgo();

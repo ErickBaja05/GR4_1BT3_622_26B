@@ -66,12 +66,21 @@ public class EvolucionServlet extends HttpServlet {
                 Long proyectoId = Long.parseLong(proyectoIdParam.trim());
                 if (usuario != null && usuario.getRol() == RolEnum.ESTUDIANTE) {
                     final Long finalPid = proyectoId;
-                    boolean pertenece = listaProyectos != null && listaProyectos.stream().anyMatch(p -> p.getId().equals(finalPid));
-                    if (!pertenece) {
+                    Proyecto miProyecto = null;
+                    if (listaProyectos != null) {
+                        for (Proyecto p : listaProyectos) {
+                            if (finalPid.equals(p.getId()) || (p.getIdEstudiante() != null && finalPid.equals(p.getIdEstudiante()))) {
+                                miProyecto = p;
+                                break;
+                            }
+                        }
+                    }
+                    if (miProyecto == null) {
                         request.setAttribute("mensajeError", "No tiene permisos para consultar el proyecto seleccionado.");
                         request.getRequestDispatcher(VISTA).forward(request, response);
                         return;
                     }
+                    proyectoId = miProyecto.getId();
                 }
                 EvolucionDTO dto = new EvolucionDTO(proyectoId);
                 request.setAttribute("evolucionDTO", dto);
@@ -137,12 +146,21 @@ public class EvolucionServlet extends HttpServlet {
 
             if (proyectoId != null && usuario != null && usuario.getRol() == RolEnum.ESTUDIANTE) {
                 final Long finalPid = proyectoId;
-                boolean pertenece = listaProyectos != null && listaProyectos.stream().anyMatch(p -> p.getId().equals(finalPid));
-                if (!pertenece) {
+                Proyecto miProyecto = null;
+                if (listaProyectos != null) {
+                    for (Proyecto p : listaProyectos) {
+                        if (finalPid.equals(p.getId()) || (p.getIdEstudiante() != null && finalPid.equals(p.getIdEstudiante()))) {
+                            miProyecto = p;
+                            break;
+                        }
+                    }
+                }
+                if (miProyecto == null) {
                     request.setAttribute("mensajeError", "No tiene permisos para consultar el proyecto seleccionado.");
                     request.getRequestDispatcher(VISTA).forward(request, response);
                     return;
                 }
+                proyectoId = miProyecto.getId();
             }
 
             EvolucionDTO dto = new EvolucionDTO(proyectoId, baseId, comparadaId);

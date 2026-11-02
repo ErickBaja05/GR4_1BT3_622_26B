@@ -50,6 +50,9 @@ public class Auditoria {
     @Column(name = "porcentaje", nullable = false)
     private double porcentaje;
 
+    @Column(name = "numero_en_proyecto")
+    private Long numeroEnProyecto;
+
     // Composición: al guardar la Auditoria se guardan sus ResultadoRegla (y sus Hallazgo)
     @OneToMany(mappedBy = "auditoria", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ResultadoRegla> resultados;
@@ -183,6 +186,18 @@ public class Auditoria {
 
     public void setDictamen(String dictamen) {
         this.dictamen = dictamen;
+    }
+
+    public Long getNumeroEnProyecto() {
+        return numeroEnProyecto;
+    }
+
+    public void setNumeroEnProyecto(Long numeroEnProyecto) {
+        this.numeroEnProyecto = numeroEnProyecto;
+    }
+
+    public Long getIdVisible() {
+        return numeroEnProyecto != null ? numeroEnProyecto : id;
     }
 
     public static final double UMBRAL_MINIMO_APROBACION = 70.0;

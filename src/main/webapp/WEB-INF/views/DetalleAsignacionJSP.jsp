@@ -144,7 +144,7 @@
                 boolean aprobada = "APROBADA".equalsIgnoreCase(resultado.getDictamen());
         %>
             <div class="card" style="margin-top: 1.5rem;">
-                <h2 class="section-title" style="margin-top: 0;">Resultado de la Evaluación</h2>
+                <h2 class="section-title" style="margin-top: 0;">Resultado de la Evaluación <%= resultado.getIdVisible() != null ? "(Auditoría #" + resultado.getIdVisible() + ")" : "" %></h2>
                 <div style="display: flex; gap: 1.5rem; align-items: center; margin-bottom: 1rem; flex-wrap: wrap;">
                     <div>
                         <strong>Dictamen Final:</strong>

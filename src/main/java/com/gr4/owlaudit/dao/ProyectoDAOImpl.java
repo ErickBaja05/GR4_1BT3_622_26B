@@ -100,6 +100,29 @@ public class ProyectoDAOImpl implements ProyectoDAO {
     }
 
     @Override
+    public Proyecto buscarPorIdYUsuarioId(Long proyectoId, Long usuarioId) {
+        if (proyectoId == null || usuarioId == null) {
+            return null;
+        }
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            Proyecto p = session.createQuery(
+                "SELECT p FROM Proyecto p WHERE p.id = :pid AND p.usuario.id = :uid", Proyecto.class)
+                .setParameter("pid", proyectoId)
+                .setParameter("uid", usuarioId)
+                .uniqueResult();
+            if (p != null) return p;
+
+            return session.createQuery(
+                "SELECT p FROM Proyecto p WHERE p.idEstudiante = :pid AND p.usuario.id = :uid", Proyecto.class)
+                .setParameter("pid", proyectoId)
+                .setParameter("uid", usuarioId)
+                .uniqueResult();
+        } catch (Exception e) {
+            throw new RuntimeException("Error al buscar proyecto por ID y usuario: " + e.getMessage(), e);
+        }
+    }
+
+    @Override
     public void actualizar(Proyecto proyecto) {
         if (proyecto == null) {
             return;
@@ -217,4 +240,3 @@ public class ProyectoDAOImpl implements ProyectoDAO {
         }
     }
 }
-

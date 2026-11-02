@@ -17,4 +17,13 @@ public interface AuditoriaDAO {
     default List<Auditoria> consultarHistorialDeAuditoriasPorUsuario(Long usuarioId) {
         return java.util.Collections.emptyList();
     }
+    default Long obtenerSiguienteNumeroEnProyecto(Long proyectoId) {
+        return 1L;
+    }
+    default void resecuenciarAuditoriasDeProyecto(Long proyectoId) {}
+    default List<Auditoria> buscarPorAsignacionId(Long asignacionId) {
+        return java.util.Collections.emptyList();
+    }
+    default void actualizarAuditoria(Auditoria auditoria) {}
+    default void eliminarAuditoriasDeAsignacion(Long asignacionId) {}
 }

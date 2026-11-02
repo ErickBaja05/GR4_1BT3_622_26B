@@ -22,6 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
@@ -73,7 +74,7 @@ class AuditoriaServiceCommitsMockTest {
                 "test: agrega prueba parametrizada",
                 "subiendo cambios finales" // 4 de 5 válidos = 80% (CUMPLE)
         );
-        when(gitHubClient.obtenerMensajesDeCommits(anyString(), eq(10))).thenReturn(commitsSimulados);
+        when(gitHubClient.obtenerMensajesDeCommits(anyString(), anyInt())).thenReturn(commitsSimulados);
 
         AuditoriaDTO auditoriaDTO = new AuditoriaDTO();
         auditoriaDTO.setProyectoId(1L);
@@ -83,7 +84,7 @@ class AuditoriaServiceCommitsMockTest {
         ResultadoDTO resultado = auditoriaService.confirmarEjecucionDeAuditoria(auditoriaDTO);
 
         // Then
-        verify(gitHubClient).obtenerMensajesDeCommits("https://github.com/ErickBaja05/GR4_1BT3_622_26B", 10);
+        verify(gitHubClient).obtenerMensajesDeCommits(eq("https://github.com/ErickBaja05/GR4_1BT3_622_26B"), anyInt());
         assertEquals(20, resultado.getPuntajeObtenido());
         assertEquals(100.0, resultado.getPorcentaje());
         assertTrue(resultado.getDetalles().get(0).isCumple());
@@ -112,7 +113,7 @@ class AuditoriaServiceCommitsMockTest {
                 "arreglando bug",
                 "final final ahora si" // Solo 1 de 5 válido = 20% < 80% (NO CUMPLE)
         );
-        when(gitHubClient.obtenerMensajesDeCommits(anyString(), eq(10))).thenReturn(commitsSimulados);
+        when(gitHubClient.obtenerMensajesDeCommits(anyString(), anyInt())).thenReturn(commitsSimulados);
 
         AuditoriaDTO auditoriaDTO = new AuditoriaDTO();
         auditoriaDTO.setProyectoId(1L);
@@ -122,7 +123,7 @@ class AuditoriaServiceCommitsMockTest {
         ResultadoDTO resultado = auditoriaService.confirmarEjecucionDeAuditoria(auditoriaDTO);
 
         // Then
-        verify(gitHubClient).obtenerMensajesDeCommits("https://github.com/ErickBaja05/GR4_1BT3_622_26B", 10);
+        verify(gitHubClient).obtenerMensajesDeCommits(eq("https://github.com/ErickBaja05/GR4_1BT3_622_26B"), anyInt());
         assertEquals(0, resultado.getPuntajeObtenido());
         assertEquals(0.0, resultado.getPorcentaje());
         assertFalse(resultado.getDetalles().get(0).isCumple());
