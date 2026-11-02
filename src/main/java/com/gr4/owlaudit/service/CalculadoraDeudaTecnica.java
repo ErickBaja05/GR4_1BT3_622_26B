@@ -1,8 +1,10 @@
 package com.gr4.owlaudit.service;
 
 import com.gr4.owlaudit.dto.DeudaTecnicaDTO;
+import com.gr4.owlaudit.dto.ResultadoDTO;
 import com.gr4.owlaudit.model.NivelSeveridadEnum;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -43,6 +45,26 @@ public class CalculadoraDeudaTecnica {
                 + (cantidadBaja * TIEMPO_HALLAZGO_BAJA);
 
         return new DeudaTecnicaDTO(totalMinutos, cantidadAlta, cantidadMedia, cantidadBaja);
+    }
+
+    /**
+     * Calcula la deuda tecnica a partir del resultado de una auditoria,
+     * considerando unicamente las reglas incumplidas (hallazgos reales).
+     * Lo usan tanto la auditoria general como la auditoria de asignacion.
+     *
+     * @param resultado resultado de la auditoria; puede ser null.
+     * @return {@link DeudaTecnicaDTO} con el total de minutos y contadores por nivel.
+     */
+    public DeudaTecnicaDTO calcularDesdeResultado(ResultadoDTO resultado) {
+        List<NivelSeveridadEnum> severidades = new ArrayList<>();
+        if (resultado != null && resultado.getDetalles() != null) {
+            for (ResultadoDTO.DetalleResultadoDTO detalle : resultado.getDetalles()) {
+                if (!detalle.isCumple() && detalle.getNivelSeveridad() != null) {
+                    severidades.add(detalle.getNivelSeveridad());
+                }
+            }
+        }
+        return calcular(severidades);
     }
 
     /**

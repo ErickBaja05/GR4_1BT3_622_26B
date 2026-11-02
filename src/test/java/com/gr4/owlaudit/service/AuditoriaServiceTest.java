@@ -138,7 +138,7 @@ class AuditoriaServiceTest {
     }
 
     @Test
-    @DisplayName("Escenario 2.2: Dictamen NO_APROBADA cuando el porcentaje no alcanza el umbral de la asignación")
+    @DisplayName("Escenario 2.2: Dictamen NO APROBADA cuando el porcentaje no alcanza el umbral de la asignación")
     void given_evaluacionMenorAlUmbral_when_ejecutarAuditoriaDeAsignacion_then_dictamenNoAprobada() {
         // GIVEN: Proyecto válido y asignación con umbral 80.0
         Long proyectoId = 2L;
@@ -173,7 +173,7 @@ class AuditoriaServiceTest {
 
         // THEN
         assertNotNull(resultado);
-        assertEquals("NO_APROBADA", resultado.getDictamen());
+        assertEquals("NO APROBADA", resultado.getDictamen());
         assertEquals(80.0, resultado.getUmbralAprobacion());
         assertEquals(0.0, resultado.getPorcentaje());
         verify(auditoriaDAO).registrarAuditoriaEnElHistorial(any(Auditoria.class));

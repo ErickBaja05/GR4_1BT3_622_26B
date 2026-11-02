@@ -1,7 +1,6 @@
 package com.gr4.owlaudit.servlet;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 
 import com.gr4.owlaudit.common.exception.ExcepcionNegocio;
@@ -10,7 +9,6 @@ import com.gr4.owlaudit.dto.DeudaTecnicaDTO;
 import com.gr4.owlaudit.dto.ResultadoDTO;
 import com.gr4.owlaudit.dto.ResumenDTO;
 import com.gr4.owlaudit.dto.UsuarioDTO;
-import com.gr4.owlaudit.model.NivelSeveridadEnum;
 import com.gr4.owlaudit.model.RolEnum;
 import com.gr4.owlaudit.service.AuditoriaService;
 import com.gr4.owlaudit.service.AuditoriaServiceImpl;
@@ -197,15 +195,8 @@ public class AuditoriaServlet extends HttpServlet {
             request.setAttribute("resultadoDTO", resultadoDTO);
             request.setAttribute("mensajeExito", "Auditoría ejecutada y registrada en el historial correctamente.");
 
-            List<NivelSeveridadEnum> severidades = new ArrayList<>();
-            if (resultadoDTO.getDetalles() != null) {
-                for (ResultadoDTO.DetalleResultadoDTO detalle : resultadoDTO.getDetalles()) {
-                    if (!detalle.isCumple() && detalle.getNivelSeveridad() != null) {
-                        severidades.add(detalle.getNivelSeveridad());
-                    }
-                }
-            }
-            DeudaTecnicaDTO deudaTecnica = calculadoraDeudaTecnica.calcular(severidades);
+            // Deuda T�cnica Estimada: solo considera las reglas incumplidas (hallazgos reales)
+            DeudaTecnicaDTO deudaTecnica = calculadoraDeudaTecnica.calcularDesdeResultado(resultadoDTO);
             request.setAttribute("deudaTecnica", deudaTecnica);
 
         } catch (ExcepcionNegocio e) {

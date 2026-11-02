@@ -23,6 +23,7 @@ import com.gr4.owlaudit.service.AsignacionesService;
 import com.gr4.owlaudit.service.AsignacionesServiceImpl;
 import com.gr4.owlaudit.service.AuditoriaService;
 import com.gr4.owlaudit.service.AuditoriaServiceImpl;
+import com.gr4.owlaudit.service.CalculadoraDeudaTecnica;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -46,6 +47,7 @@ public class AsignacionServlet extends HttpServlet {
     private final AuditoriaService auditoriaService;
     private final ProyectoDAO proyectoDAO;
     private final AuditoriaDAO auditoriaDAO;
+    private final CalculadoraDeudaTecnica calculadoraDeudaTecnica = new CalculadoraDeudaTecnica();
 
     public AsignacionServlet() {
         this(new AsignacionesServiceImpl(), new ReglaDAOImpl(), new AuditoriaServiceImpl(), new ProyectoDAOImpl(), new AuditoriaDAOImpl());
@@ -235,6 +237,7 @@ public class AsignacionServlet extends HttpServlet {
                     Long detalleId = Long.parseLong(detalleAuditoriaIdParam.trim());
                     ResultadoDTO resultado = auditoriaService.obtenerDetalleAuditoria(detalleId);
                     request.setAttribute("resultadoAuditoria", resultado);
+                    request.setAttribute("deudaTecnica", calculadoraDeudaTecnica.calcularDesdeResultado(resultado));
                 }
             } catch (NumberFormatException e) {
                 request.setAttribute("mensajeError", "El identificador de la asignación o auditoría no es válido.");
@@ -280,6 +283,8 @@ public class AsignacionServlet extends HttpServlet {
             AuditoriaDTO auditoriaDTO = construirAuditoriaDTO(request, idAsignacion, idProyecto);
             ResultadoDTO resultado = auditoriaService.ejecutarAuditoriaDeAsignacion(auditoriaDTO);
             request.setAttribute("resultadoAuditoria", resultado);
+            // Misma salida que la auditor�a general: Deuda T�cnica Estimada
+            request.setAttribute("deudaTecnica", calculadoraDeudaTecnica.calcularDesdeResultado(resultado));
 
             if (auditoriaDAO != null) {
                 List<Auditoria> historial = auditoriaDAO.consultarAuditoriasDeAsignacionPorUsuario(idAsignacion, usuarioId);
