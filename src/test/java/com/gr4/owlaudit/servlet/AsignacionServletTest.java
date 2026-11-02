@@ -4,6 +4,8 @@ import java.util.Collections;
 import java.util.List;
 
 import com.gr4.owlaudit.common.exception.ExcepcionNegocio;
+import com.gr4.owlaudit.dao.AuditoriaDAO;
+import com.gr4.owlaudit.dao.ProyectoDAO;
 import com.gr4.owlaudit.dao.ReglaDAO;
 import com.gr4.owlaudit.dto.AuditoriaDTO;
 import com.gr4.owlaudit.dto.NuevaAsignacionDTO;
@@ -56,6 +58,12 @@ class AsignacionServletTest {
     private AuditoriaService auditoriaService;
 
     @Mock
+    private ProyectoDAO proyectoDAO;
+
+    @Mock
+    private AuditoriaDAO auditoriaDAO;
+
+    @Mock
     private HttpServletRequest request;
 
     @Mock
@@ -68,7 +76,7 @@ class AsignacionServletTest {
 
     @BeforeEach
     void setUp() {
-        servlet = new AsignacionServlet(asignacionesService, reglaDAO, auditoriaService);
+        servlet = new AsignacionServlet(asignacionesService, reglaDAO, auditoriaService, proyectoDAO, auditoriaDAO);
         when(request.getRequestDispatcher(anyString())).thenReturn(dispatcher);
     }
 

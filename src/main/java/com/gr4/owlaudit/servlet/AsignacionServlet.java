@@ -2,6 +2,7 @@ package com.gr4.owlaudit.servlet;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import com.gr4.owlaudit.common.exception.ExcepcionNegocio;
@@ -54,17 +55,17 @@ public class AsignacionServlet extends HttpServlet {
     }
 
     public AsignacionServlet(AsignacionesService asignacionesService, ReglaDAO reglaDAO) {
-        this(asignacionesService, reglaDAO, new AuditoriaServiceImpl(), new ProyectoDAOImpl(), new AuditoriaDAOImpl());
+        this(asignacionesService, reglaDAO, null, null, null);
     }
 
     public AsignacionServlet(AsignacionesService asignacionesService, ReglaDAO reglaDAO,
             AuditoriaService auditoriaService) {
-        this(asignacionesService, reglaDAO, auditoriaService, new ProyectoDAOImpl(), new AuditoriaDAOImpl());
+        this(asignacionesService, reglaDAO, auditoriaService, null, null);
     }
 
     public AsignacionServlet(AsignacionesService asignacionesService, ReglaDAO reglaDAO,
             AuditoriaService auditoriaService, ProyectoDAO proyectoDAO) {
-        this(asignacionesService, reglaDAO, auditoriaService, proyectoDAO, new AuditoriaDAOImpl());
+        this(asignacionesService, reglaDAO, auditoriaService, proyectoDAO, null);
     }
 
     public AsignacionServlet(AsignacionesService asignacionesService, ReglaDAO reglaDAO,
@@ -228,8 +229,13 @@ public class AsignacionServlet extends HttpServlet {
                 request.setAttribute("resumenAsignacion", resumen);
 
                 if (auditoriaDAO != null) {
-                    List<Auditoria> historial = auditoriaDAO.consultarAuditoriasDeAsignacionPorUsuario(idAsignacion, usuarioId);
-                    request.setAttribute("historialAuditoriasAsignacion", historial);
+                    try {
+                        List<Auditoria> historial = auditoriaDAO.consultarAuditoriasDeAsignacionPorUsuario(idAsignacion, usuarioId);
+                        request.setAttribute("historialAuditoriasAsignacion", historial);
+                    } catch (Exception e) {
+                        System.err.println("[AsignacionServlet] Error al consultar historial de auditorias: " + e.getMessage());
+                        request.setAttribute("historialAuditoriasAsignacion", Collections.emptyList());
+                    }
                 }
 
                 String detalleAuditoriaIdParam = request.getParameter("detalleAuditoriaId");
@@ -270,7 +276,7 @@ public class AsignacionServlet extends HttpServlet {
             HttpSession session = request.getSession(false);
             UsuarioDTO usuarioSesion = (session != null) ? (UsuarioDTO) session.getAttribute(LoginServlet.ATRIBUTO_USUARIO) : null;
             if (usuarioSesion != null && usuarioSesion.getRol() == RolEnum.ESTUDIANTE && idProyecto != null) {
-                List<Proyecto> misProyectos = proyectoDAO.listarPorUsuarioId(usuarioSesion.getId());
+                List<Proyecto> misProyectos = (proyectoDAO != null) ? proyectoDAO.listarPorUsuarioId(usuarioSesion.getId()) : null;
                 boolean pertenece = misProyectos != null && misProyectos.stream()
                         .anyMatch(p -> p.getId().equals(idProyecto) || (p.getIdEstudiante() != null && p.getIdEstudiante().equals(idProyecto)));
                 if (!pertenece) {
@@ -287,8 +293,13 @@ public class AsignacionServlet extends HttpServlet {
             request.setAttribute("deudaTecnica", calculadoraDeudaTecnica.calcularDesdeResultado(resultado));
 
             if (auditoriaDAO != null) {
-                List<Auditoria> historial = auditoriaDAO.consultarAuditoriasDeAsignacionPorUsuario(idAsignacion, usuarioId);
-                request.setAttribute("historialAuditoriasAsignacion", historial);
+                try {
+                    List<Auditoria> historial = auditoriaDAO.consultarAuditoriasDeAsignacionPorUsuario(idAsignacion, usuarioId);
+                    request.setAttribute("historialAuditoriasAsignacion", historial);
+                } catch (Exception e) {
+                    System.err.println("[AsignacionServlet] Error al consultar historial de auditorias: " + e.getMessage());
+                    request.setAttribute("historialAuditoriasAsignacion", Collections.emptyList());
+                }
             }
         } catch (NumberFormatException e) {
             request.setAttribute("mensajeError", "Los identificadores de asignación o proyecto no son válidos.");
