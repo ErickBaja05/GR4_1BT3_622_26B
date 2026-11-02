@@ -274,8 +274,19 @@ public class AuditoriaServiceImpl implements AuditoriaService {
         List<Auditoria> auditorias = auditoriaDAO.buscarPorAsignacionId(asignacionId);
         if (auditorias == null || auditorias.isEmpty()) return;
 
-        List<Regla> nuevasReglas = asignacionesService.consultarReglasDeAsignacion(asignacionId);
-        double nuevoUmbral = asignacionesService.consultarUmbralAprobacion(asignacionId);
+        List<Regla> nuevasReglas = (asignacionesService != null)
+                ? asignacionesService.consultarReglasDeAsignacion(asignacionId)
+                : java.util.Collections.emptyList();
+        if ((nuevasReglas == null || nuevasReglas.isEmpty()) && auditorias.get(0).getAsignacion() != null) {
+            nuevasReglas = auditorias.get(0).getAsignacion().getReglas();
+        }
+
+        double nuevoUmbral = (asignacionesService != null)
+                ? asignacionesService.consultarUmbralAprobacion(asignacionId)
+                : 70.0;
+        if (nuevoUmbral <= 0.0 && auditorias.get(0).getAsignacion() != null && auditorias.get(0).getAsignacion().getUmbralAprobacion() != null) {
+            nuevoUmbral = auditorias.get(0).getAsignacion().getUmbralAprobacion();
+        }
 
         for (Auditoria aud : auditorias) {
             Proyecto p = aud.getProyecto();

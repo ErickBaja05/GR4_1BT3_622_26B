@@ -124,6 +124,10 @@ public class AsignacionesServiceImpl implements AsignacionesService {
         if (idAsignacion == null) {
             throw new ExcepcionNegocio("Identificador de asignación no válido.");
         }
+        Asignacion existente = asignacionesDAO.buscarPorId(idAsignacion);
+        if (existente == null) {
+            throw new ExcepcionNegocio("La asignación no existe.");
+        }
         asignacionesDAO.eliminar(idAsignacion);
     }
 
