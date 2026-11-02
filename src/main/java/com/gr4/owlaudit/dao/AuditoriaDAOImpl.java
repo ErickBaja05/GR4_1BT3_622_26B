@@ -153,7 +153,7 @@ public class AuditoriaDAOImpl implements AuditoriaDAO {
     public List<Auditoria> consultarHistorialAuditoriasGenerales(Long proyectoId) {
         if (proyectoId == null) return java.util.Collections.emptyList();
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
-            return session.createQuery(
+            List<Auditoria> list = session.createQuery(
                 "SELECT DISTINCT a FROM Auditoria a " +
                 "LEFT JOIN FETCH a.proyecto " +
                 "LEFT JOIN FETCH a.resultados r " +
@@ -163,6 +163,22 @@ public class AuditoriaDAOImpl implements AuditoriaDAO {
                 "ORDER BY a.fechaHora ASC, a.id ASC",
                 Auditoria.class
             ).setParameter("proyectoId", proyectoId).getResultList();
+
+            boolean hayNulos = list.stream().anyMatch(a -> a.getNumeroEnProyecto() == null || a.getTipoAuditoria() == null);
+            if (hayNulos) {
+                resecuenciarAuditoriasDeProyecto(proyectoId);
+                return session.createQuery(
+                    "SELECT DISTINCT a FROM Auditoria a " +
+                    "LEFT JOIN FETCH a.proyecto " +
+                    "LEFT JOIN FETCH a.resultados r " +
+                    "LEFT JOIN FETCH r.regla " +
+                    "LEFT JOIN FETCH r.hallazgo " +
+                    "WHERE a.proyecto.id = :proyectoId AND a.asignacion IS NULL " +
+                    "ORDER BY a.fechaHora ASC, a.id ASC",
+                    Auditoria.class
+                ).setParameter("proyectoId", proyectoId).getResultList();
+            }
+            return list;
         } catch (Exception e) {
             throw new RuntimeException("Error al consultar historial de auditorías generales: " + e.getMessage(), e);
         }
@@ -172,7 +188,7 @@ public class AuditoriaDAOImpl implements AuditoriaDAO {
     public List<Auditoria> consultarHistorialAuditoriasAsignacion(Long proyectoId, Long asignacionId) {
         if (proyectoId == null) return java.util.Collections.emptyList();
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
-            return session.createQuery(
+            List<Auditoria> list = session.createQuery(
                 "SELECT DISTINCT a FROM Auditoria a " +
                 "LEFT JOIN FETCH a.proyecto " +
                 "LEFT JOIN FETCH a.asignacion " +
@@ -186,6 +202,26 @@ public class AuditoriaDAOImpl implements AuditoriaDAO {
             .setParameter("proyectoId", proyectoId)
             .setParameter("asigId", asignacionId)
             .getResultList();
+
+            boolean hayNulos = list.stream().anyMatch(a -> a.getNumeroEnAsignacion() == null || a.getTipoAuditoria() == null);
+            if (hayNulos) {
+                resecuenciarAuditoriasDeProyecto(proyectoId);
+                return session.createQuery(
+                    "SELECT DISTINCT a FROM Auditoria a " +
+                    "LEFT JOIN FETCH a.proyecto " +
+                    "LEFT JOIN FETCH a.asignacion " +
+                    "LEFT JOIN FETCH a.resultados r " +
+                    "LEFT JOIN FETCH r.regla " +
+                    "LEFT JOIN FETCH r.hallazgo " +
+                    "WHERE a.proyecto.id = :proyectoId AND a.asignacion.id = :asigId " +
+                    "ORDER BY a.fechaHora ASC, a.id ASC",
+                    Auditoria.class
+                )
+                .setParameter("proyectoId", proyectoId)
+                .setParameter("asigId", asignacionId)
+                .getResultList();
+            }
+            return list;
         } catch (Exception e) {
             throw new RuntimeException("Error al consultar historial de auditorías de asignación: " + e.getMessage(), e);
         }
@@ -234,6 +270,7 @@ public class AuditoriaDAOImpl implements AuditoriaDAO {
             long seqGen = 1L;
             for (Auditoria a : generales) {
                 a.setNumeroEnProyecto(seqGen++);
+                a.setTipoAuditoria("GENERAL");
                 session.merge(a);
             }
 
@@ -251,6 +288,7 @@ public class AuditoriaDAOImpl implements AuditoriaDAO {
                 long seqAsig = 1L;
                 for (Auditoria a : asignadas) {
                     a.setNumeroEnAsignacion(seqAsig++);
+                    a.setTipoAuditoria("ASIGNACION");
                     session.merge(a);
                 }
             }

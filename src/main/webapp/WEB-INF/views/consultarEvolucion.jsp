@@ -125,11 +125,25 @@
         </div>
 
         <!-- Paso 2: Historial de Auditorías y Formulario de Selección para Comparar -->
-        <% if (resumenHistorial != null && resumenHistorial.getAuditorias() != null && !resumenHistorial.getAuditorias().isEmpty()) { %>
+        <% 
+            if (resumenHistorial != null && resumenHistorial.getAuditorias() != null && !resumenHistorial.getAuditorias().isEmpty()) { 
+                String nombreProyectoMostrado = "";
+                Long idEstudianteMostrado = null;
+                Long pidTarget = proyectoIdActual != null ? proyectoIdActual : resumenHistorial.getProyectoId();
+                if (listaProyectos != null && pidTarget != null) {
+                    for (Proyecto p : listaProyectos) {
+                        if (pidTarget.equals(p.getId())) {
+                            nombreProyectoMostrado = p.getNombre();
+                            idEstudianteMostrado = p.getIdEstudiante();
+                            break;
+                        }
+                    }
+                }
+        %>
             <div class="card">
                 <h3 style="margin-bottom: 0.25rem;">📋 Historial de Auditorías Registradas (<%= "ASIGNACION".equalsIgnoreCase(tipoAuditoriaActual) ? "Por Asignación" : "Generales" %>)</h3>
                 <p class="card-subtitle" style="margin-bottom: 1rem;">
-                    Proyecto ID: <strong><%= resumenHistorial.getProyectoId() != null ? resumenHistorial.getProyectoId() : proyectoIdActual %></strong> &middot; 
+                    Proyecto: <strong>#<%= idEstudianteMostrado != null ? idEstudianteMostrado : pidTarget %><%= !nombreProyectoMostrado.isEmpty() ? " &middot; " + HtmlUtil.escape(nombreProyectoMostrado) : "" %></strong> &middot; 
                     Total registradas: <%= resumenHistorial.getAuditorias().size() %>
                 </p>
 
@@ -237,11 +251,6 @@
                             <% if (evolucionFinal.getNombreAsignacion() != null) { %>
                                 &middot; Asignación: <strong><%= HtmlUtil.escape(evolucionFinal.getNombreAsignacion()) %></strong>
                             <% } %>
-                        </p>
-                    </div>
-                        <p class="card-subtitle" style="margin-bottom: 0;">
-                            Auditoría Base <strong>#<%= evolucionFinal.getIdVisibleBase() %></strong> (<%= evolucionFinal.getFechaBaseFormateada() %>) vs 
-                            Auditoría Comparada <strong>#<%= evolucionFinal.getIdVisibleComparada() %></strong> (<%= evolucionFinal.getFechaComparadaFormateada() %>)
                         </p>
                     </div>
                     <div style="text-align: right;">

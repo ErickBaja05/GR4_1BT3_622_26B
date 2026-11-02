@@ -72,7 +72,12 @@ public class EvolucionServiceImpl implements EvolucionService {
         List<AuditoriaResumenDTO> items = new ArrayList<>();
         long seq = 1L;
         for (Auditoria a : listaOrdenada) {
-            Long num = a.getIdVisible() != null ? a.getIdVisible() : seq++;
+            Long num;
+            if (esAsignacion) {
+                num = a.getNumeroEnAsignacion() != null ? a.getNumeroEnAsignacion() : seq++;
+            } else {
+                num = a.getNumeroEnProyecto() != null ? a.getNumeroEnProyecto() : seq++;
+            }
             AuditoriaResumenDTO item = new AuditoriaResumenDTO(
                 a.getId(),
                 num,
@@ -81,11 +86,11 @@ public class EvolucionServiceImpl implements EvolucionService {
                 a.getPuntajeMaximo(),
                 a.getPorcentaje()
             );
-            item.setNumeroEnProyecto(a.getNumeroEnProyecto());
-            item.setNumeroEnAsignacion(a.getNumeroEnAsignacion());
-            item.setTipoAuditoria(a.getTipoAuditoria());
-            item.setCodigoVisible(a.getCodigoVisible());
-            item.setEtiquetaVisible(a.getEtiquetaVisible());
+            item.setNumeroEnProyecto(a.getNumeroEnProyecto() != null ? a.getNumeroEnProyecto() : (!esAsignacion ? num : null));
+            item.setNumeroEnAsignacion(a.getNumeroEnAsignacion() != null ? a.getNumeroEnAsignacion() : (esAsignacion ? num : null));
+            item.setTipoAuditoria(a.getTipoAuditoria() != null ? a.getTipoAuditoria() : (esAsignacion ? "ASIGNACION" : "GENERAL"));
+            item.setCodigoVisible(esAsignacion ? "AA-" + num : "AG-" + num);
+            item.setEtiquetaVisible(esAsignacion ? "Auditoría Asignación #" + num : "Auditoría General #" + num);
             item.setDictamen(a.getDictamen());
             if (a.getAsignacion() != null) {
                 item.setNombreAsignacion(a.getAsignacion().getNombre());
