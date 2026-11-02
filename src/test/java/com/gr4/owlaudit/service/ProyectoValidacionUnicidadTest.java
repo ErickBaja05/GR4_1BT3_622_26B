@@ -85,7 +85,6 @@ public class ProyectoValidacionUnicidadTest {
     @Test
     @DisplayName("Permite que dos estudiantes distintos registren proyectos con el mismo nombre o URL")
     void testPermiteMismoNombreOUrlEntreEstudiantesDistintos() {
-        Long estudianteA = 1L;
         Long estudianteB = 2L;
 
         // Estudiante B no tiene proyectos registrados
