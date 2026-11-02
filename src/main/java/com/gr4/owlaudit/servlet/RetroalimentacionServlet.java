@@ -45,24 +45,34 @@ public class RetroalimentacionServlet extends HttpServlet {
     private final RetroalimentacionService retroalimentacionService;
     private final SolicitudDAO solicitudDAO;
     private final ProyectoDAO proyectoDAO;
+    private final AuditoriaDAO auditoriaDAO;
+    private final com.gr4.owlaudit.service.AsignacionesService asignacionesService;
 
     public RetroalimentacionServlet() {
-        this(new RetroalimentacionServiceImpl(), new SolicitudDAOImpl(), new ProyectoDAOImpl(), new AuditoriaDAOImpl());
+        this(new RetroalimentacionServiceImpl(), new SolicitudDAOImpl(), new ProyectoDAOImpl(), new AuditoriaDAOImpl(), new com.gr4.owlaudit.service.AsignacionesServiceImpl());
     }
 
     public RetroalimentacionServlet(RetroalimentacionService retroalimentacionService) {
-        this(retroalimentacionService, new SolicitudDAOImpl(), new ProyectoDAOImpl(), new AuditoriaDAOImpl());
+        this(retroalimentacionService, new SolicitudDAOImpl(), new ProyectoDAOImpl(), new AuditoriaDAOImpl(), new com.gr4.owlaudit.service.AsignacionesServiceImpl());
     }
 
     public RetroalimentacionServlet(RetroalimentacionService retroalimentacionService, SolicitudDAO solicitudDAO) {
-        this(retroalimentacionService, solicitudDAO, new ProyectoDAOImpl(), new AuditoriaDAOImpl());
+        this(retroalimentacionService, solicitudDAO, new ProyectoDAOImpl(), new AuditoriaDAOImpl(), new com.gr4.owlaudit.service.AsignacionesServiceImpl());
     }
 
     public RetroalimentacionServlet(RetroalimentacionService retroalimentacionService, SolicitudDAO solicitudDAO,
                                    ProyectoDAO proyectoDAO, AuditoriaDAO auditoriaDAO) {
+        this(retroalimentacionService, solicitudDAO, proyectoDAO, auditoriaDAO, new com.gr4.owlaudit.service.AsignacionesServiceImpl());
+    }
+
+    public RetroalimentacionServlet(RetroalimentacionService retroalimentacionService, SolicitudDAO solicitudDAO,
+                                   ProyectoDAO proyectoDAO, AuditoriaDAO auditoriaDAO,
+                                   com.gr4.owlaudit.service.AsignacionesService asignacionesService) {
         this.retroalimentacionService = retroalimentacionService;
         this.solicitudDAO = solicitudDAO;
         this.proyectoDAO = proyectoDAO;
+        this.auditoriaDAO = auditoriaDAO;
+        this.asignacionesService = asignacionesService;
     }
 
     @Override
@@ -263,18 +273,28 @@ public class RetroalimentacionServlet extends HttpServlet {
                             request.setAttribute("reglaNombre", rr.getRegla().getNombreRepresentativo());
                         }
                         if (rr.getAuditoria() != null) {
-                            if (rr.getAuditoria().getId() != null && request.getAttribute("auditoriaId") == null) {
-                                request.setAttribute("auditoriaId", rr.getAuditoria().getId());
+                            com.gr4.owlaudit.model.Auditoria a = rr.getAuditoria();
+                            if (a.getId() != null && request.getAttribute("auditoriaId") == null) {
+                                request.setAttribute("auditoriaId", a.getId());
                             }
-                            if (rr.getAuditoria().getFechaHora() != null && request.getAttribute("fechaAuditoria") == null) {
-                                request.setAttribute("fechaAuditoria", rr.getAuditoria().getFechaHora().toString().replace('T', ' '));
+                            if (request.getAttribute("codigoVisibleAuditoria") == null) {
+                                request.setAttribute("codigoVisibleAuditoria", a.getCodigoVisible());
                             }
-                            if (rr.getAuditoria().getProyecto() != null) {
+                            if (request.getAttribute("tipoAuditoria") == null) {
+                                request.setAttribute("tipoAuditoria", a.getTipoAuditoria());
+                            }
+                            if (a.getAsignacion() != null && request.getAttribute("nombreAsignacion") == null) {
+                                request.setAttribute("nombreAsignacion", a.getAsignacion().getNombre());
+                            }
+                            if (a.getFechaHora() != null && request.getAttribute("fechaAuditoria") == null) {
+                                request.setAttribute("fechaAuditoria", a.getFechaHora().toString().replace('T', ' '));
+                            }
+                            if (a.getProyecto() != null) {
                                 if (request.getAttribute("nombreProyecto") == null) {
-                                    request.setAttribute("nombreProyecto", rr.getAuditoria().getProyecto().getNombre());
+                                    request.setAttribute("nombreProyecto", a.getProyecto().getNombre());
                                 }
-                                if (request.getAttribute("urlGithub") == null && rr.getAuditoria().getProyecto().getUrlGithub() != null) {
-                                    request.setAttribute("urlGithub", rr.getAuditoria().getProyecto().getUrlGithub());
+                                if (request.getAttribute("urlGithub") == null && a.getProyecto().getUrlGithub() != null) {
+                                    request.setAttribute("urlGithub", a.getProyecto().getUrlGithub());
                                 }
                             }
                         }
@@ -301,14 +321,15 @@ public class RetroalimentacionServlet extends HttpServlet {
         // Cargar proyectos y auditorías para selección (Paso 1 y 2 CU05)
         try {
             UsuarioDTO usuarioSesion = (UsuarioDTO) request.getSession().getAttribute(LoginServlet.ATRIBUTO_USUARIO);
-            List<Proyecto> listaProyectos = (usuarioSesion != null && usuarioSesion.getRol() == RolEnum.ESTUDIANTE)
-                    ? proyectoDAO.listarPorUsuarioId(usuarioSesion.getId())
+            Long usuarioId = (usuarioSesion != null && usuarioSesion.getRol() == RolEnum.ESTUDIANTE) ? usuarioSesion.getId() : null;
+            List<Proyecto> listaProyectos = (usuarioId != null)
+                    ? proyectoDAO.listarPorUsuarioId(usuarioId)
                     : proyectoDAO.listarTodos();
             request.setAttribute("proyectosDisponibles", listaProyectos);
 
             String proyectoIdStr = request.getParameter("proyectoId");
             Long proyectoId = parseLongOrNull(proyectoIdStr);
-            if (usuarioSesion != null && usuarioSesion.getRol() == RolEnum.ESTUDIANTE && proyectoId != null) {
+            if (usuarioId != null && proyectoId != null) {
                 final Long finalPid = proyectoId;
                 boolean pertenece = listaProyectos != null && listaProyectos.stream().anyMatch(p -> p.getId().equals(finalPid));
                 if (!pertenece) {
@@ -317,14 +338,91 @@ public class RetroalimentacionServlet extends HttpServlet {
             }
             request.setAttribute("proyectoIdFiltro", proyectoId);
 
-            // Invocación al método del servicio filtrado por usuario si es estudiante
+            String tipoAuditoria = request.getParameter("tipoAuditoria");
+            if (tipoAuditoria != null) {
+                tipoAuditoria = tipoAuditoria.trim();
+                if (tipoAuditoria.isBlank()) tipoAuditoria = null;
+            }
+            request.setAttribute("tipoAuditoriaFiltro", tipoAuditoria);
+
+            String asignacionIdStr = request.getParameter("asignacionId");
+            Long asignacionId = parseLongOrNull(asignacionIdStr);
+            request.setAttribute("asignacionIdFiltro", asignacionId);
+
+            String auditoriaIdStr = request.getParameter("auditoriaId");
+            Long auditoriaIdFiltro = parseLongOrNull(auditoriaIdStr);
+            request.setAttribute("auditoriaIdFiltro", auditoriaIdFiltro);
+
+            if (asignacionesService != null) {
+                request.setAttribute("asignacionesDisponibles", asignacionesService.listarAsignaciones());
+            }
+
+            // Cargar auditorías disponibles para el selector de auditoría específica
+            List<com.gr4.owlaudit.model.Auditoria> auditoriasCandidatas;
+            if (proyectoId != null) {
+                if ("GENERAL".equalsIgnoreCase(tipoAuditoria)) {
+                    auditoriasCandidatas = auditoriaDAO.consultarHistorialAuditoriasGenerales(proyectoId);
+                } else if ("ASIGNACION".equalsIgnoreCase(tipoAuditoria) || asignacionId != null) {
+                    if (asignacionId != null) {
+                        auditoriasCandidatas = auditoriaDAO.consultarHistorialAuditoriasAsignacion(proyectoId, asignacionId);
+                    } else {
+                        List<com.gr4.owlaudit.model.Auditoria> delProy = auditoriaDAO.consultarHistorialDeAuditorias(proyectoId);
+                        auditoriasCandidatas = delProy != null ? delProy.stream()
+                            .filter(a -> a.getAsignacion() != null || "ASIGNACION".equalsIgnoreCase(a.getTipoAuditoria()))
+                            .collect(java.util.stream.Collectors.toList()) : new java.util.ArrayList<>();
+                    }
+                } else {
+                    auditoriasCandidatas = auditoriaDAO.consultarHistorialDeAuditorias(proyectoId);
+                }
+            } else if (usuarioId != null) {
+                List<com.gr4.owlaudit.model.Auditoria> delUsuario = auditoriaDAO.consultarHistorialDeAuditoriasPorUsuario(usuarioId);
+                if ("GENERAL".equalsIgnoreCase(tipoAuditoria)) {
+                    auditoriasCandidatas = delUsuario != null ? delUsuario.stream()
+                        .filter(a -> a.getAsignacion() == null && !"ASIGNACION".equalsIgnoreCase(a.getTipoAuditoria()))
+                        .collect(java.util.stream.Collectors.toList()) : new java.util.ArrayList<>();
+                } else if ("ASIGNACION".equalsIgnoreCase(tipoAuditoria) || asignacionId != null) {
+                    if (asignacionId != null) {
+                        auditoriasCandidatas = delUsuario != null ? delUsuario.stream()
+                            .filter(a -> a.getAsignacion() != null && asignacionId.equals(a.getAsignacion().getId()))
+                            .collect(java.util.stream.Collectors.toList()) : new java.util.ArrayList<>();
+                    } else {
+                        auditoriasCandidatas = delUsuario != null ? delUsuario.stream()
+                            .filter(a -> a.getAsignacion() != null || "ASIGNACION".equalsIgnoreCase(a.getTipoAuditoria()))
+                            .collect(java.util.stream.Collectors.toList()) : new java.util.ArrayList<>();
+                    }
+                } else {
+                    auditoriasCandidatas = delUsuario != null ? delUsuario : new java.util.ArrayList<>();
+                }
+            } else {
+                List<com.gr4.owlaudit.model.Auditoria> todas = auditoriaDAO.consultarTodas();
+                if ("GENERAL".equalsIgnoreCase(tipoAuditoria)) {
+                    auditoriasCandidatas = todas != null ? todas.stream()
+                        .filter(a -> a.getAsignacion() == null && !"ASIGNACION".equalsIgnoreCase(a.getTipoAuditoria()))
+                        .collect(java.util.stream.Collectors.toList()) : new java.util.ArrayList<>();
+                } else if ("ASIGNACION".equalsIgnoreCase(tipoAuditoria) || asignacionId != null) {
+                    if (asignacionId != null) {
+                        auditoriasCandidatas = todas != null ? todas.stream()
+                            .filter(a -> a.getAsignacion() != null && asignacionId.equals(a.getAsignacion().getId()))
+                            .collect(java.util.stream.Collectors.toList()) : new java.util.ArrayList<>();
+                    } else {
+                        auditoriasCandidatas = todas != null ? todas.stream()
+                            .filter(a -> a.getAsignacion() != null || "ASIGNACION".equalsIgnoreCase(a.getTipoAuditoria()))
+                            .collect(java.util.stream.Collectors.toList()) : new java.util.ArrayList<>();
+                    }
+                } else {
+                    auditoriasCandidatas = todas != null ? todas : new java.util.ArrayList<>();
+                }
+            }
+            request.setAttribute("auditoriasDisponibles", auditoriasCandidatas);
+
+            // Invocación al método del servicio filtrado con los parámetros ampliados
             List<Map<String, Object>> hallazgosDisponibles = retroalimentacionService.obtenerHallazgosDisponibles(
-                    proyectoId, (usuarioSesion != null && usuarioSesion.getRol() == RolEnum.ESTUDIANTE) ? usuarioSesion.getId() : null);
+                    proyectoId, usuarioId, tipoAuditoria, asignacionId, auditoriaIdFiltro);
             request.setAttribute("hallazgosDisponibles", hallazgosDisponibles);
 
             // Cargar solicitudes previas para consulta del estudiante (cierre del corte vertical)
-            List<SolicitudRetroalimentacion> misSolicitudes = (usuarioSesion != null && usuarioSesion.getRol() == RolEnum.ESTUDIANTE)
-                    ? solicitudDAO.consultarSolicitudesPorUsuarioId(usuarioSesion.getId())
+            List<SolicitudRetroalimentacion> misSolicitudes = (usuarioId != null)
+                    ? solicitudDAO.consultarSolicitudesPorUsuarioId(usuarioId)
                     : solicitudDAO.consultarTodasLasSolicitudes();
             request.setAttribute("misSolicitudes", misSolicitudes);
 
@@ -380,6 +478,11 @@ public class RetroalimentacionServlet extends HttpServlet {
                         if (rr.getAuditoria() != null) {
                             if (rr.getAuditoria().getFechaHora() != null) {
                                 map.put("fechaHora", rr.getAuditoria().getFechaHora().toString());
+                            }
+                            map.put("codigoVisible", rr.getAuditoria().getCodigoVisible());
+                            map.put("tipoAuditoria", rr.getAuditoria().getTipoAuditoria());
+                            if (rr.getAuditoria().getAsignacion() != null) {
+                                map.put("nombreAsignacion", rr.getAuditoria().getAsignacion().getNombre());
                             }
                             if (nombreEstudiante == null && rr.getAuditoria().getUsuario() != null) {
                                 nombreEstudiante = rr.getAuditoria().getUsuario().getNombre();

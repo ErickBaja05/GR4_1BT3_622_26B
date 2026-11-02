@@ -5,6 +5,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.gr4.owlaudit.common.exception.ExcepcionNegocio;
+import com.gr4.owlaudit.dao.AuditoriaDAO;
+import com.gr4.owlaudit.dao.AuditoriaDAOImpl;
+import com.gr4.owlaudit.dao.ProyectoDAO;
+import com.gr4.owlaudit.dao.ProyectoDAOImpl;
 import com.gr4.owlaudit.dao.ReglaDAO;
 import com.gr4.owlaudit.dao.ReglaDAOImpl;
 import com.gr4.owlaudit.dto.AuditoriaDTO;
@@ -12,10 +16,14 @@ import com.gr4.owlaudit.dto.NuevaAsignacionDTO;
 import com.gr4.owlaudit.dto.ResultadoDTO;
 import com.gr4.owlaudit.dto.ResumenAsignacionDTO;
 import com.gr4.owlaudit.dto.UsuarioDTO;
+import com.gr4.owlaudit.model.Auditoria;
+import com.gr4.owlaudit.model.Proyecto;
+import com.gr4.owlaudit.model.RolEnum;
 import com.gr4.owlaudit.service.AsignacionesService;
 import com.gr4.owlaudit.service.AsignacionesServiceImpl;
 import com.gr4.owlaudit.service.AuditoriaService;
 import com.gr4.owlaudit.service.AuditoriaServiceImpl;
+import com.gr4.owlaudit.service.CalculadoraDeudaTecnica;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -25,11 +33,10 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 
 /**
- * HU-02 · Crear asignaciones para auditorías específicas.
- * HU-03 · Ejecutar auditoría de proyecto bajo una asignación específica.
- * Boundary: Interfaz de Asignaciones / Control de Asignaciones.
+ * HU-02 · Crear y gestionar asignaciones para auditorías específicas (CRUD Completo Docente).
+ * HU-03 · Ejecutar auditoría de proyecto bajo una asignación específica (Estudiante).
  */
-@WebServlet("/asignaciones")
+@WebServlet({"/asignaciones", "/asignacion"})
 public class AsignacionServlet extends HttpServlet {
 
     private static final String VISTA_CREAR = "/WEB-INF/views/crearAsignacion.jsp";
@@ -38,20 +45,35 @@ public class AsignacionServlet extends HttpServlet {
     private final AsignacionesService asignacionesService;
     private final ReglaDAO reglaDAO;
     private final AuditoriaService auditoriaService;
+    private final ProyectoDAO proyectoDAO;
+    private final AuditoriaDAO auditoriaDAO;
+    private final CalculadoraDeudaTecnica calculadoraDeudaTecnica = new CalculadoraDeudaTecnica();
 
     public AsignacionServlet() {
-        this(new AsignacionesServiceImpl(), new ReglaDAOImpl(), new AuditoriaServiceImpl());
+        this(new AsignacionesServiceImpl(), new ReglaDAOImpl(), new AuditoriaServiceImpl(), new ProyectoDAOImpl(), new AuditoriaDAOImpl());
     }
 
     public AsignacionServlet(AsignacionesService asignacionesService, ReglaDAO reglaDAO) {
-        this(asignacionesService, reglaDAO, new AuditoriaServiceImpl());
+        this(asignacionesService, reglaDAO, new AuditoriaServiceImpl(), new ProyectoDAOImpl(), new AuditoriaDAOImpl());
     }
 
     public AsignacionServlet(AsignacionesService asignacionesService, ReglaDAO reglaDAO,
             AuditoriaService auditoriaService) {
+        this(asignacionesService, reglaDAO, auditoriaService, new ProyectoDAOImpl(), new AuditoriaDAOImpl());
+    }
+
+    public AsignacionServlet(AsignacionesService asignacionesService, ReglaDAO reglaDAO,
+            AuditoriaService auditoriaService, ProyectoDAO proyectoDAO) {
+        this(asignacionesService, reglaDAO, auditoriaService, proyectoDAO, new AuditoriaDAOImpl());
+    }
+
+    public AsignacionServlet(AsignacionesService asignacionesService, ReglaDAO reglaDAO,
+            AuditoriaService auditoriaService, ProyectoDAO proyectoDAO, AuditoriaDAO auditoriaDAO) {
         this.asignacionesService = asignacionesService;
         this.reglaDAO = reglaDAO;
         this.auditoriaService = auditoriaService;
+        this.proyectoDAO = proyectoDAO;
+        this.auditoriaDAO = auditoriaDAO;
     }
 
     @Override
@@ -74,18 +96,25 @@ public class AsignacionServlet extends HttpServlet {
             throws ServletException, IOException {
         request.setCharacterEncoding("UTF-8");
 
+        String accion = request.getParameter("accion");
+        if ("actualizar".equalsIgnoreCase(accion)) {
+            procesarActualizarAsignacion(request, response);
+            return;
+        }
+        if ("eliminar".equalsIgnoreCase(accion)) {
+            procesarEliminarAsignacion(request, response);
+            return;
+        }
+
         String idAsignacionParam = request.getParameter("idAsignacion");
-        if (idAsignacionParam != null) {
+        if (idAsignacionParam != null && request.getParameter("idProyecto") != null) {
             procesarPostAuditoriaEstudiante(request, response, idAsignacionParam);
             return;
         }
 
         try {
-            // Se utiliza el query method directamente en lugar de las variables temporales
             NuevaAsignacionDTO dto = obtenerNuevaAsignacionDTO(request);
 
-            // Inline Temp: se reemplaza la variable intermedia fueAsignacionExitosa por la
-            // expresión directa
             if (asignacionesService != null && asignacionesService.crearAsignacion(dto) != null) {
                 request.setAttribute("mensajeExito", "Asignación creada correctamente.");
             } else {
@@ -93,10 +122,47 @@ public class AsignacionServlet extends HttpServlet {
             }
         } catch (NumberFormatException e) {
             request.setAttribute("mensajeError", "El umbral de aprobación debe ser un número válido.");
-        } catch (IllegalArgumentException e) {
+        } catch (IllegalArgumentException | ExcepcionNegocio e) {
             request.setAttribute("mensajeError", e.getMessage());
         }
 
+        cargarDatosVista(request);
+        request.getRequestDispatcher(VISTA_CREAR).forward(request, response);
+    }
+
+    private void procesarActualizarAsignacion(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        String idAsignacionStr = request.getParameter("idAsignacion");
+        try {
+            Long idAsignacion = Long.parseLong(idAsignacionStr.trim());
+            NuevaAsignacionDTO dto = obtenerNuevaAsignacionDTO(request);
+            asignacionesService.actualizarAsignacion(idAsignacion, dto);
+            request.setAttribute("mensajeExito", "Asignación '" + dto.getNombre() + "' actualizada exitosamente. Las auditorías realizadas han sido revalorizadas automáticamente.");
+        } catch (NumberFormatException e) {
+            request.setAttribute("mensajeError", "El identificador o umbral de la asignación no es válido.");
+        } catch (IllegalArgumentException | ExcepcionNegocio e) {
+            request.setAttribute("mensajeError", e.getMessage());
+        } catch (Exception e) {
+            request.setAttribute("mensajeError", "Error al actualizar la asignación: " + e.getMessage());
+        }
+        cargarDatosVista(request);
+        request.getRequestDispatcher(VISTA_CREAR).forward(request, response);
+    }
+
+    private void procesarEliminarAsignacion(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        String idAsignacionStr = request.getParameter("idAsignacion");
+        try {
+            Long idAsignacion = Long.parseLong(idAsignacionStr.trim());
+            asignacionesService.eliminarAsignacion(idAsignacion);
+            request.setAttribute("mensajeExito", "Asignación eliminada exitosamente en cascada y numeración secuencial actualizada.");
+        } catch (NumberFormatException e) {
+            request.setAttribute("mensajeError", "Identificador de asignación no válido.");
+        } catch (ExcepcionNegocio e) {
+            request.setAttribute("mensajeError", e.getMessage());
+        } catch (Exception e) {
+            request.setAttribute("mensajeError", "Error al eliminar la asignación: " + e.getMessage());
+        }
         cargarDatosVista(request);
         request.getRequestDispatcher(VISTA_CREAR).forward(request, response);
     }
@@ -133,12 +199,15 @@ public class AsignacionServlet extends HttpServlet {
     // --- MÉTODOS DE SOPORTE ---
 
     private boolean esFlujoEstudianteGet(HttpServletRequest request, String idAsignacionParam, String vistaParam) {
-        if (idAsignacionParam != null || "estudiante".equalsIgnoreCase(vistaParam)) {
+        if (idAsignacionParam != null && !idAsignacionParam.trim().isEmpty()) {
+            return true;
+        }
+        if ("estudiante".equalsIgnoreCase(vistaParam)) {
             return true;
         }
         HttpSession session = request.getSession(false);
         if (session != null && session.getAttribute(LoginServlet.ATRIBUTO_USUARIO) instanceof UsuarioDTO usuario) {
-            return usuario.getRol() == com.gr4.owlaudit.model.RolEnum.ESTUDIANTE;
+            return usuario.getRol() == RolEnum.ESTUDIANTE;
         }
         return false;
     }
@@ -148,18 +217,33 @@ public class AsignacionServlet extends HttpServlet {
             throws ServletException, IOException {
         cargarAsignacionesDisponibles(request);
 
+        Long usuarioId = obtenerUsuarioIdEnSesion(request);
+
         if (idAsignacionParam != null && !idAsignacionParam.trim().isEmpty()) {
             try {
                 Long idAsignacion = Long.parseLong(idAsignacionParam.trim());
-                ResumenAsignacionDTO resumen = asignacionesService.generarResumenAsignacion(idAsignacion);
+                ResumenAsignacionDTO resumen = (usuarioId != null)
+                        ? asignacionesService.generarResumenAsignacion(idAsignacion, usuarioId)
+                        : asignacionesService.generarResumenAsignacion(idAsignacion);
                 request.setAttribute("resumenAsignacion", resumen);
+
+                if (auditoriaDAO != null) {
+                    List<Auditoria> historial = auditoriaDAO.consultarAuditoriasDeAsignacionPorUsuario(idAsignacion, usuarioId);
+                    request.setAttribute("historialAuditoriasAsignacion", historial);
+                }
+
+                String detalleAuditoriaIdParam = request.getParameter("detalleAuditoriaId");
+                if (detalleAuditoriaIdParam != null && !detalleAuditoriaIdParam.trim().isEmpty() && auditoriaService != null) {
+                    Long detalleId = Long.parseLong(detalleAuditoriaIdParam.trim());
+                    ResultadoDTO resultado = auditoriaService.obtenerDetalleAuditoria(detalleId);
+                    request.setAttribute("resultadoAuditoria", resultado);
+                    request.setAttribute("deudaTecnica", calculadoraDeudaTecnica.calcularDesdeResultado(resultado));
+                }
             } catch (NumberFormatException e) {
-                request.setAttribute("mensajeError", "El identificador de la asignación no es válido.");
+                request.setAttribute("mensajeError", "El identificador de la asignación o auditoría no es válido.");
             } catch (ExcepcionNegocio | IllegalArgumentException e) {
                 request.setAttribute("mensajeError", e.getMessage());
             }
-        } else if (idAsignacionParam != null) {
-            request.setAttribute("mensajeError", "El identificador de la asignación no puede estar vacío.");
         }
 
         request.getRequestDispatcher(VISTA_DETALLE_ESTUDIANTE).forward(request, response);
@@ -169,11 +253,12 @@ public class AsignacionServlet extends HttpServlet {
             String idAsignacionParam)
             throws ServletException, IOException {
         cargarAsignacionesDisponibles(request);
+        Long usuarioId = obtenerUsuarioIdEnSesion(request);
 
         try {
             Long idAsignacion = Long.parseLong(idAsignacionParam.trim());
             if (asignacionesService != null) {
-                request.setAttribute("resumenAsignacion", asignacionesService.generarResumenAsignacion(idAsignacion));
+                request.setAttribute("resumenAsignacion", asignacionesService.generarResumenAsignacion(idAsignacion, usuarioId));
             }
 
             String idProyectoParam = request.getParameter("idProyecto");
@@ -181,9 +266,30 @@ public class AsignacionServlet extends HttpServlet {
                     ? Long.parseLong(idProyectoParam.trim())
                     : null;
 
+            // Validación estricta de pertenencia para estudiante
+            HttpSession session = request.getSession(false);
+            UsuarioDTO usuarioSesion = (session != null) ? (UsuarioDTO) session.getAttribute(LoginServlet.ATRIBUTO_USUARIO) : null;
+            if (usuarioSesion != null && usuarioSesion.getRol() == RolEnum.ESTUDIANTE && idProyecto != null) {
+                List<Proyecto> misProyectos = proyectoDAO.listarPorUsuarioId(usuarioSesion.getId());
+                boolean pertenece = misProyectos != null && misProyectos.stream()
+                        .anyMatch(p -> p.getId().equals(idProyecto) || (p.getIdEstudiante() != null && p.getIdEstudiante().equals(idProyecto)));
+                if (!pertenece) {
+                    request.setAttribute("mensajeError", "No tiene permisos para auditar un proyecto que no le pertenece.");
+                    request.getRequestDispatcher(VISTA_DETALLE_ESTUDIANTE).forward(request, response);
+                    return;
+                }
+            }
+
             AuditoriaDTO auditoriaDTO = construirAuditoriaDTO(request, idAsignacion, idProyecto);
             ResultadoDTO resultado = auditoriaService.ejecutarAuditoriaDeAsignacion(auditoriaDTO);
             request.setAttribute("resultadoAuditoria", resultado);
+            // Misma salida que la auditor�a general: Deuda T�cnica Estimada
+            request.setAttribute("deudaTecnica", calculadoraDeudaTecnica.calcularDesdeResultado(resultado));
+
+            if (auditoriaDAO != null) {
+                List<Auditoria> historial = auditoriaDAO.consultarAuditoriasDeAsignacionPorUsuario(idAsignacion, usuarioId);
+                request.setAttribute("historialAuditoriasAsignacion", historial);
+            }
         } catch (NumberFormatException e) {
             request.setAttribute("mensajeError", "Los identificadores de asignación o proyecto no son válidos.");
         } catch (ExcepcionNegocio | IllegalArgumentException e) {

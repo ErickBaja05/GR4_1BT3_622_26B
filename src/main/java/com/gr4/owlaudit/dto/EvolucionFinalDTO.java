@@ -14,6 +14,8 @@ public class EvolucionFinalDTO {
 
     // Datos de auditoría base
     private Long baseId;
+    private Long numeroBase;
+    private String codigoVisibleBase;
     private LocalDateTime fechaHoraBase;
     private int puntajeObtenidoBase;
     private int puntajeMaximoBase;
@@ -21,10 +23,15 @@ public class EvolucionFinalDTO {
 
     // Datos de auditoría comparada
     private Long comparadaId;
+    private Long numeroComparada;
+    private String codigoVisibleComparada;
     private LocalDateTime fechaHoraComparada;
     private int puntajeObtenidoComparada;
     private int puntajeMaximoComparada;
     private double porcentajeComparada;
+
+    private String tipoAuditoria;
+    private String nombreAsignacion;
 
     // Variaciones
     private int variacionPuntaje;
@@ -41,10 +48,8 @@ public class EvolucionFinalDTO {
     // Mensaje para escenarios alternativos (p. ej. "No existen hallazgos en las auditorías comparadas")
     private String mensaje;
 
-
     // Clasificación evolutiva global del repositorio (MEJORA, REGRESION, ESTABLE)
     private EvolucionGlobalEnum evolucionGlobal;
-
 
     public EvolucionFinalDTO() {
         this.comparaciones = new ArrayList<>();
@@ -64,6 +69,26 @@ public class EvolucionFinalDTO {
 
     public void setBaseId(Long baseId) {
         this.baseId = baseId;
+    }
+
+    public Long getNumeroBase() {
+        return numeroBase;
+    }
+
+    public void setNumeroBase(Long numeroBase) {
+        this.numeroBase = numeroBase;
+    }
+
+    public Long getIdVisibleBase() {
+        return numeroBase != null ? numeroBase : baseId;
+    }
+
+    public String getCodigoVisibleBase() {
+        return codigoVisibleBase;
+    }
+
+    public void setCodigoVisibleBase(String codigoVisibleBase) {
+        this.codigoVisibleBase = codigoVisibleBase;
     }
 
     public LocalDateTime getFechaHoraBase() {
@@ -104,6 +129,42 @@ public class EvolucionFinalDTO {
 
     public void setComparadaId(Long comparadaId) {
         this.comparadaId = comparadaId;
+    }
+
+    public Long getNumeroComparada() {
+        return numeroComparada;
+    }
+
+    public void setNumeroComparada(Long numeroComparada) {
+        this.numeroComparada = numeroComparada;
+    }
+
+    public Long getIdVisibleComparada() {
+        return numeroComparada != null ? numeroComparada : comparadaId;
+    }
+
+    public String getCodigoVisibleComparada() {
+        return codigoVisibleComparada;
+    }
+
+    public void setCodigoVisibleComparada(String codigoVisibleComparada) {
+        this.codigoVisibleComparada = codigoVisibleComparada;
+    }
+
+    public String getTipoAuditoria() {
+        return tipoAuditoria;
+    }
+
+    public void setTipoAuditoria(String tipoAuditoria) {
+        this.tipoAuditoria = tipoAuditoria;
+    }
+
+    public String getNombreAsignacion() {
+        return nombreAsignacion;
+    }
+
+    public void setNombreAsignacion(String nombreAsignacion) {
+        this.nombreAsignacion = nombreAsignacion;
     }
 
     public LocalDateTime getFechaHoraComparada() {

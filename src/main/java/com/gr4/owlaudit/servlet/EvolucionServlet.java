@@ -9,6 +9,8 @@ import com.gr4.owlaudit.dto.ResumenHistorialDTO;
 import com.gr4.owlaudit.dto.UsuarioDTO;
 import com.gr4.owlaudit.model.Proyecto;
 import com.gr4.owlaudit.model.RolEnum;
+import com.gr4.owlaudit.service.AsignacionesService;
+import com.gr4.owlaudit.service.AsignacionesServiceImpl;
 import com.gr4.owlaudit.service.EvolucionService;
 import com.gr4.owlaudit.service.EvolucionServiceImpl;
 
@@ -30,18 +32,24 @@ public class EvolucionServlet extends HttpServlet {
 
     private final EvolucionService evolucionService;
     private final ProyectoDAO proyectoDAO;
+    private final AsignacionesService asignacionesService;
 
     public EvolucionServlet() {
-        this(new EvolucionServiceImpl(), new ProyectoDAOImpl());
+        this(new EvolucionServiceImpl(), new ProyectoDAOImpl(), new AsignacionesServiceImpl());
     }
 
     public EvolucionServlet(EvolucionService evolucionService) {
-        this(evolucionService, new ProyectoDAOImpl());
+        this(evolucionService, new ProyectoDAOImpl(), new AsignacionesServiceImpl());
     }
 
     public EvolucionServlet(EvolucionService evolucionService, ProyectoDAO proyectoDAO) {
+        this(evolucionService, proyectoDAO, new AsignacionesServiceImpl());
+    }
+
+    public EvolucionServlet(EvolucionService evolucionService, ProyectoDAO proyectoDAO, AsignacionesService asignacionesService) {
         this.evolucionService = evolucionService;
         this.proyectoDAO = proyectoDAO;
+        this.asignacionesService = asignacionesService;
     }
 
     // 1. Carga del Historial (doGet) según secuencia4.puml
@@ -60,24 +68,62 @@ public class EvolucionServlet extends HttpServlet {
             System.err.println("[EvolucionServlet] Error al listar proyectos: " + e.getMessage());
         }
 
+        try {
+            if (asignacionesService != null) {
+                request.setAttribute("listaAsignaciones", asignacionesService.listarAsignaciones());
+            }
+        } catch (Exception e) {
+            System.err.println("[EvolucionServlet] Error al listar asignaciones: " + e.getMessage());
+        }
+
+        String tipoAuditoria = request.getParameter("tipoAuditoria");
+        if (tipoAuditoria == null || tipoAuditoria.isBlank()) {
+            tipoAuditoria = "GENERAL";
+        }
+        request.setAttribute("tipoAuditoria", tipoAuditoria);
+
+        String asignacionIdParam = request.getParameter("asignacionId");
+        Long asignacionId = null;
+        if (asignacionIdParam != null && !asignacionIdParam.isBlank()) {
+            try {
+                asignacionId = Long.parseLong(asignacionIdParam.trim());
+                request.setAttribute("asignacionId", asignacionId);
+            } catch (NumberFormatException ignored) {}
+        }
+
         String proyectoIdParam = request.getParameter("proyectoId");
         if (proyectoIdParam != null && !proyectoIdParam.isBlank()) {
             try {
                 Long proyectoId = Long.parseLong(proyectoIdParam.trim());
                 if (usuario != null && usuario.getRol() == RolEnum.ESTUDIANTE) {
                     final Long finalPid = proyectoId;
-                    boolean pertenece = listaProyectos != null && listaProyectos.stream().anyMatch(p -> p.getId().equals(finalPid));
-                    if (!pertenece) {
+                    Proyecto miProyecto = null;
+                    if (listaProyectos != null) {
+                        for (Proyecto p : listaProyectos) {
+                            if (finalPid.equals(p.getId()) || (p.getIdEstudiante() != null && finalPid.equals(p.getIdEstudiante()))) {
+                                miProyecto = p;
+                                break;
+                            }
+                        }
+                    }
+                    if (miProyecto == null) {
                         request.setAttribute("mensajeError", "No tiene permisos para consultar el proyecto seleccionado.");
                         request.getRequestDispatcher(VISTA).forward(request, response);
                         return;
                     }
+                    proyectoId = miProyecto.getId();
                 }
                 EvolucionDTO dto = new EvolucionDTO(proyectoId);
+                dto.setTipoAuditoria(tipoAuditoria);
+                dto.setAsignacionId(asignacionId);
                 request.setAttribute("evolucionDTO", dto);
 
-                ResumenHistorialDTO resumen = evolucionService.solicitarEvolucionDeCalidad(dto);
-                request.setAttribute("resumenHistorialDTO", resumen);
+                if ("ASIGNACION".equalsIgnoreCase(tipoAuditoria) && asignacionId == null) {
+                    request.setAttribute("mensajeInfo", "Seleccione una asignación para cargar el historial correspondiente.");
+                } else {
+                    ResumenHistorialDTO resumen = evolucionService.solicitarEvolucionDeCalidad(dto);
+                    request.setAttribute("resumenHistorialDTO", resumen);
+                }
             } catch (NumberFormatException e) {
                 request.setAttribute("mensajeError", "El identificador del proyecto debe ser un número entero válido.");
             } catch (ExcepcionNegocio e) {
@@ -107,6 +153,14 @@ public class EvolucionServlet extends HttpServlet {
             System.err.println("[EvolucionServlet] Error al listar proyectos: " + e.getMessage());
         }
 
+        try {
+            if (asignacionesService != null) {
+                request.setAttribute("listaAsignaciones", asignacionesService.listarAsignaciones());
+            }
+        } catch (Exception e) {
+            System.err.println("[EvolucionServlet] Error al listar asignaciones: " + e.getMessage());
+        }
+
         request.setCharacterEncoding("UTF-8");
 
         String accion = request.getParameter("accion");
@@ -114,6 +168,21 @@ public class EvolucionServlet extends HttpServlet {
             request.setAttribute("mensajeInfo", "Consulta cancelada.");
             doGet(request, response);
             return;
+        }
+
+        String tipoAuditoria = request.getParameter("tipoAuditoria");
+        if (tipoAuditoria == null || tipoAuditoria.isBlank()) {
+            tipoAuditoria = "GENERAL";
+        }
+        request.setAttribute("tipoAuditoria", tipoAuditoria);
+
+        String asignacionIdParam = request.getParameter("asignacionId");
+        Long asignacionId = null;
+        if (asignacionIdParam != null && !asignacionIdParam.isBlank()) {
+            try {
+                asignacionId = Long.parseLong(asignacionIdParam.trim());
+                request.setAttribute("asignacionId", asignacionId);
+            } catch (NumberFormatException ignored) {}
         }
 
         String proyectoIdParam = request.getParameter("proyectoId");
@@ -137,15 +206,26 @@ public class EvolucionServlet extends HttpServlet {
 
             if (proyectoId != null && usuario != null && usuario.getRol() == RolEnum.ESTUDIANTE) {
                 final Long finalPid = proyectoId;
-                boolean pertenece = listaProyectos != null && listaProyectos.stream().anyMatch(p -> p.getId().equals(finalPid));
-                if (!pertenece) {
+                Proyecto miProyecto = null;
+                if (listaProyectos != null) {
+                    for (Proyecto p : listaProyectos) {
+                        if (finalPid.equals(p.getId()) || (p.getIdEstudiante() != null && finalPid.equals(p.getIdEstudiante()))) {
+                            miProyecto = p;
+                            break;
+                        }
+                    }
+                }
+                if (miProyecto == null) {
                     request.setAttribute("mensajeError", "No tiene permisos para consultar el proyecto seleccionado.");
                     request.getRequestDispatcher(VISTA).forward(request, response);
                     return;
                 }
+                proyectoId = miProyecto.getId();
             }
 
             EvolucionDTO dto = new EvolucionDTO(proyectoId, baseId, comparadaId);
+            dto.setTipoAuditoria(tipoAuditoria);
+            dto.setAsignacionId(asignacionId);
             request.setAttribute("evolucionDTO", dto);
 
             EvolucionFinalDTO evolucionFinal = evolucionService.indicarDosAuditoriasAComparar(dto);
@@ -153,8 +233,10 @@ public class EvolucionServlet extends HttpServlet {
 
             // Mantener el historial cargado para la vista
             if (proyectoId != null) {
-                ResumenHistorialDTO resumen = evolucionService.solicitarEvolucionDeCalidad(new EvolucionDTO(proyectoId));
-                request.setAttribute("resumenHistorialDTO", resumen);
+                try {
+                    ResumenHistorialDTO resumen = evolucionService.solicitarEvolucionDeCalidad(dto);
+                    request.setAttribute("resumenHistorialDTO", resumen);
+                } catch (Exception ignored) {}
             }
 
         } catch (NumberFormatException e) {
@@ -164,7 +246,10 @@ public class EvolucionServlet extends HttpServlet {
             // Si hubo error de comparación pero el proyecto es válido, reintentar cargar el historial
             if (proyectoId != null) {
                 try {
-                    ResumenHistorialDTO resumen = evolucionService.solicitarEvolucionDeCalidad(new EvolucionDTO(proyectoId));
+                    EvolucionDTO dto = new EvolucionDTO(proyectoId);
+                    dto.setTipoAuditoria(tipoAuditoria);
+                    dto.setAsignacionId(asignacionId);
+                    ResumenHistorialDTO resumen = evolucionService.solicitarEvolucionDeCalidad(dto);
                     request.setAttribute("resumenHistorialDTO", resumen);
                 } catch (Exception ignored) {
                 }

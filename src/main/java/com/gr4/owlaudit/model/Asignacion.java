@@ -28,6 +28,9 @@ public class Asignacion {
     @Column(name = "umbral_aprobacion", nullable = false)
     private Double umbralAprobacion;
 
+    @Column(name = "id_secuencial")
+    private Long idSecuencial;
+
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
         name = "asignacion_regla",
@@ -68,6 +71,18 @@ public class Asignacion {
 
     public void setUmbralAprobacion(Double umbralAprobacion) {
         this.umbralAprobacion = umbralAprobacion;
+    }
+
+    public Long getIdSecuencial() {
+        return idSecuencial;
+    }
+
+    public void setIdSecuencial(Long idSecuencial) {
+        this.idSecuencial = idSecuencial;
+    }
+
+    public Long getIdVisible() {
+        return idSecuencial != null ? idSecuencial : id;
     }
 
 

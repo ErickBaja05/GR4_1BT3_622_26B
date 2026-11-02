@@ -54,23 +54,49 @@ public class EvolucionServiceImpl implements EvolucionService {
             throw new ExcepcionNegocio("El identificador del proyecto no es válido.");
         }
 
-        List<Auditoria> historial = auditoriaDAO.consultarHistorialDeAuditorias(dto.getProyectoId());
+        List<Auditoria> historial;
+        boolean esAsignacion = "ASIGNACION".equalsIgnoreCase(dto.getTipoAuditoria()) || dto.getAsignacionId() != null;
+        if (esAsignacion && dto.getAsignacionId() != null) {
+            historial = auditoriaDAO.consultarHistorialAuditoriasAsignacion(dto.getProyectoId(), dto.getAsignacionId());
+        } else {
+            historial = auditoriaDAO.consultarHistorialAuditoriasGenerales(dto.getProyectoId());
+        }
 
         if (historial == null || historial.size() < 2) {
             throw new ExcepcionNegocio(MENSAJE_SIN_AUDITORIAS_SUFICIENTES);
         }
 
-        historial.sort(Comparator.comparing(Auditoria::getFechaHora));
+        List<Auditoria> listaOrdenada = new ArrayList<>(historial);
+        listaOrdenada.sort(Comparator.comparing(Auditoria::getFechaHora));
 
         List<AuditoriaResumenDTO> items = new ArrayList<>();
-        for (Auditoria a : historial) {
-            items.add(new AuditoriaResumenDTO(
+        long seq = 1L;
+        for (Auditoria a : listaOrdenada) {
+            Long num;
+            if (esAsignacion) {
+                num = a.getNumeroEnAsignacion() != null ? a.getNumeroEnAsignacion() : seq++;
+            } else {
+                num = a.getNumeroEnProyecto() != null ? a.getNumeroEnProyecto() : seq++;
+            }
+            AuditoriaResumenDTO item = new AuditoriaResumenDTO(
                 a.getId(),
+                num,
                 a.getFechaHora(),
                 a.getPuntajeObtenido(),
                 a.getPuntajeMaximo(),
                 a.getPorcentaje()
-            ));
+            );
+            item.setNumeroEnProyecto(a.getNumeroEnProyecto() != null ? a.getNumeroEnProyecto() : (!esAsignacion ? num : null));
+            item.setNumeroEnAsignacion(a.getNumeroEnAsignacion() != null ? a.getNumeroEnAsignacion() : (esAsignacion ? num : null));
+            item.setTipoAuditoria(a.getTipoAuditoria() != null ? a.getTipoAuditoria() : (esAsignacion ? "ASIGNACION" : "GENERAL"));
+            item.setCodigoVisible(esAsignacion ? "AA-" + num : "AG-" + num);
+            item.setEtiquetaVisible(esAsignacion ? "Auditoría Asignación #" + num : "Auditoría General #" + num);
+            item.setDictamen(a.getDictamen());
+            if (a.getAsignacion() != null) {
+                item.setNombreAsignacion(a.getAsignacion().getNombre());
+                item.setUmbral(a.getAsignacion().getUmbralAprobacion());
+            }
+            items.add(item);
         }
 
         return new ResumenHistorialDTO(dto.getProyectoId(), items);
@@ -117,6 +143,13 @@ public class EvolucionServiceImpl implements EvolucionService {
                 }
             }
 
+            if (ctx.auditoriaBase == null && auditoriaDAO != null) {
+                ctx.auditoriaBase = auditoriaDAO.buscarPorId(dto.getBaseId());
+            }
+            if (ctx.auditoriaComparada == null && auditoriaDAO != null) {
+                ctx.auditoriaComparada = auditoriaDAO.buscarPorId(dto.getComparadaId());
+            }
+
             if ((ctx.auditoriaBase == null || ctx.auditoriaComparada == null) && dto.getProyectoId() != null) {
                 List<Auditoria> historial = auditoriaDAO.consultarHistorialDeAuditorias(dto.getProyectoId());
                 if (historial != null) {
@@ -127,20 +160,67 @@ public class EvolucionServiceImpl implements EvolucionService {
                 }
             }
 
+            if (ctx.auditoriaBase != null && ctx.auditoriaComparada != null) {
+                boolean baseEsAsig = ctx.auditoriaBase.esAuditoriaAsignacion();
+                boolean compEsAsig = ctx.auditoriaComparada.esAuditoriaAsignacion();
+                if (baseEsAsig != compEsAsig) {
+                    throw new ExcepcionNegocio("No se pueden comparar auditorías generales con auditorías de asignación.");
+                }
+                if (baseEsAsig) {
+                    Long asigIdBase = ctx.auditoriaBase.getAsignacion() != null ? ctx.auditoriaBase.getAsignacion().getId() : null;
+                    Long asigIdComp = ctx.auditoriaComparada.getAsignacion() != null ? ctx.auditoriaComparada.getAsignacion().getId() : null;
+                    if (asigIdBase == null || asigIdComp == null || !asigIdBase.equals(asigIdComp)) {
+                        throw new ExcepcionNegocio("Solo se pueden comparar auditorías pertenecientes a la misma asignación académica.");
+                    }
+                }
+            }
+
             ctx.evolucionFinalDTO = new EvolucionFinalDTO();
             if (ctx.auditoriaBase != null) {
                 ctx.evolucionFinalDTO.setBaseId(ctx.auditoriaBase.getId());
+                ctx.evolucionFinalDTO.setNumeroBase(ctx.auditoriaBase.getIdVisible());
+                ctx.evolucionFinalDTO.setCodigoVisibleBase(ctx.auditoriaBase.getCodigoVisible());
                 ctx.evolucionFinalDTO.setFechaHoraBase(ctx.auditoriaBase.getFechaHora());
                 ctx.evolucionFinalDTO.setPuntajeObtenidoBase(ctx.auditoriaBase.getPuntajeObtenido());
                 ctx.evolucionFinalDTO.setPuntajeMaximoBase(ctx.auditoriaBase.getPuntajeMaximo());
                 ctx.evolucionFinalDTO.setPorcentajeBase(ctx.auditoriaBase.getPorcentaje());
+                ctx.evolucionFinalDTO.setTipoAuditoria(ctx.auditoriaBase.getTipoAuditoria());
+                if (ctx.auditoriaBase.getAsignacion() != null) {
+                    ctx.evolucionFinalDTO.setNombreAsignacion(ctx.auditoriaBase.getAsignacion().getNombre());
+                }
             }
             if (ctx.auditoriaComparada != null) {
                 ctx.evolucionFinalDTO.setComparadaId(ctx.auditoriaComparada.getId());
+                ctx.evolucionFinalDTO.setNumeroComparada(ctx.auditoriaComparada.getIdVisible());
+                ctx.evolucionFinalDTO.setCodigoVisibleComparada(ctx.auditoriaComparada.getCodigoVisible());
                 ctx.evolucionFinalDTO.setFechaHoraComparada(ctx.auditoriaComparada.getFechaHora());
                 ctx.evolucionFinalDTO.setPuntajeObtenidoComparada(ctx.auditoriaComparada.getPuntajeObtenido());
                 ctx.evolucionFinalDTO.setPuntajeMaximoComparada(ctx.auditoriaComparada.getPuntajeMaximo());
                 ctx.evolucionFinalDTO.setPorcentajeComparada(ctx.auditoriaComparada.getPorcentaje());
+            }
+
+            if (dto.getProyectoId() != null && (ctx.evolucionFinalDTO.getNumeroBase() == null || ctx.evolucionFinalDTO.getNumeroComparada() == null)) {
+                List<Auditoria> historial = auditoriaDAO.consultarHistorialDeAuditorias(dto.getProyectoId());
+                if (historial != null) {
+                    List<Auditoria> mutableHistorial = new ArrayList<>(historial);
+                    mutableHistorial.sort(Comparator.comparing(Auditoria::getFechaHora));
+                    for (int i = 0; i < mutableHistorial.size(); i++) {
+                        Auditoria ha = mutableHistorial.get(i);
+                        long num = ha.getIdVisible() != null ? ha.getIdVisible() : (i + 1L);
+                        if (ha.getId().equals(dto.getBaseId()) && ctx.evolucionFinalDTO.getNumeroBase() == null) {
+                            ctx.evolucionFinalDTO.setNumeroBase(num);
+                            if (ctx.evolucionFinalDTO.getCodigoVisibleBase() == null) {
+                                ctx.evolucionFinalDTO.setCodigoVisibleBase(ha.getCodigoVisible());
+                            }
+                        }
+                        if (ha.getId().equals(dto.getComparadaId()) && ctx.evolucionFinalDTO.getNumeroComparada() == null) {
+                            ctx.evolucionFinalDTO.setNumeroComparada(num);
+                            if (ctx.evolucionFinalDTO.getCodigoVisibleComparada() == null) {
+                                ctx.evolucionFinalDTO.setCodigoVisibleComparada(ha.getCodigoVisible());
+                            }
+                        }
+                    }
+                }
             }
 
             // 3. Calcular variación de puntajes
@@ -174,20 +254,25 @@ public class EvolucionServiceImpl implements EvolucionService {
     // ========================================================
 
     private void ordenarAuditoriasPorFecha(EvolucionDTO dto) {
+        Auditoria aud1 = null;
+        Auditoria aud2 = null;
         if (dto.getProyectoId() != null) {
             List<Auditoria> historial = auditoriaDAO.consultarHistorialDeAuditorias(dto.getProyectoId());
             if (historial != null) {
-                Auditoria aud1 = null;
-                Auditoria aud2 = null;
                 for (Auditoria a : historial) {
                     if (a.getId().equals(dto.getBaseId())) aud1 = a;
                     if (a.getId().equals(dto.getComparadaId())) aud2 = a;
                 }
-                if (aud1 != null && aud2 != null && aud1.getFechaHora().isAfter(aud2.getFechaHora())) {
-                    Long temp = dto.getBaseId();
-                    dto.setBaseId(dto.getComparadaId());
-                    dto.setComparadaId(temp);
-                }
+            }
+        }
+        if (aud1 == null && auditoriaDAO != null) aud1 = auditoriaDAO.buscarPorId(dto.getBaseId());
+        if (aud2 == null && auditoriaDAO != null) aud2 = auditoriaDAO.buscarPorId(dto.getComparadaId());
+
+        if (aud1 != null && aud2 != null && aud1.getFechaHora() != null && aud2.getFechaHora() != null) {
+            if (aud1.getFechaHora().isAfter(aud2.getFechaHora())) {
+                Long temp = dto.getBaseId();
+                dto.setBaseId(dto.getComparadaId());
+                dto.setComparadaId(temp);
             }
         }
     }

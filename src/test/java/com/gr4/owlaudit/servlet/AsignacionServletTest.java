@@ -215,4 +215,29 @@ class AsignacionServletTest {
         verify(request).getRequestDispatcher(VISTA_DETALLE_ESTUDIANTE);
         verify(dispatcher).forward(request, response);
     }
+
+    @Test
+    @DisplayName("doGet (HU-03): Con idAsignacion y detalleAuditoriaId consulta el detalle de la auditoría y lo inyecta")
+    void given_idAsignacionYDetalleAuditoriaId_when_doGet_then_cargaDetalleAuditoriaYDespacha() throws Exception {
+        // GIVEN
+        when(request.getParameter("idAsignacion")).thenReturn("5");
+        when(request.getParameter("detalleAuditoriaId")).thenReturn("88");
+
+        ResumenAsignacionDTO resumenEsperado = new ResumenAsignacionDTO();
+        resumenEsperado.setIdAsignacion(5L);
+        when(asignacionesService.generarResumenAsignacion(5L)).thenReturn(resumenEsperado);
+
+        ResultadoDTO detalleEsperado = new ResultadoDTO(90, 100, 90.0);
+        detalleEsperado.setIdAuditoria(88L);
+        when(auditoriaService.obtenerDetalleAuditoria(88L)).thenReturn(detalleEsperado);
+
+        // WHEN
+        servlet.doGet(request, response);
+
+        // THEN
+        verify(auditoriaService).obtenerDetalleAuditoria(88L);
+        verify(request).setAttribute("resultadoAuditoria", detalleEsperado);
+        verify(request).getRequestDispatcher(VISTA_DETALLE_ESTUDIANTE);
+        verify(dispatcher).forward(request, response);
+    }
 }

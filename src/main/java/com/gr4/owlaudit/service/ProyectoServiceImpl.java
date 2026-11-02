@@ -37,6 +37,9 @@ public class ProyectoServiceImpl implements ProyectoService {
         // Validación del enlace según secuencia2.puml
         validarEnlace(dto.getUrlGithub());
 
+        // Validación de unicidad de nombre y URL para el mismo estudiante
+        validarUnicidadParaEstudiante(dto.getUsuarioId(), dto.getNombre(), dto.getUrlGithub(), null);
+
         // Instanciación y persistencia
         Proyecto proyecto = new Proyecto(dto);
         if (dto.getUsuarioId() != null) {
@@ -63,5 +66,116 @@ public class ProyectoServiceImpl implements ProyectoService {
         if (!GITHUB_REPO_PATTERN.matcher(urlTrim).matches()) {
             throw new ExcepcionNegocio("Enlace no válido");
         }
+    }
+
+    @Override
+    public void actualizarProyecto(Long proyectoId, NuevoProyectoDTO dto, Long usuarioId) {
+        validarDatosActualizacion(proyectoId, dto, usuarioId);
+        validarEnlace(dto.getUrlGithub());
+        validarUnicidadParaEstudiante(usuarioId, dto.getNombre(), dto.getUrlGithub(), proyectoId);
+
+        Proyecto proyecto = obtenerProyectoValido(proyectoId, usuarioId, "modificar");
+        validarPropietario(proyecto, usuarioId, "modificar");
+
+        // Patrón Martin Fowler: Move Method (actualizarDesdeDTO en Proyecto)
+        proyecto.actualizarDesdeDTO(dto);
+        proyectoDAO.actualizar(proyecto);
+    }
+
+    private void validarUnicidadParaEstudiante(Long usuarioId, String nombre, String urlGithub, Long proyectoIdExcluir) {
+        if (usuarioId == null) return;
+        java.util.List<Proyecto> existentes = proyectoDAO.listarPorUsuarioId(usuarioId);
+        if (existentes == null || existentes.isEmpty()) return;
+
+        String nombreTrim = nombre != null ? nombre.trim() : "";
+        String urlNorm = normalizarUrl(urlGithub);
+
+        for (Proyecto p : existentes) {
+            if (proyectoIdExcluir != null && p.getId() != null && p.getId().equals(proyectoIdExcluir)) {
+                continue;
+            }
+            if (p.getNombre() != null && p.getNombre().trim().equalsIgnoreCase(nombreTrim)) {
+                throw new ExcepcionNegocio("Ya tiene un proyecto registrado con este nombre.");
+            }
+            if (p.getUrlGithub() != null && normalizarUrl(p.getUrlGithub()).equalsIgnoreCase(urlNorm)) {
+                throw new ExcepcionNegocio("Ya tiene un proyecto registrado con este enlace de repositorio.");
+            }
+        }
+    }
+
+    private String normalizarUrl(String url) {
+        if (url == null) return "";
+        String norm = url.trim().toLowerCase();
+        while (norm.endsWith("/")) {
+            norm = norm.substring(0, norm.length() - 1);
+        }
+        if (norm.endsWith(".git")) {
+            norm = norm.substring(0, norm.length() - 4);
+        }
+        return norm;
+    }
+
+    @Override
+    public void eliminarProyecto(Long proyectoId, Long usuarioId) {
+        if (proyectoId == null || usuarioId == null) {
+            throw new ExcepcionNegocio("Identificador de proyecto o usuario no válido.");
+        }
+        Proyecto proyecto = obtenerProyectoValido(proyectoId, usuarioId, "eliminar");
+        validarPropietario(proyecto, usuarioId, "eliminar");
+
+        proyectoDAO.eliminar(proyecto.getId());
+        proyectoDAO.resecuenciarIdsEstudiante(usuarioId);
+    }
+
+    /**
+     * Refactorización Martin Fowler: Extract Method (Composing Methods).
+     */
+    private void validarDatosActualizacion(Long proyectoId, NuevoProyectoDTO dto, Long usuarioId) {
+        if (proyectoId == null || dto == null || usuarioId == null) {
+            throw new ExcepcionNegocio("Los datos para actualizar el proyecto son incompletos.");
+        }
+        if (dto.getNombre() == null || dto.getNombre().trim().isEmpty()) {
+            throw new ExcepcionNegocio("El nombre del proyecto es obligatorio.");
+        }
+    }
+
+    /**
+     * Refactorización Martin Fowler: Extract Method (Composing Methods).
+     */
+    private Proyecto obtenerProyectoValido(Long proyectoId, Long usuarioId, String accion) {
+        Proyecto proyecto = proyectoDAO.buscarPorIdYUsuarioId(proyectoId, usuarioId);
+        if (proyecto != null) {
+            return proyecto;
+        }
+        Proyecto ajeno = proyectoDAO.buscarPorId(proyectoId);
+        if (ajeno != null) {
+            return ajeno;
+        }
+        throw new ExcepcionNegocio("El proyecto a " + accion + " no existe.");
+    }
+
+    /**
+     * Refactorización Martin Fowler: Extract Method (Composing Methods).
+     */
+    private void validarPropietario(Proyecto proyecto, Long usuarioId, String accion) {
+        if (proyecto.getUsuario() == null || !usuarioId.equals(proyecto.getUsuario().getId())) {
+            throw new ExcepcionNegocio("No tiene permisos para " + accion + " este proyecto. Solo puede gestionar sus propios proyectos.");
+        }
+    }
+
+    @Override
+    public Proyecto buscarPorId(Long proyectoId) {
+        if (proyectoId == null) {
+            return null;
+        }
+        return proyectoDAO.buscarPorId(proyectoId);
+    }
+
+    @Override
+    public java.util.List<Proyecto> listarProyectosDeEstudiante(Long usuarioId) {
+        if (usuarioId == null) {
+            return java.util.Collections.emptyList();
+        }
+        return proyectoDAO.listarPorUsuarioId(usuarioId);
     }
 }

@@ -150,6 +150,19 @@
             font-size: 0.82rem;
             color: var(--text-muted);
         }
+        .btn-edit { background-color: #EFF6FF; color: #1D4ED8; border: 1px solid #BFDBFE; font-size: 0.82rem; font-weight: 600; padding: 0.35rem 0.75rem; border-radius: 6px; cursor: pointer; transition: all 0.2s; }
+        .btn-edit:hover { background-color: #2563EB; color: #FFFFFF; border-color: #2563EB; }
+        .btn-delete { background-color: #FEF2F2; color: #B91C1C; border: 1px solid #FECACA; font-size: 0.82rem; font-weight: 600; padding: 0.35rem 0.75rem; border-radius: 6px; cursor: pointer; transition: all 0.2s; }
+        .btn-delete:hover { background-color: #DC2626; color: #FFFFFF; border-color: #DC2626; }
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px);
+            display: none; align-items: center; justify-content: center; z-index: 1000;
+        }
+        .modal-content {
+            background: #FFFFFF; border-radius: 12px; max-width: 600px; width: 92%;
+            padding: 1.75rem; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+        }
     </style>
 </head>
 <body>
@@ -336,20 +349,36 @@
                                 <th style="width: 80px;">ID</th>
                                 <th>Nombre de la Asignación</th>
                                 <th style="width: 160px; text-align: center;">Umbral de Aprobación</th>
-                                <th style="width: 180px; text-align: center;">Reglas Vinculadas</th>
+                                <th style="width: 160px; text-align: center;">Reglas Vinculadas</th>
+                                <th style="width: 160px; text-align: center;">Acciones</th>
                             </tr>
                         </thead>
                         <tbody>
                             <% 
                                for (Object objAsig : asignacionesExistentes) {
                                    Long idAsig = null;
+                                   Long idVisible = null;
                                    String nomAsig = "";
                                    Object umbralAsig = "";
                                    int cantidadReglas = 0;
+                                   java.util.List<Long> reglaIdsList = new java.util.ArrayList<>();
                                    try {
                                        java.lang.reflect.Method mId = objAsig.getClass().getMethod("getId");
                                        idAsig = (Long) mId.invoke(objAsig);
                                    } catch (Exception ignored) {}
+                                   try {
+                                       java.lang.reflect.Method mIdVis = objAsig.getClass().getMethod("getIdVisible");
+                                       idVisible = (Long) mIdVis.invoke(objAsig);
+                                   } catch (Exception ignored) {}
+                                   if (idVisible == null) {
+                                       try {
+                                           java.lang.reflect.Method mIdSec = objAsig.getClass().getMethod("getIdSecuencial");
+                                           idVisible = (Long) mIdSec.invoke(objAsig);
+                                       } catch (Exception ignored) {}
+                                   }
+                                   if (idVisible == null) {
+                                       idVisible = idAsig;
+                                   }
                                    try {
                                        java.lang.reflect.Method mNom = objAsig.getClass().getMethod("getNombre");
                                        nomAsig = (String) mNom.invoke(objAsig);
@@ -362,12 +391,24 @@
                                        java.lang.reflect.Method mReg = objAsig.getClass().getMethod("getReglas");
                                        Object listaR = mReg.invoke(objAsig);
                                        if (listaR instanceof java.util.Collection) {
-                                           cantidadReglas = ((java.util.Collection<?>) listaR).size();
+                                           java.util.Collection<?> col = (java.util.Collection<?>) listaR;
+                                           cantidadReglas = col.size();
+                                           for (Object rObj : col) {
+                                               java.lang.reflect.Method mRegId = rObj.getClass().getMethod("getId");
+                                               reglaIdsList.add((Long) mRegId.invoke(rObj));
+                                           }
                                        }
                                    } catch (Exception ignored) {}
+
+                                   StringBuilder sbReglasJson = new StringBuilder("[");
+                                   for (int i = 0; i < reglaIdsList.size(); i++) {
+                                       if (i > 0) sbReglasJson.append(",");
+                                       sbReglasJson.append(reglaIdsList.get(i));
+                                   }
+                                   sbReglasJson.append("]");
                             %>
                                 <tr>
-                                    <td><strong>#<%= idAsig != null ? idAsig : "-" %></strong></td>
+                                    <td><strong>#<%= idVisible != null ? idVisible : "-" %></strong></td>
                                     <td>
                                         <span style="font-weight: 600; color: var(--text-main);">
                                             <%= HtmlUtil.escape(nomAsig) %>
@@ -383,6 +424,18 @@
                                             <%= cantidadReglas %> regla(s)
                                         </span>
                                     </td>
+                                    <td style="text-align: center;">
+                                        <div style="display: inline-flex; align-items: center; gap: 0.4rem; justify-content: center; flex-wrap: wrap;">
+                                            <button type="button" class="btn-edit"
+                                                    onclick="abrirModalEditarAsignacion('<%= idAsig %>', '<%= HtmlUtil.escape(nomAsig) %>', '<%= HtmlUtil.escape(umbralAsig) %>', <%= sbReglasJson.toString() %>)">
+                                                ✏️ Editar
+                                            </button>
+                                            <button type="button" class="btn-delete"
+                                                    onclick="confirmarEliminarAsignacion('<%= idAsig %>', '<%= HtmlUtil.escape(nomAsig) %>')">
+                                                🗑️ Eliminar
+                                            </button>
+                                        </div>
+                                    </td>
                                 </tr>
                             <% } %>
                         </tbody>
@@ -390,11 +443,70 @@
                 </div>
             <% } %>
         </div>
+
+        <!-- Formulario Oculto para Eliminar Asignación -->
+        <form id="formEliminarAsignacion" action="<%= ctx %>/asignaciones" method="POST" style="display:none;">
+            <input type="hidden" name="accion" value="eliminar">
+            <input type="hidden" id="deleteIdAsignacion" name="idAsignacion" value="">
+        </form>
+
+        <!-- Modal para Editar Asignación Académica -->
+        <div id="modalEditarAsignacion" class="modal-overlay">
+            <div class="modal-content">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.75rem;">
+                    <h3 style="margin: 0; font-size: 1.2rem; color: var(--bg-primary);">Editar Asignación Académica</h3>
+                    <button type="button" onclick="cerrarModalEditarAsignacion()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer;">&times;</button>
+                </div>
+                <form action="<%= ctx %>/asignaciones" method="POST">
+                    <input type="hidden" name="accion" value="actualizar">
+                    <input type="hidden" id="editIdAsignacion" name="idAsignacion" value="">
+
+                    <div class="form-group" style="margin-bottom: 1rem;">
+                        <label for="editNombreAsignacion" class="form-label">Nombre de la Asignación *</label>
+                        <input type="text" id="editNombreAsignacion" name="nombre" class="form-control" required>
+                    </div>
+
+                    <div class="form-group" style="margin-bottom: 1rem;">
+                        <label for="editUmbralAprobacion" class="form-label">Umbral de Aprobación (%) *</label>
+                        <input type="text" id="editUmbralAprobacion" name="umbralAprobacion" class="form-control" required>
+                        <span class="input-hint">El valor debe ser entre 50% y 100%. Las auditorías previas se revalorizarán automáticamente con las nuevas reglas y umbral.</span>
+                    </div>
+
+                    <div class="form-group" style="margin-bottom: 1rem;">
+                        <label class="form-label">Reglas Técnicas Vigentes *</label>
+                        <div class="rules-selection-box" style="max-height: 220px; overflow-y: auto; margin-top: 0.35rem;">
+                            <% if (reglasVigentes != null) {
+                                   for (Regla regla : reglasVigentes) { %>
+                                <div class="rule-item-row" style="padding: 0.5rem 0.75rem;">
+                                    <div class="rule-checkbox-wrapper">
+                                        <input type="checkbox" name="reglasIds" value="<%= regla.getId() %>" class="edit-modal-regla-cb" id="edit_regla_<%= regla.getId() %>">
+                                    </div>
+                                    <div class="rule-details">
+                                        <label for="edit_regla_<%= regla.getId() %>" style="font-size: 0.9rem; font-weight: 600; cursor: pointer;">
+                                            <%= HtmlUtil.escape(regla.getNombreRepresentativo()) %>
+                                        </label>
+                                        <span class="badge badge-muted" style="margin-left: 0.5rem; font-size: 0.75rem;">
+                                            <%= regla.getPonderacion() %> pts
+                                        </span>
+                                    </div>
+                                </div>
+                            <%     }
+                               } %>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1.25rem;">
+                        <button type="button" class="btn btn-secondary" onclick="cerrarModalEditarAsignacion()">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">Guardar Cambios y Revalorizar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
     </main>
 
     <script>
         function actualizarContadorReglas() {
-            const checkboxes = document.querySelectorAll('input[name="reglasIds"]:checked');
+            const checkboxes = document.querySelectorAll('input[name="reglasIds"]:checked:not(.edit-modal-regla-cb)');
             const contadorEl = document.getElementById('seleccionadas-reglas-count');
             if (contadorEl) {
                 contadorEl.textContent = checkboxes.length;
@@ -402,11 +514,36 @@
         }
 
         function marcarTodasLasReglas(marcar) {
-            const checkboxes = document.querySelectorAll('input[name="reglasIds"]');
+            const checkboxes = document.querySelectorAll('input[name="reglasIds"]:not(.edit-modal-regla-cb)');
             checkboxes.forEach(cb => {
                 cb.checked = marcar;
             });
             actualizarContadorReglas();
+        }
+
+        function abrirModalEditarAsignacion(id, nombre, umbral, idsReglas) {
+            document.getElementById('editIdAsignacion').value = id;
+            document.getElementById('editNombreAsignacion').value = nombre;
+            document.getElementById('editUmbralAprobacion').value = umbral;
+            
+            const cbs = document.querySelectorAll('.edit-modal-regla-cb');
+            const idsSet = new Set((idsReglas || []).map(String));
+            cbs.forEach(cb => {
+                cb.checked = idsSet.has(String(cb.value));
+            });
+            
+            document.getElementById('modalEditarAsignacion').style.display = 'flex';
+        }
+
+        function cerrarModalEditarAsignacion() {
+            document.getElementById('modalEditarAsignacion').style.display = 'none';
+        }
+
+        function confirmarEliminarAsignacion(id, nombre) {
+            if (confirm('¿Está seguro de eliminar la asignación "' + nombre + '"? Se eliminarán en cascada todas sus auditorías asociadas, hallazgos y retroalimentaciones vinculadas.')) {
+                document.getElementById('deleteIdAsignacion').value = id;
+                document.getElementById('formEliminarAsignacion').submit();
+            }
         }
 
         // Ejecución al cargar la página para reflejar el estado inicial de selección

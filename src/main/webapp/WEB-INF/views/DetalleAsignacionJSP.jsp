@@ -1,9 +1,11 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ page import="java.util.List" %>
+<%@ page import="java.time.format.DateTimeFormatter" %>
 <%@ page import="com.gr4.owlaudit.dto.ResumenAsignacionDTO" %>
 <%@ page import="com.gr4.owlaudit.dto.ResultadoDTO" %>
 <%@ page import="com.gr4.owlaudit.dto.ResultadoDTO.DetalleResultadoDTO" %>
 <%@ page import="com.gr4.owlaudit.model.Asignacion" %>
+<%@ page import="com.gr4.owlaudit.model.Auditoria" %>
 <%@ page import="com.gr4.owlaudit.model.Regla" %>
 <%@ page import="com.gr4.owlaudit.model.Proyecto" %>
 <%@ page import="com.gr4.owlaudit.common.util.HtmlUtil" %>
@@ -16,6 +18,9 @@
     }
     ResumenAsignacionDTO resumen = (ResumenAsignacionDTO) request.getAttribute("resumenAsignacion");
     ResultadoDTO resultado = (ResultadoDTO) request.getAttribute("resultadoAuditoria");
+    @SuppressWarnings("unchecked")
+    List<Auditoria> historialAuditorias = (List<Auditoria>) request.getAttribute("historialAuditoriasAsignacion");
+    com.gr4.owlaudit.dto.DeudaTecnicaDTO deudaTecnica = (com.gr4.owlaudit.dto.DeudaTecnicaDTO) request.getAttribute("deudaTecnica");
     String mensajeError = (String) request.getAttribute("mensajeError");
 %>
 <!DOCTYPE html>
@@ -136,65 +141,73 @@
                         Ejecutar Auditoría de Asignación
                     </button>
                 </form>
+
+                <hr style="margin: 2rem 0; border: none; border-top: 1px solid var(--border-color, #e2e8f0);">
+
+                <h3 style="margin-top: 0;">📋 Historial de Auditorías en esta Asignación</h3>
+                <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1rem;">
+                    Consulte sus evaluaciones previas en esta asignación o presione <strong>🔍 Ver Detalle</strong> para inspeccionar los hallazgos y evidencias.
+                </p>
+
+                <% if (historialAuditorias != null && !historialAuditorias.isEmpty()) { %>
+                    <div class="table-responsive">
+                        <table class="table data-table" style="width: 100%;">
+                            <thead>
+                                <tr>
+                                    <th>ID Auditoría</th>
+                                    <th>Proyecto</th>
+                                    <th>Fecha y Hora</th>
+                                    <th>Puntaje</th>
+                                    <th>Cumplimiento</th>
+                                    <th>Dictamen</th>
+                                    <th style="text-align: center;">Acción</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <%
+                                    DateTimeFormatter dtf = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
+                                    for (Auditoria aud : historialAuditorias) {
+                                        boolean passed = "APROBADA".equalsIgnoreCase(aud.getDictamen());
+                                        String proyNom = aud.getProyecto() != null ? aud.getProyecto().getNombre() : "-";
+                                        String fechaStr = aud.getFechaHora() != null ? aud.getFechaHora().format(dtf) : "-";
+                                %>
+                                    <tr>
+                                        <td><strong><%= aud.getCodigoVisible() %></strong></td>
+                                        <td><%= HtmlUtil.escape(proyNom) %></td>
+                                        <td><%= fechaStr %></td>
+                                        <td><%= aud.getPuntajeObtenido() %> / <%= aud.getPuntajeMaximo() %> pts</td>
+                                        <td><strong><%= aud.getPorcentaje() %>%</strong></td>
+                                        <td>
+                                            <span class="badge <%= passed ? "badge-estudiante" : "alert-error" %>">
+                                                <%= HtmlUtil.escape(aud.getDictamen() != null ? aud.getDictamen() : "-") %>
+                                            </span>
+                                        </td>
+                                        <td style="text-align: center;">
+                                            <a href="<%= ctx %>/asignaciones?idAsignacion=<%= resumen.getIdAsignacion() %>&detalleAuditoriaId=<%= aud.getId() %>" 
+                                               class="btn btn-secondary btn-sm" id="btnDetalleAuditoria_<%= aud.getId() %>">
+                                                🔍 Ver Detalle
+                                            </a>
+                                        </td>
+                                    </tr>
+                                <% } %>
+                            </tbody>
+                        </table>
+                    </div>
+                <% } else { %>
+                    <p style="color: var(--text-muted); font-style: italic;">
+                        Aún no registra auditorías ejecutadas en esta asignación. Seleccione su proyecto arriba y presione "Ejecutar Auditoría de Asignación".
+                    </p>
+                <% } %>
             </div>
         <% } %>
 
-        <%
-            if (resultado != null) {
-                boolean aprobada = "APROBADA".equalsIgnoreCase(resultado.getDictamen());
+        <% 
+            if (resultado != null) { 
+                String idLabel = resultado.getCodigoVisible() != null ? resultado.getCodigoVisible() : (resultado.getIdVisible() != null ? "Auditor�a #" + resultado.getIdVisible() : "");
         %>
             <div class="card" style="margin-top: 1.5rem;">
-                <h2 class="section-title" style="margin-top: 0;">Resultado de la Evaluación</h2>
-                <div style="display: flex; gap: 1.5rem; align-items: center; margin-bottom: 1rem; flex-wrap: wrap;">
-                    <div>
-                        <strong>Dictamen Final:</strong>
-                        <span class="badge <%= aprobada ? "badge-estudiante" : "alert-error" %>" style="font-size: 1rem; padding: 0.4rem 0.8rem;">
-                            <%= HtmlUtil.escape(resultado.getDictamen()) %>
-                        </span>
-                    </div>
-                    <div>
-                        <strong>Puntaje Obtenido:</strong>
-                        <%= resultado.getPuntajeObtenido() %> / <%= resultado.getPuntajeMaximo() %> pts (<%= resultado.getPorcentaje() %>%)
-                    </div>
-                    <div>
-                        <strong>Umbral Requerido:</strong>
-                        <%= resultado.getUmbralAprobacion() %>%
-                    </div>
-                </div>
-
-                <h3>Desglose de Hallazgos y Cumplimiento Regla por Regla</h3>
-                <div class="table-responsive">
-                    <table class="table data-table" style="width: 100%;">
-                        <thead>
-                            <tr>
-                                <th>Regla</th>
-                                <th>Estado</th>
-                                <th>Puntaje / Ponderación</th>
-                                <th>Severidad</th>
-                                <th>Evidencia / Observación</th>
-                                <th>Recomendación</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <%
-                                if (resultado.getDetalles() != null) {
-                                    for (DetalleResultadoDTO det : resultado.getDetalles()) {
-                            %>
-                                <tr>
-                                    <td><%= HtmlUtil.escape(det.getNombreRegla()) %></td>
-                                    <td><%= det.isCumple() ? "✅ Cumple" : "❌ Incumple" %></td>
-                                    <td><%= det.getPuntosObtenidos() %> / <%= det.getPonderacion() %> pts</td>
-                                    <td><%= det.getNivelSeveridad() != null ? det.getNivelSeveridad() : "-" %></td>
-                                    <td><%= det.getEvidencia() != null ? HtmlUtil.escape(det.getEvidencia()) : "Sin hallazgos" %></td>
-                                    <td><%= det.getRecomendacion() != null ? HtmlUtil.escape(det.getRecomendacion()) : "-" %></td>
-                                </tr>
-                            <%
-                                    }
-                                }
-                            %>
-                        </tbody>
-                    </table>
-                </div>
+                <h2 class="section-title" style="margin-top: 0;">Resultado de la Evaluaci�n <%= !idLabel.isEmpty() ? "(" + HtmlUtil.escape(idLabel) + ")" : "" %></h2>
+                <%@ include file="/WEB-INF/views/fragments/resultadoAuditoria.jspf" %>
             </div>
         <% } %>
     </main>

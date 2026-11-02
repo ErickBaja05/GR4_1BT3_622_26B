@@ -5,12 +5,73 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class ResultadoDTO {
+    private Long idAuditoria;
+    private Long numeroEnProyecto;
+    private Long numeroEnAsignacion;
+    private String tipoAuditoria;
+    private String codigoVisible;
+    private String etiquetaVisible;
     private int puntajeObtenido;
     private int puntajeMaximo;
     private double porcentaje;
     private String dictamen;
     private List<DetalleResultadoDTO> detalles = new ArrayList<>();
     private double umbralAprobacion;
+
+    public Long getIdAuditoria() {
+        return idAuditoria;
+    }
+
+    public void setIdAuditoria(Long idAuditoria) {
+        this.idAuditoria = idAuditoria;
+    }
+
+    public Long getNumeroEnProyecto() {
+        return numeroEnProyecto;
+    }
+
+    public void setNumeroEnProyecto(Long numeroEnProyecto) {
+        this.numeroEnProyecto = numeroEnProyecto;
+    }
+
+    public String getTipoAuditoria() {
+        return tipoAuditoria;
+    }
+
+    public void setTipoAuditoria(String tipoAuditoria) {
+        this.tipoAuditoria = tipoAuditoria;
+    }
+
+    public String getCodigoVisible() {
+        return codigoVisible;
+    }
+
+    public void setCodigoVisible(String codigoVisible) {
+        this.codigoVisible = codigoVisible;
+    }
+
+    public String getEtiquetaVisible() {
+        return etiquetaVisible;
+    }
+
+    public void setEtiquetaVisible(String etiquetaVisible) {
+        this.etiquetaVisible = etiquetaVisible;
+    }
+
+    public Long getNumeroEnAsignacion() {
+        return numeroEnAsignacion;
+    }
+
+    public void setNumeroEnAsignacion(Long numeroEnAsignacion) {
+        this.numeroEnAsignacion = numeroEnAsignacion;
+    }
+
+    public Long getIdVisible() {
+        if ("ASIGNACION".equalsIgnoreCase(tipoAuditoria)) {
+            return numeroEnAsignacion != null ? numeroEnAsignacion : (numeroEnProyecto != null ? numeroEnProyecto : idAuditoria);
+        }
+        return numeroEnProyecto != null ? numeroEnProyecto : idAuditoria;
+    }
 
     public double getUmbralAprobacion() {
         return umbralAprobacion;
@@ -78,7 +139,7 @@ public class ResultadoDTO {
     }
 
     public static class DetalleResultadoDTO {
-        private String nombreRegla;
+        private String regla;
         private boolean cumple;
         private int puntosObtenidos;
         private int ponderacion;
@@ -90,9 +151,26 @@ public class ResultadoDTO {
         public DetalleResultadoDTO() {
         }
 
-        public DetalleResultadoDTO(String nombreRegla, boolean cumple, int puntosObtenidos, int ponderacion,
-                NivelSeveridadEnum nivelSeveridad, Long hallazgoId, String evidencia, String recomendacion) {
-            this.nombreRegla = nombreRegla;
+        public DetalleResultadoDTO(String regla, boolean cumple, int puntosObtenidos, int ponderacion) {
+            this.regla = regla;
+            this.cumple = cumple;
+            this.puntosObtenidos = puntosObtenidos;
+            this.ponderacion = ponderacion;
+        }
+
+        public DetalleResultadoDTO(String regla, boolean cumple, int puntosObtenidos,
+                                  int ponderacion, NivelSeveridadEnum nivelSeveridad) {
+            this.regla = regla;
+            this.cumple = cumple;
+            this.puntosObtenidos = puntosObtenidos;
+            this.ponderacion = ponderacion;
+            this.nivelSeveridad = nivelSeveridad;
+        }
+
+        public DetalleResultadoDTO(String regla, boolean cumple, int puntosObtenidos,
+                                  int ponderacion, NivelSeveridadEnum nivelSeveridad,
+                                  Long hallazgoId, String evidencia, String recomendacion) {
+            this.regla = regla;
             this.cumple = cumple;
             this.puntosObtenidos = puntosObtenidos;
             this.ponderacion = ponderacion;
@@ -102,12 +180,20 @@ public class ResultadoDTO {
             this.recomendacion = recomendacion;
         }
 
-        public String getNombreRegla() {
-            return nombreRegla;
+        public String getRegla() {
+            return regla;
         }
 
-        public void setNombreRegla(String nombreRegla) {
-            this.nombreRegla = nombreRegla;
+        public String getNombreRegla() {
+            return regla;
+        }
+
+        public void setRegla(String regla) {
+            this.regla = regla;
+        }
+
+        public Long getIdHallazgo() {
+            return hallazgoId;
         }
 
         public boolean isCumple() {
@@ -165,15 +251,5 @@ public class ResultadoDTO {
         public void setRecomendacion(String recomendacion) {
             this.recomendacion = recomendacion;
         }
-    }
-
-    @Override
-    public String toString() {
-        return "ResultadoDTO{" +
-                "puntajeObtenido=" + puntajeObtenido +
-                ", puntajeMaximo=" + puntajeMaximo +
-                ", porcentaje=" + porcentaje +
-                ", detalles=" + detalles +
-                '}';
     }
 }

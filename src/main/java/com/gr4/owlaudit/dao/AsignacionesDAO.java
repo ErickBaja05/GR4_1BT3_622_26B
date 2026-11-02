@@ -10,9 +10,17 @@ public interface AsignacionesDAO {
 
     List<Asignacion> listarAsignaciones();
 
-    public List<Asignacion> consultarAsignacionesDisponibles();
+    List<Asignacion> consultarAsignacionesDisponibles();
 
-    public List<Regla> consultarReglasDeAsignacion(Long idAsignacion);
+    List<Regla> consultarReglasDeAsignacion(Long idAsignacion);
 
-    public double consultarUmbralAprobacion(Long idAsignacion);
+    double consultarUmbralAprobacion(Long idAsignacion);
+
+    Asignacion buscarPorId(Long id);
+
+    void actualizar(Asignacion asignacion, List<Long> nuevasReglasIds);
+
+    void eliminar(Long id);
+
+    void resecuenciarIdsAsignaciones();
 }

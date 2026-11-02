@@ -12,11 +12,19 @@ public interface AsignacionesService {
 
     List<Asignacion> listarAsignaciones();
 
-    public List<Asignacion> consultarAsignacionesDisponibles();
+    List<Asignacion> consultarAsignacionesDisponibles();
 
-    public List<Regla> consultarReglasDeAsignacion(Long idAsignacion);
+    List<Regla> consultarReglasDeAsignacion(Long idAsignacion);
 
-    public double consultarUmbralAprobacion(Long idAsignacion);
+    double consultarUmbralAprobacion(Long idAsignacion);
 
-    public ResumenAsignacionDTO generarResumenAsignacion(Long idAsignacion);
+    ResumenAsignacionDTO generarResumenAsignacion(Long idAsignacion);
+
+    ResumenAsignacionDTO generarResumenAsignacion(Long idAsignacion, Long usuarioId);
+
+    Asignacion buscarPorId(Long id);
+
+    void actualizarAsignacion(Long idAsignacion, NuevaAsignacionDTO dto);
+
+    void eliminarAsignacion(Long idAsignacion);
 }

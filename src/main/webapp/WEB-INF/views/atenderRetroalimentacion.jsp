@@ -62,11 +62,20 @@
                            String fechaHora = (String) sol.get("fechaHora");
                            String nombreEstudiante = (String) sol.get("nombreEstudiante");
                            String urlGithub = (String) sol.get("urlGithub");
+                           String codigoVisible = (String) sol.get("codigoVisible");
+                           String tipoAud = (String) sol.get("tipoAuditoria");
+                           String nombreAsig = (String) sol.get("nombreAsignacion");
                     %>
                         <div class="request-item<%= esSeleccionada ? " selected" : "" %>">
                             <div class="request-header">
                                 <span class="request-title">
                                     Solicitud #<%= solId %> &middot; <%= HtmlUtil.escape(nombreProyecto) %>
+                                    <% if (codigoVisible != null) { %>
+                                        &middot; <span class="badge <%= "ASIGNACION".equalsIgnoreCase(tipoAud) ? "badge-alta" : "badge-media" %>" style="font-size: 0.72rem;"><%= HtmlUtil.escape(codigoVisible) %></span>
+                                    <% } %>
+                                    <% if (nombreAsig != null) { %>
+                                        <span class="badge badge-alta" style="font-size: 0.72rem;"><%= HtmlUtil.escape(nombreAsig) %></span>
+                                    <% } %>
                                 </span>
                                 <span class="badge badge-<%= estado.toLowerCase() %>"><%= estado %></span>
                             </div>
@@ -136,6 +145,16 @@
                     <div class="context-box">
                         <p><strong>👤 Estudiante Solicitante:</strong> <span style="color: var(--brand-blue); font-weight: 600;"><%= HtmlUtil.escape(selEstudiante) %></span></p>
                         <p><strong>📁 Proyecto:</strong> <%= HtmlUtil.escape(selProyecto) %></p>
+                        <% if (seleccionada != null && seleccionada.get("codigoVisible") != null) { %>
+                            <p><strong>📋 Auditoría:</strong> 
+                                <span class="badge <%= "ASIGNACION".equalsIgnoreCase((String) seleccionada.get("tipoAuditoria")) ? "badge-alta" : "badge-media" %>">
+                                    <%= HtmlUtil.escape((String) seleccionada.get("codigoVisible")) %>
+                                </span>
+                                <% if (seleccionada.get("nombreAsignacion") != null) { %>
+                                    &middot; <strong>📚 Asignación:</strong> <%= HtmlUtil.escape((String) seleccionada.get("nombreAsignacion")) %>
+                                <% } %>
+                            </p>
+                        <% } %>
                         <p><strong>🔗 URL del Repositorio:</strong> 
                             <% if (selUrlRepo != null && !selUrlRepo.isBlank()) { %>
                                 <a href="<%= HtmlUtil.escape(selUrlRepo) %>" target="_blank" rel="noopener noreferrer" style="color: var(--brand-blue); text-decoration: underline; font-weight: 500;">

@@ -1,5 +1,9 @@
 package com.gr4.owlaudit.service;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+
 import com.gr4.owlaudit.client.GitHubClient;
 import com.gr4.owlaudit.common.exception.ExcepcionNegocio;
 import com.gr4.owlaudit.dao.AuditoriaDAO;
@@ -13,19 +17,17 @@ import com.gr4.owlaudit.dto.ResultadoDTO;
 import com.gr4.owlaudit.dto.ResumenDTO;
 import com.gr4.owlaudit.model.Asignacion;
 import com.gr4.owlaudit.model.Auditoria;
+import com.gr4.owlaudit.model.NivelSeveridadEnum;
 import com.gr4.owlaudit.model.Proyecto;
 import com.gr4.owlaudit.model.Regla;
 import com.gr4.owlaudit.model.ResultadoRegla;
 import com.gr4.owlaudit.model.TipoMotorEnum;
 import com.gr4.owlaudit.reglas.strategy.EvaluadorReglaFactory;
 
-import java.util.ArrayList;
-import java.util.List;
-
 public class AuditoriaServiceImpl implements AuditoriaService {
 
     private static final String MENSAJE_SIN_REGLAS = "No existen reglas de evaluación activas para auditar el proyecto";
-    private static final int LIMITE_COMMITS = 10;
+    private static final int LIMITE_COMMITS = 30;
 
     private final ReglaDAO reglaDAO;
     private final AuditoriaDAO auditoriaDAO;
@@ -55,12 +57,14 @@ public class AuditoriaServiceImpl implements AuditoriaService {
         this.asignacionesService = new AsignacionesServiceImpl();
     }
 
-    // Mantén los 3 constructores actuales intactos y agrega este 4to para el test
-    // de HU-03:
     public AuditoriaServiceImpl(ReglaDAO reglaDAO, AuditoriaDAO auditoriaDAO,
             GitHubClient gitHubClient, EvaluadorReglaFactory evaluadorFactory,
             ProyectoDAO proyectoDAO, AsignacionesService asignacionesService) {
         this(reglaDAO, auditoriaDAO, gitHubClient, evaluadorFactory, proyectoDAO);
+        this.asignacionesService = asignacionesService;
+    }
+
+    public void setAsignacionesService(AsignacionesService asignacionesService) {
         this.asignacionesService = asignacionesService;
     }
 
@@ -76,17 +80,34 @@ public class AuditoriaServiceImpl implements AuditoriaService {
 
     @Override
     public ResultadoDTO confirmarEjecucionDeAuditoria(AuditoriaDTO dto) {
+        if (dto != null && dto.getProyectoId() != null && proyectoDAO != null) {
+            Proyecto proyecto = proyectoDAO.buscarPorId(dto.getProyectoId());
+            if (proyecto != null && dto.getUsuarioId() != null && proyecto.getUsuario() != null) {
+                if (!dto.getUsuarioId().equals(proyecto.getUsuario().getId())) {
+                    throw new ExcepcionNegocio("No tiene permisos para auditar un proyecto que no le pertenece");
+                }
+            }
+        }
+
         String urlRepositorio = dto == null ? null : dto.getUrl();
         List<String> rutas = gitHubClient.obtenerEstructuraDelRepositorio(urlRepositorio);
         List<Regla> reglas = obtenerReglasVigentes();
 
         Auditoria auditoria = crearAuditoria(dto);
+        auditoria.setTipoAuditoria("GENERAL");
+        if (dto != null && dto.getProyectoId() != null) {
+            auditoria.setNumeroEnProyecto(auditoriaDAO.obtenerSiguienteNumeroGeneralEnProyecto(dto.getProyectoId()));
+        }
         evaluarReglas(auditoria, reglas, rutas, urlRepositorio);
 
         calcularPuntajesDeLaAuditoria(auditoria);
+        auditoria.setDictamen(auditoria.determinarDictamen());
         auditoriaDAO.registrarAuditoriaEnElHistorial(auditoria);
 
-        return crearResultadoDTO(auditoria);
+        ResultadoDTO resultadoDTO = crearResultadoDTO(auditoria);
+        // La auditoría general usa el umbral por defecto; se expone para mostrarlo igual que en la asignación
+        resultadoDTO.setUmbralAprobacion(Auditoria.UMBRAL_MINIMO_APROBACION);
+        return resultadoDTO;
     }
 
     private List<Regla> obtenerReglasVigentes() {
@@ -118,6 +139,7 @@ public class AuditoriaServiceImpl implements AuditoriaService {
             u.setId(dto.getUsuarioId());
             auditoria.setUsuario(u);
         }
+
         return auditoria;
     }
 
@@ -162,7 +184,13 @@ public class AuditoriaServiceImpl implements AuditoriaService {
                 auditoria.getPuntajeMaximo(),
                 auditoria.getPorcentaje(),
                 detalles);
-        resultadoDTO.setDictamen(auditoria.determinarDictamen());
+        resultadoDTO.setIdAuditoria(auditoria.getId());
+        resultadoDTO.setNumeroEnProyecto(auditoria.getNumeroEnProyecto());
+        resultadoDTO.setNumeroEnAsignacion(auditoria.getNumeroEnAsignacion());
+        resultadoDTO.setTipoAuditoria(auditoria.getTipoAuditoria());
+        resultadoDTO.setCodigoVisible(auditoria.getCodigoVisible());
+        resultadoDTO.setEtiquetaVisible(auditoria.getEtiquetaVisible());
+        resultadoDTO.setDictamen(auditoria.getDictamen() != null ? auditoria.getDictamen() : auditoria.determinarDictamen());
 
         return resultadoDTO;
     }
@@ -205,7 +233,6 @@ public class AuditoriaServiceImpl implements AuditoriaService {
 
     @Override
     public ResultadoDTO ejecutarAuditoriaDeAsignacion(AuditoriaDTO auditoriaDTO) {
-        // Refactorización 2 (Martin Fowler): Introduce Explaining Variable para clarificar la precondición
         final boolean esProyectoNoEspecificado = auditoriaDTO == null || auditoriaDTO.getProyectoId() == null;
         if (esProyectoNoEspecificado) {
             throw new ExcepcionNegocio("Debe seleccionar un proyecto válido");
@@ -214,6 +241,12 @@ public class AuditoriaServiceImpl implements AuditoriaService {
         Proyecto proyecto = proyectoDAO.buscarPorId(auditoriaDTO.getProyectoId());
         if (proyecto == null) {
             throw new ExcepcionNegocio("Debe seleccionar un proyecto válido");
+        }
+
+        if (auditoriaDTO.getUsuarioId() != null && proyecto.getUsuario() != null) {
+            if (!auditoriaDTO.getUsuarioId().equals(proyecto.getUsuario().getId())) {
+                throw new ExcepcionNegocio("No tiene permisos para auditar un proyecto que no le pertenece");
+            }
         }
 
         String urlRepositorio = (proyecto.getUrlGithub() != null && !proyecto.getUrlGithub().isBlank())
@@ -226,16 +259,17 @@ public class AuditoriaServiceImpl implements AuditoriaService {
         double umbral = asignacionesService.consultarUmbralAprobacion(auditoriaDTO.getIdAsignacion());
 
         Auditoria auditoria = crearAuditoria(auditoriaDTO);
+        auditoria.setTipoAuditoria("ASIGNACION");
         if (auditoriaDTO.getIdAsignacion() != null) {
             Asignacion asignacion = new Asignacion();
             asignacion.setId(auditoriaDTO.getIdAsignacion());
             auditoria.setAsignacion(asignacion);
+            auditoria.setNumeroEnAsignacion(auditoriaDAO.obtenerSiguienteNumeroEnAsignacion(auditoriaDTO.getProyectoId(), auditoriaDTO.getIdAsignacion()));
         }
 
         evaluarReglas(auditoria, reglasAsignacion, rutas, urlRepositorio);
         calcularPuntajesDeLaAuditoria(auditoria);
 
-        // Refactorización 1 (Martin Fowler): Move Method delegado al modelo de dominio Auditoria
         String dictamen = auditoria.determinarDictamenPorUmbral(umbral);
         auditoria.setDictamen(dictamen);
 
@@ -246,5 +280,71 @@ public class AuditoriaServiceImpl implements AuditoriaService {
         resultadoDTO.setUmbralAprobacion(umbral);
 
         return resultadoDTO;
+    }
+
+    @Override
+    public ResultadoDTO obtenerDetalleAuditoria(Long auditoriaId) {
+        if (auditoriaId == null) return null;
+        Auditoria aud = auditoriaDAO.buscarPorId(auditoriaId);
+        if (aud == null) return null;
+        return convertirAuditoriaAResultadoDTO(aud);
+    }
+
+    @Override
+    public ResultadoDTO convertirAuditoriaAResultadoDTO(Auditoria auditoria) {
+        if (auditoria == null) return null;
+        ResultadoDTO dto = crearResultadoDTO(auditoria);
+        if (auditoria.getAsignacion() != null && auditoria.getAsignacion().getUmbralAprobacion() != null) {
+            dto.setUmbralAprobacion(auditoria.getAsignacion().getUmbralAprobacion());
+        }
+        return dto;
+    }
+
+    @Override
+    public void revalorizarAuditoriasDeAsignacion(Long asignacionId) {
+        if (asignacionId == null) return;
+        List<Auditoria> auditorias = auditoriaDAO.buscarPorAsignacionId(asignacionId);
+        if (auditorias == null || auditorias.isEmpty()) return;
+
+        List<Regla> nuevasReglas = (asignacionesService != null)
+                ? asignacionesService.consultarReglasDeAsignacion(asignacionId)
+                : java.util.Collections.emptyList();
+        if ((nuevasReglas == null || nuevasReglas.isEmpty()) && auditorias.get(0).getAsignacion() != null) {
+            nuevasReglas = auditorias.get(0).getAsignacion().getReglas();
+        }
+
+        double nuevoUmbral = (asignacionesService != null)
+                ? asignacionesService.consultarUmbralAprobacion(asignacionId)
+                : 70.0;
+        if (nuevoUmbral <= 0.0 && auditorias.get(0).getAsignacion() != null && auditorias.get(0).getAsignacion().getUmbralAprobacion() != null) {
+            nuevoUmbral = auditorias.get(0).getAsignacion().getUmbralAprobacion();
+        }
+
+        for (Auditoria aud : auditorias) {
+            Proyecto p = aud.getProyecto();
+            String urlRepo = (p != null && p.getUrlGithub() != null && !p.getUrlGithub().isBlank())
+                    ? p.getUrlGithub()
+                    : "";
+
+            List<String> rutas = java.util.Collections.emptyList();
+            try {
+                if (urlRepo != null && !urlRepo.isBlank()) {
+                    rutas = gitHubClient.obtenerEstructuraDelRepositorio(urlRepo);
+                }
+            } catch (Exception ignored) {}
+
+            if (aud.getResultados() != null) {
+                aud.getResultados().clear();
+            } else {
+                aud.setResultados(new ArrayList<>());
+            }
+
+            evaluarReglas(aud, nuevasReglas, rutas, urlRepo);
+            calcularPuntajesDeLaAuditoria(aud);
+            String nuevoDictamen = aud.determinarDictamenPorUmbral(nuevoUmbral);
+            aud.setDictamen(nuevoDictamen);
+
+            auditoriaDAO.actualizarAuditoria(aud);
+        }
     }
 }
