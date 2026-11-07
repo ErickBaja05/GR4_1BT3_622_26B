@@ -2,10 +2,17 @@ package com.gr4.owlaudit.model;
 
 import jakarta.persistence.DiscriminatorValue;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.OneToMany;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @DiscriminatorValue("DOCENTE")
 public class Docente extends Usuario {
+
+    @OneToMany(mappedBy = "docente", fetch = FetchType.LAZY)
+    private List<Curso> cursos = new ArrayList<>();
 
     public Docente() {
         super();
@@ -28,5 +35,13 @@ public class Docente extends Usuario {
             return (Docente) usuario;
         }
         return new Docente(usuario.getId(), usuario.getNombre(), usuario.getCorreo(), usuario.getContrasena());
+    }
+
+    public List<Curso> getCursos() {
+        return cursos;
+    }
+
+    public void setCursos(List<Curso> cursos) {
+        this.cursos = cursos != null ? new ArrayList<>(cursos) : new ArrayList<>();
     }
 }
