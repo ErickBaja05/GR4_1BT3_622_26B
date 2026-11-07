@@ -14,6 +14,8 @@ public interface AsignacionesService {
 
     List<Asignacion> consultarAsignacionesDisponibles();
 
+    List<Asignacion> consultarAsignacionesDeCurso(Long idCurso, Long idEstudiante);
+
     List<Regla> consultarReglasDeAsignacion(Long idAsignacion);
 
     double consultarUmbralAprobacion(Long idAsignacion);

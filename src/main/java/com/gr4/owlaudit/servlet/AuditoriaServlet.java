@@ -55,6 +55,12 @@ public class AuditoriaServlet extends HttpServlet {
     protected void doGet(HttpServletRequest request, HttpServletResponse response) 
             throws ServletException, IOException {
         
+        String idAsignacionParam = request.getParameter("idAsignacion");
+        if (idAsignacionParam == null || idAsignacionParam.isBlank()) {
+            response.sendRedirect(request.getContextPath() + "/curso?error=sinAsignacion");
+            return;
+        }
+
         UsuarioDTO usuario = (UsuarioDTO) request.getSession().getAttribute(LoginServlet.ATRIBUTO_USUARIO);
         List<Proyecto> proyectos = (usuario != null && usuario.getRol() == RolEnum.ESTUDIANTE)
                 ? proyectoDAO.listarPorUsuarioId(usuario.getId())
@@ -140,6 +146,12 @@ public class AuditoriaServlet extends HttpServlet {
     protected void doPost(HttpServletRequest request, HttpServletResponse response) 
             throws ServletException, IOException {
         
+        String idAsignacionParam = request.getParameter("idAsignacion");
+        if (idAsignacionParam == null || idAsignacionParam.isBlank()) {
+            response.sendRedirect(request.getContextPath() + "/curso?error=sinAsignacion");
+            return;
+        }
+
         UsuarioDTO usuario = (UsuarioDTO) request.getSession().getAttribute(LoginServlet.ATRIBUTO_USUARIO);
         request.setCharacterEncoding("UTF-8");
         String urlRepo = request.getParameter("urlGithub");

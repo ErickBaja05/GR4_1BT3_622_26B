@@ -3,6 +3,8 @@ package com.gr4.owlaudit.service;
 import com.gr4.owlaudit.common.exception.ExcepcionNegocio;
 import com.gr4.owlaudit.dao.AsignacionesDAO;
 import com.gr4.owlaudit.dao.AsignacionesDAOImpl;
+import com.gr4.owlaudit.dao.CursoDAO;
+import com.gr4.owlaudit.dao.CursoDAOImpl;
 import com.gr4.owlaudit.dao.ProyectoDAO;
 import com.gr4.owlaudit.dao.ProyectoDAOImpl;
 import com.gr4.owlaudit.dao.ReglaDAO;
@@ -10,9 +12,12 @@ import com.gr4.owlaudit.dao.ReglaDAOImpl;
 import com.gr4.owlaudit.dto.NuevaAsignacionDTO;
 import com.gr4.owlaudit.dto.ResumenAsignacionDTO;
 import com.gr4.owlaudit.model.Asignacion;
+import com.gr4.owlaudit.model.Curso;
+import com.gr4.owlaudit.model.ListadoEstudiantes;
 import com.gr4.owlaudit.model.Proyecto;
 import com.gr4.owlaudit.model.Regla;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -23,26 +28,35 @@ public class AsignacionesServiceImpl implements AsignacionesService {
     private final AsignacionesDAO asignacionesDAO;
     private final ReglaDAO reglaDAO;
     private final ProyectoDAO proyectoDAO;
+    private final CursoDAO cursoDAO;
     private AuditoriaService auditoriaService;
 
     public AsignacionesServiceImpl() {
-        this(new AsignacionesDAOImpl(), new ReglaDAOImpl(), new ProyectoDAOImpl());
+        this(new AsignacionesDAOImpl(), new ReglaDAOImpl(), new ProyectoDAOImpl(), new CursoDAOImpl());
     }
 
     public AsignacionesServiceImpl(
             AsignacionesDAO asignacionesDAO,
             ReglaDAO reglaDAO) {
-        this(asignacionesDAO, reglaDAO, new ProyectoDAOImpl());
+        this(asignacionesDAO, reglaDAO, new ProyectoDAOImpl(), new CursoDAOImpl());
     }
 
     public AsignacionesServiceImpl(
             AsignacionesDAO asignacionesDAO,
             ReglaDAO reglaDAO,
             ProyectoDAO proyectoDAO) {
+        this(asignacionesDAO, reglaDAO, proyectoDAO, new CursoDAOImpl());
+    }
 
+    public AsignacionesServiceImpl(
+            AsignacionesDAO asignacionesDAO,
+            ReglaDAO reglaDAO,
+            ProyectoDAO proyectoDAO,
+            CursoDAO cursoDAO) {
         this.asignacionesDAO = asignacionesDAO;
         this.reglaDAO = reglaDAO;
         this.proyectoDAO = proyectoDAO;
+        this.cursoDAO = cursoDAO;
     }
 
     public AsignacionesServiceImpl(
@@ -50,7 +64,17 @@ public class AsignacionesServiceImpl implements AsignacionesService {
             ReglaDAO reglaDAO,
             ProyectoDAO proyectoDAO,
             AuditoriaService auditoriaService) {
-        this(asignacionesDAO, reglaDAO, proyectoDAO);
+        this(asignacionesDAO, reglaDAO, proyectoDAO, new CursoDAOImpl());
+        this.auditoriaService = auditoriaService;
+    }
+
+    public AsignacionesServiceImpl(
+            AsignacionesDAO asignacionesDAO,
+            ReglaDAO reglaDAO,
+            ProyectoDAO proyectoDAO,
+            CursoDAO cursoDAO,
+            AuditoriaService auditoriaService) {
+        this(asignacionesDAO, reglaDAO, proyectoDAO, cursoDAO);
         this.auditoriaService = auditoriaService;
     }
 
@@ -173,6 +197,25 @@ public class AsignacionesServiceImpl implements AsignacionesService {
     }
 
     @Override
+    public List<Asignacion> consultarAsignacionesDeCurso(Long idCurso, Long idEstudiante) {
+        if (idCurso == null) {
+            return Collections.emptyList();
+        }
+        if (idEstudiante != null) {
+            boolean matriculado = (cursoDAO != null) && cursoDAO.estaEstudianteMatriculado(idCurso, idEstudiante);
+            if (!matriculado) {
+                Curso curso = (cursoDAO != null) ? cursoDAO.buscarPorId(idCurso) : null;
+                if (curso != null && !estaMatriculadoEnCurso(curso, idEstudiante)) {
+                    throw new ExcepcionNegocio("No tienes permisos para acceder a las asignaciones de un curso en el que no estás matriculado");
+                } else if (curso == null) {
+                    throw new ExcepcionNegocio("No tienes permisos para acceder a las asignaciones de un curso en el que no estás matriculado");
+                }
+            }
+        }
+        return asignacionesDAO.consultarAsignacionesDeCurso(idCurso);
+    }
+
+    @Override
     public List<Regla> consultarReglasDeAsignacion(Long idAsignacion) {
         return asignacionesDAO.consultarReglasDeAsignacion(idAsignacion);
     }
@@ -189,6 +232,15 @@ public class AsignacionesServiceImpl implements AsignacionesService {
 
     @Override
     public ResumenAsignacionDTO generarResumenAsignacion(Long idAsignacion, Long usuarioId) {
+        if (idAsignacion != null && usuarioId != null) {
+            Asignacion asignacion = asignacionesDAO.buscarPorId(idAsignacion);
+            if (asignacion != null && asignacion.getCurso() != null) {
+                if (!estaMatriculadoEnCurso(asignacion.getCurso(), usuarioId)) {
+                    throw new ExcepcionNegocio("No tienes permisos para acceder a las asignaciones de un curso en el que no estás matriculado");
+                }
+            }
+        }
+
         List<Proyecto> proyectos = (usuarioId != null)
                 ? proyectoDAO.listarPorUsuarioId(usuarioId)
                 : proyectoDAO.listarTodos();
@@ -199,6 +251,23 @@ public class AsignacionesServiceImpl implements AsignacionesService {
                 consultarReglasDeAsignacion(idAsignacion),
                 proyectos,
                 obtenerNombreAsignacion(idAsignacion));
+    }
+
+    private boolean estaMatriculadoEnCurso(Curso curso, Long usuarioId) {
+        if (curso == null || usuarioId == null) {
+            return false;
+        }
+        if (curso.getListadoEstudiantes() != null && !curso.getListadoEstudiantes().isEmpty()) {
+            for (ListadoEstudiantes le : curso.getListadoEstudiantes()) {
+                if (le != null && le.getEstudiante() != null && usuarioId.equals(le.getEstudiante().getId())) {
+                    return "ACTIVO".equalsIgnoreCase(le.getEstado());
+                }
+            }
+        }
+        if (cursoDAO != null && curso.getId() != null) {
+            return cursoDAO.estaEstudianteMatriculado(curso.getId(), usuarioId);
+        }
+        return false;
     }
 
     private String obtenerNombreAsignacion(Long idAsignacion) {

@@ -321,10 +321,22 @@ public class AsignacionServlet extends HttpServlet {
     private void cargarAsignacionesDisponibles(HttpServletRequest request) {
         try {
             if (asignacionesService != null) {
-                List<?> lista = asignacionesService.listarAsignaciones();
+                String idCursoStr = request.getParameter("idCurso");
+                Long usuarioId = obtenerUsuarioIdEnSesion(request);
+                List<?> lista;
+                if (idCursoStr != null && !idCursoStr.isBlank()) {
+                    Long idCurso = Long.parseLong(idCursoStr.trim());
+                    lista = asignacionesService.consultarAsignacionesDeCurso(idCurso, usuarioId);
+                } else {
+                    lista = asignacionesService.listarAsignaciones();
+                }
                 request.setAttribute("asignacionesDisponibles", lista);
                 request.setAttribute("asignaciones", lista);
             }
+        } catch (ExcepcionNegocio e) {
+            request.setAttribute("mensajeError", e.getMessage());
+            request.setAttribute("asignacionesDisponibles", Collections.emptyList());
+            request.setAttribute("asignaciones", Collections.emptyList());
         } catch (Exception e) {
             System.err.println("[AsignacionServlet] Error al cargar asignaciones disponibles: " + e.getMessage());
         }
