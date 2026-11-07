@@ -3,6 +3,8 @@ package com.gr4.owlaudit.service;
 import com.gr4.owlaudit.common.exception.ExcepcionNegocio;
 import com.gr4.owlaudit.dao.AsignacionesDAO;
 import com.gr4.owlaudit.dao.AsignacionesDAOImpl;
+import com.gr4.owlaudit.dao.CursoDAO;
+import com.gr4.owlaudit.dao.CursoDAOImpl;
 import com.gr4.owlaudit.dao.ProyectoDAO;
 import com.gr4.owlaudit.dao.ProyectoDAOImpl;
 import com.gr4.owlaudit.dao.ReglaDAO;
@@ -10,9 +12,12 @@ import com.gr4.owlaudit.dao.ReglaDAOImpl;
 import com.gr4.owlaudit.dto.NuevaAsignacionDTO;
 import com.gr4.owlaudit.dto.ResumenAsignacionDTO;
 import com.gr4.owlaudit.model.Asignacion;
+import com.gr4.owlaudit.model.Curso;
+import com.gr4.owlaudit.model.ListadoEstudiantes;
 import com.gr4.owlaudit.model.Proyecto;
 import com.gr4.owlaudit.model.Regla;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -23,26 +28,37 @@ public class AsignacionesServiceImpl implements AsignacionesService {
     private final AsignacionesDAO asignacionesDAO;
     private final ReglaDAO reglaDAO;
     private final ProyectoDAO proyectoDAO;
+    private final CursoDAO cursoDAO;
+    private final ValidadorAccesoCurso validadorAccesoCurso;
     private AuditoriaService auditoriaService;
 
     public AsignacionesServiceImpl() {
-        this(new AsignacionesDAOImpl(), new ReglaDAOImpl(), new ProyectoDAOImpl());
+        this(new AsignacionesDAOImpl(), new ReglaDAOImpl(), new ProyectoDAOImpl(), new CursoDAOImpl());
     }
 
     public AsignacionesServiceImpl(
             AsignacionesDAO asignacionesDAO,
             ReglaDAO reglaDAO) {
-        this(asignacionesDAO, reglaDAO, new ProyectoDAOImpl());
+        this(asignacionesDAO, reglaDAO, new ProyectoDAOImpl(), new CursoDAOImpl());
     }
 
     public AsignacionesServiceImpl(
             AsignacionesDAO asignacionesDAO,
             ReglaDAO reglaDAO,
             ProyectoDAO proyectoDAO) {
+        this(asignacionesDAO, reglaDAO, proyectoDAO, (CursoDAO) null);
+    }
 
+    public AsignacionesServiceImpl(
+            AsignacionesDAO asignacionesDAO,
+            ReglaDAO reglaDAO,
+            ProyectoDAO proyectoDAO,
+            CursoDAO cursoDAO) {
         this.asignacionesDAO = asignacionesDAO;
         this.reglaDAO = reglaDAO;
         this.proyectoDAO = proyectoDAO;
+        this.cursoDAO = cursoDAO;
+        this.validadorAccesoCurso = new ValidadorAccesoCurso(cursoDAO);
     }
 
     public AsignacionesServiceImpl(
@@ -50,7 +66,17 @@ public class AsignacionesServiceImpl implements AsignacionesService {
             ReglaDAO reglaDAO,
             ProyectoDAO proyectoDAO,
             AuditoriaService auditoriaService) {
-        this(asignacionesDAO, reglaDAO, proyectoDAO);
+        this(asignacionesDAO, reglaDAO, proyectoDAO, new CursoDAOImpl());
+        this.auditoriaService = auditoriaService;
+    }
+
+    public AsignacionesServiceImpl(
+            AsignacionesDAO asignacionesDAO,
+            ReglaDAO reglaDAO,
+            ProyectoDAO proyectoDAO,
+            CursoDAO cursoDAO,
+            AuditoriaService auditoriaService) {
+        this(asignacionesDAO, reglaDAO, proyectoDAO, cursoDAO);
         this.auditoriaService = auditoriaService;
     }
 
@@ -173,6 +199,17 @@ public class AsignacionesServiceImpl implements AsignacionesService {
     }
 
     @Override
+    public List<Asignacion> consultarAsignacionesDeCurso(Long idCurso, Long idEstudiante) {
+        if (idCurso == null) {
+            return Collections.emptyList();
+        }
+        if (idEstudiante != null) {
+            validadorAccesoCurso.validarAccesoEstudianteACurso(idCurso, idEstudiante);
+        }
+        return asignacionesDAO.consultarAsignacionesDeCurso(idCurso);
+    }
+
+    @Override
     public List<Regla> consultarReglasDeAsignacion(Long idAsignacion) {
         return asignacionesDAO.consultarReglasDeAsignacion(idAsignacion);
     }
@@ -189,6 +226,8 @@ public class AsignacionesServiceImpl implements AsignacionesService {
 
     @Override
     public ResumenAsignacionDTO generarResumenAsignacion(Long idAsignacion, Long usuarioId) {
+        validarAccesoAsignacion(idAsignacion, usuarioId);
+
         List<Proyecto> proyectos = (usuarioId != null)
                 ? proyectoDAO.listarPorUsuarioId(usuarioId)
                 : proyectoDAO.listarTodos();
@@ -199,6 +238,20 @@ public class AsignacionesServiceImpl implements AsignacionesService {
                 consultarReglasDeAsignacion(idAsignacion),
                 proyectos,
                 obtenerNombreAsignacion(idAsignacion));
+    }
+
+    /**
+     * Refactoring: Extract Method (Martin Fowler)
+     * Extrae y centraliza la validación de acceso de la asignación consultada.
+     */
+    private void validarAccesoAsignacion(Long idAsignacion, Long usuarioId) {
+        if (idAsignacion == null || usuarioId == null) {
+            return;
+        }
+        Asignacion asignacion = asignacionesDAO.buscarPorId(idAsignacion);
+        if (asignacion != null && asignacion.getCurso() != null) {
+            validadorAccesoCurso.validarAccesoEstudianteACurso(asignacion.getCurso(), usuarioId);
+        }
     }
 
     private String obtenerNombreAsignacion(Long idAsignacion) {

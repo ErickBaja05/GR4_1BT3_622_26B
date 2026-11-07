@@ -134,5 +134,20 @@ public class Curso {
     public boolean esDocenteTitular(Long docenteId) {
         return docenteId != null && this.docente != null && docenteId.equals(this.docente.getId());
     }
+
+    /**
+     * Refactoring: Move Method & Substitute Algorithm
+     * Determina si el estudiante dado posee una matrícula ACTIVA en el curso.
+     */
+    public boolean estaMatriculado(Long estudianteId) {
+        if (estudianteId == null || this.listadoEstudiantes == null) {
+            return false;
+        }
+        return this.listadoEstudiantes.stream()
+                .filter(java.util.Objects::nonNull)
+                .anyMatch(le -> le.getEstudiante() != null
+                        && estudianteId.equals(le.getEstudiante().getId())
+                        && "ACTIVO".equalsIgnoreCase(le.getEstado()));
+    }
 }
 

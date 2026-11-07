@@ -51,49 +51,22 @@
                                                         <% for (OpcionMenu opcion : opciones) { if
                                                             (!opcion.isDisponible()) continue; %>
                                                             <div class="card menu-card">
-                                                                <% if (usuario !=null &&
-                                                                    usuario.getRol()==com.gr4.owlaudit.model.RolEnum.DOCENTE
-                                                                    && opcion==OpcionMenu.EJECUTAR_AUDITORIA) { %>
-                                                                    <div class="menu-meta">
-                                                                        <span class="menu-icon">📋</span>
-                                                                        <span class="badge badge-muted">HU02</span>
-                                                                    </div>
-                                                                    <h3>Crear Asignación</h3>
-                                                                    <p>Configure una nueva asignación académica, defina
-                                                                        el umbral de aprobación y vincule las reglas
-                                                                        técnicas vigentes.</p>
-                                                                    <a class="btn btn-primary btn-block"
-                                                                        href="<%= ctx %>/asignaciones">Crear
-                                                                        Asignación</a>
-                                                                    <% } else { %>
-                                                                        <div class="menu-meta">
-                                                                            <span class="menu-icon">
-                                                                                <%= opcion.getIcono() %>
-                                                                            </span>
-                                                                            <span class="badge badge-muted">
-                                                                                <%= opcion.getCasoUso() %>
-                                                                            </span>
-                                                                        </div>
-                                                                        <h3>
-                                                                            <%= opcion.getTitulo() %>
-                                                                        </h3>
-                                                                        <p>
-                                                                            <%= opcion.getDescripcion() %>
-                                                                        </p>
-                                                                        <a class="btn btn-primary btn-block"
-                                                                            href="<%= ctx %>/vistas?opcion=<%= opcion.getClave() %>">Ingresar</a>
-                                                                        <% if (usuario !=null &&
-                                                                            usuario.getRol()==com.gr4.owlaudit.model.RolEnum.ESTUDIANTE
-                                                                            && opcion==OpcionMenu.EJECUTAR_AUDITORIA) {
-                                                                            %>
-                                                                            <a class="btn btn-secondary btn-block"
-                                                                                style="margin-top: 0.5rem;"
-                                                                                href="<%= ctx %>/asignaciones?vista=estudiante"
-                                                                                id="btnVerAsignaciones">
-                                                                                Ver Asignaciones Disponibles
-                                                                            </a>
-                                                                            <% } %>
-                                                                                <% } %>
+                                                                <div class="menu-meta">
+                                                                    <span class="menu-icon">
+                                                                        <%= opcion.getIcono() %>
+                                                                    </span>
+                                                                    <span class="badge badge-muted">
+                                                                        <%= opcion.getCasoUso() %>
+                                                                    </span>
+                                                                </div>
+                                                                <h3>
+                                                                    <%= opcion.getTitulo() %>
+                                                                </h3>
+                                                                <p>
+                                                                    <%= opcion.getDescripcion() %>
+                                                                </p>
+                                                                <a class="btn btn-primary btn-block"
+                                                                    href="<%= ctx %>/vistas?opcion=<%= opcion.getClave() %>">Ingresar</a>
                                                             </div>
                                                             <% } %>
                                                     </div>

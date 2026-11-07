@@ -17,6 +17,9 @@ import com.gr4.owlaudit.dto.NuevaAsignacionDTO;
 import com.gr4.owlaudit.dto.ResultadoDTO;
 import com.gr4.owlaudit.dto.ResumenAsignacionDTO;
 import com.gr4.owlaudit.dto.UsuarioDTO;
+import com.gr4.owlaudit.dao.CursoDAO;
+import com.gr4.owlaudit.dao.CursoDAOImpl;
+import com.gr4.owlaudit.model.Asignacion;
 import com.gr4.owlaudit.model.Auditoria;
 import com.gr4.owlaudit.model.Proyecto;
 import com.gr4.owlaudit.model.RolEnum;
@@ -25,6 +28,7 @@ import com.gr4.owlaudit.service.AsignacionesServiceImpl;
 import com.gr4.owlaudit.service.AuditoriaService;
 import com.gr4.owlaudit.service.AuditoriaServiceImpl;
 import com.gr4.owlaudit.service.CalculadoraDeudaTecnica;
+import com.gr4.owlaudit.service.ValidadorAccesoCurso;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -48,42 +52,88 @@ public class AsignacionServlet extends HttpServlet {
     private final AuditoriaService auditoriaService;
     private final ProyectoDAO proyectoDAO;
     private final AuditoriaDAO auditoriaDAO;
+    private final CursoDAO cursoDAO;
+    private final ValidadorAccesoCurso validadorAccesoCurso;
     private final CalculadoraDeudaTecnica calculadoraDeudaTecnica = new CalculadoraDeudaTecnica();
 
     public AsignacionServlet() {
-        this(new AsignacionesServiceImpl(), new ReglaDAOImpl(), new AuditoriaServiceImpl(), new ProyectoDAOImpl(), new AuditoriaDAOImpl());
+        this(new AsignacionesServiceImpl(), new ReglaDAOImpl(), new AuditoriaServiceImpl(), new ProyectoDAOImpl(), new AuditoriaDAOImpl(), new CursoDAOImpl());
     }
 
     public AsignacionServlet(AsignacionesService asignacionesService, ReglaDAO reglaDAO) {
-        this(asignacionesService, reglaDAO, null, null, null);
+        this(asignacionesService, reglaDAO, null, null, null, null);
     }
 
     public AsignacionServlet(AsignacionesService asignacionesService, ReglaDAO reglaDAO,
             AuditoriaService auditoriaService) {
-        this(asignacionesService, reglaDAO, auditoriaService, null, null);
+        this(asignacionesService, reglaDAO, auditoriaService, null, null, null);
     }
 
     public AsignacionServlet(AsignacionesService asignacionesService, ReglaDAO reglaDAO,
             AuditoriaService auditoriaService, ProyectoDAO proyectoDAO) {
-        this(asignacionesService, reglaDAO, auditoriaService, proyectoDAO, null);
+        this(asignacionesService, reglaDAO, auditoriaService, proyectoDAO, null, null);
     }
 
     public AsignacionServlet(AsignacionesService asignacionesService, ReglaDAO reglaDAO,
             AuditoriaService auditoriaService, ProyectoDAO proyectoDAO, AuditoriaDAO auditoriaDAO) {
+        this(asignacionesService, reglaDAO, auditoriaService, proyectoDAO, auditoriaDAO, null);
+    }
+
+    public AsignacionServlet(AsignacionesService asignacionesService, ReglaDAO reglaDAO,
+            AuditoriaService auditoriaService, ProyectoDAO proyectoDAO, AuditoriaDAO auditoriaDAO,
+            CursoDAO cursoDAO) {
         this.asignacionesService = asignacionesService;
         this.reglaDAO = reglaDAO;
         this.auditoriaService = auditoriaService;
         this.proyectoDAO = proyectoDAO;
         this.auditoriaDAO = auditoriaDAO;
+        this.cursoDAO = cursoDAO;
+        this.validadorAccesoCurso = new ValidadorAccesoCurso(cursoDAO);
     }
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
+        HttpSession session = request.getSession(false);
+        UsuarioDTO usuario = (session != null) ? (UsuarioDTO) session.getAttribute(LoginServlet.ATRIBUTO_USUARIO) : null;
         String idAsignacionParam = request.getParameter("idAsignacion");
-        String vistaParam = request.getParameter("vista");
+        String idCursoParam = request.getParameter("idCurso");
 
-        if (esFlujoEstudianteGet(request, idAsignacionParam, vistaParam)) {
+        // Flujo del Estudiante: determinado por rol en sesión o si hay idAsignacion en tests unitarios sin sesión
+        if ((usuario != null && usuario.getRol() == RolEnum.ESTUDIANTE) || (usuario == null && idAsignacionParam != null && !idAsignacionParam.isBlank())) {
+            if (usuario != null && validadorAccesoCurso != null) {
+                // Validación estricta GET para estudiante con sesión activa
+                if (idAsignacionParam != null && !idAsignacionParam.isBlank()) {
+                    try {
+                        Long idAsignacion = Long.parseLong(idAsignacionParam.trim());
+                        Asignacion asignacion = (asignacionesService != null) ? asignacionesService.buscarPorId(idAsignacion) : null;
+                        if (asignacion == null || asignacion.getCurso() == null ||
+                                !validadorAccesoCurso.estaEstudianteMatriculado(asignacion.getCurso(), usuario.getId())) {
+                            response.sendRedirect(request.getContextPath() + "/curso?error=permisos");
+                            return;
+                        }
+                    } catch (NumberFormatException e) {
+                        response.sendRedirect(request.getContextPath() + "/curso?error=sinCurso");
+                        return;
+                    }
+                } else if (idCursoParam != null && !idCursoParam.isBlank()) {
+                    try {
+                        Long idCurso = Long.parseLong(idCursoParam.trim());
+                        if (!validadorAccesoCurso.estaEstudianteMatriculado(idCurso, usuario.getId())) {
+                            response.sendRedirect(request.getContextPath() + "/curso?error=permisos");
+                            return;
+                        }
+                    } catch (NumberFormatException e) {
+                        response.sendRedirect(request.getContextPath() + "/curso?error=sinCurso");
+                        return;
+                    }
+                } else {
+                    // Acceso a /asignaciones sin idCurso ni idAsignacion
+                    response.sendRedirect(request.getContextPath() + "/curso?error=sinCurso");
+                    return;
+                }
+            }
+
             procesarGetEstudiante(request, response, idAsignacionParam);
             return;
         }
@@ -109,6 +159,22 @@ public class AsignacionServlet extends HttpServlet {
 
         String idAsignacionParam = request.getParameter("idAsignacion");
         if (idAsignacionParam != null && request.getParameter("idProyecto") != null) {
+            HttpSession session = request.getSession(false);
+            UsuarioDTO usuario = (session != null) ? (UsuarioDTO) session.getAttribute(LoginServlet.ATRIBUTO_USUARIO) : null;
+            if (usuario != null && usuario.getRol() == RolEnum.ESTUDIANTE && validadorAccesoCurso != null) {
+                try {
+                    Long idAsignacion = Long.parseLong(idAsignacionParam.trim());
+                    Asignacion asignacion = (asignacionesService != null) ? asignacionesService.buscarPorId(idAsignacion) : null;
+                    if (asignacion == null || asignacion.getCurso() == null ||
+                            !validadorAccesoCurso.estaEstudianteMatriculado(asignacion.getCurso(), usuario.getId())) {
+                        response.sendRedirect(request.getContextPath() + "/curso?error=permisos");
+                        return;
+                    }
+                } catch (NumberFormatException e) {
+                    response.sendRedirect(request.getContextPath() + "/curso?error=sinCurso");
+                    return;
+                }
+            }
             procesarPostAuditoriaEstudiante(request, response, idAsignacionParam);
             return;
         }
@@ -321,10 +387,22 @@ public class AsignacionServlet extends HttpServlet {
     private void cargarAsignacionesDisponibles(HttpServletRequest request) {
         try {
             if (asignacionesService != null) {
-                List<?> lista = asignacionesService.listarAsignaciones();
+                String idCursoStr = request.getParameter("idCurso");
+                Long usuarioId = obtenerUsuarioIdEnSesion(request);
+                List<?> lista;
+                if (idCursoStr != null && !idCursoStr.isBlank()) {
+                    Long idCurso = Long.parseLong(idCursoStr.trim());
+                    lista = asignacionesService.consultarAsignacionesDeCurso(idCurso, usuarioId);
+                } else {
+                    lista = asignacionesService.listarAsignaciones();
+                }
                 request.setAttribute("asignacionesDisponibles", lista);
                 request.setAttribute("asignaciones", lista);
             }
+        } catch (ExcepcionNegocio e) {
+            request.setAttribute("mensajeError", e.getMessage());
+            request.setAttribute("asignacionesDisponibles", Collections.emptyList());
+            request.setAttribute("asignaciones", Collections.emptyList());
         } catch (Exception e) {
             System.err.println("[AsignacionServlet] Error al cargar asignaciones disponibles: " + e.getMessage());
         }

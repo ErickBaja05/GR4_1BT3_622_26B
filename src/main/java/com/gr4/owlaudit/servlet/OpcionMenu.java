@@ -27,9 +27,9 @@ public enum OpcionMenu {
             "Vincule el repositorio de GitHub de su proyecto para habilitar las auditorías.",
             "📁", "/proyecto", true, RolEnum.ESTUDIANTE),
 
-    EJECUTAR_AUDITORIA("auditoria", "CU03", "Ejecutar Auditoría de Calidad", "Auditar Repositorio",
-            "Inspeccione un repositorio con las reglas vigentes y obtenga su puntaje de calidad.",
-            "🔍", "/auditoria", true, RolEnum.ESTUDIANTE, RolEnum.DOCENTE),
+    MIS_CURSOS("curso", "CU03", "Mis Cursos Académicos", "Mis Cursos",
+            "Consulte sus cursos asignados y las asignaciones de calidad vinculadas.",
+            "📚", "/curso", true, RolEnum.ESTUDIANTE, RolEnum.DOCENTE),
 
     CONSULTAR_EVOLUCION("evolucion", "CU04", "Consultar Evolución de Calidad", "Evolución",
             "Revise el historial de auditorías y la evolución del puntaje del proyecto.",

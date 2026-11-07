@@ -17,6 +17,8 @@ import com.gr4.owlaudit.dto.ResultadoDTO;
 import com.gr4.owlaudit.dto.ResumenDTO;
 import com.gr4.owlaudit.model.Asignacion;
 import com.gr4.owlaudit.model.Auditoria;
+import com.gr4.owlaudit.model.Curso;
+import com.gr4.owlaudit.model.ListadoEstudiantes;
 import com.gr4.owlaudit.model.NivelSeveridadEnum;
 import com.gr4.owlaudit.model.Proyecto;
 import com.gr4.owlaudit.model.Regla;
@@ -34,6 +36,7 @@ public class AuditoriaServiceImpl implements AuditoriaService {
     private final GitHubClient gitHubClient;
     private final EvaluadorReglaFactory evaluadorFactory;
     private final ProyectoDAO proyectoDAO;
+    private final ValidadorAccesoCurso validadorAccesoCurso;
     private AsignacionesService asignacionesService;
 
     public AuditoriaServiceImpl() {
@@ -54,7 +57,8 @@ public class AuditoriaServiceImpl implements AuditoriaService {
         this.gitHubClient = gitHubClient;
         this.evaluadorFactory = evaluadorFactory;
         this.proyectoDAO = proyectoDAO;
-        this.asignacionesService = new AsignacionesServiceImpl();
+        this.validadorAccesoCurso = new ValidadorAccesoCurso(null);
+        this.asignacionesService = null;
     }
 
     public AuditoriaServiceImpl(ReglaDAO reglaDAO, AuditoriaDAO auditoriaDAO,
@@ -80,6 +84,10 @@ public class AuditoriaServiceImpl implements AuditoriaService {
 
     @Override
     public ResultadoDTO confirmarEjecucionDeAuditoria(AuditoriaDTO dto) {
+        if (dto != null && dto.getIdAsignacion() != null) {
+            return ejecutarAuditoriaDeAsignacion(dto);
+        }
+
         if (dto != null && dto.getProyectoId() != null && proyectoDAO != null) {
             Proyecto proyecto = proyectoDAO.buscarPorId(dto.getProyectoId());
             if (proyecto != null && dto.getUsuarioId() != null && proyecto.getUsuario() != null) {
@@ -105,7 +113,6 @@ public class AuditoriaServiceImpl implements AuditoriaService {
         auditoriaDAO.registrarAuditoriaEnElHistorial(auditoria);
 
         ResultadoDTO resultadoDTO = crearResultadoDTO(auditoria);
-        // La auditoría general usa el umbral por defecto; se expone para mostrarlo igual que en la asignación
         resultadoDTO.setUmbralAprobacion(Auditoria.UMBRAL_MINIMO_APROBACION);
         return resultadoDTO;
     }
@@ -233,7 +240,11 @@ public class AuditoriaServiceImpl implements AuditoriaService {
 
     @Override
     public ResultadoDTO ejecutarAuditoriaDeAsignacion(AuditoriaDTO auditoriaDTO) {
-        final boolean esProyectoNoEspecificado = auditoriaDTO == null || auditoriaDTO.getProyectoId() == null;
+        if (auditoriaDTO == null || auditoriaDTO.getIdAsignacion() == null) {
+            throw new ExcepcionNegocio("No se permiten auditorías libres. Debe seleccionar una asignación válida dentro de sus cursos matriculados.");
+        }
+
+        final boolean esProyectoNoEspecificado = auditoriaDTO.getProyectoId() == null;
         if (esProyectoNoEspecificado) {
             throw new ExcepcionNegocio("Debe seleccionar un proyecto válido");
         }
@@ -243,11 +254,8 @@ public class AuditoriaServiceImpl implements AuditoriaService {
             throw new ExcepcionNegocio("Debe seleccionar un proyecto válido");
         }
 
-        if (auditoriaDTO.getUsuarioId() != null && proyecto.getUsuario() != null) {
-            if (!auditoriaDTO.getUsuarioId().equals(proyecto.getUsuario().getId())) {
-                throw new ExcepcionNegocio("No tiene permisos para auditar un proyecto que no le pertenece");
-            }
-        }
+        verificarPertenenciaProyecto(auditoriaDTO, proyecto);
+        validarAccesoEstudianteACursoDeAsignacion(auditoriaDTO);
 
         String urlRepositorio = (proyecto.getUrlGithub() != null && !proyecto.getUrlGithub().isBlank())
                 ? proyecto.getUrlGithub()
@@ -261,9 +269,9 @@ public class AuditoriaServiceImpl implements AuditoriaService {
         Auditoria auditoria = crearAuditoria(auditoriaDTO);
         auditoria.setTipoAuditoria("ASIGNACION");
         if (auditoriaDTO.getIdAsignacion() != null) {
-            Asignacion asignacion = new Asignacion();
-            asignacion.setId(auditoriaDTO.getIdAsignacion());
-            auditoria.setAsignacion(asignacion);
+            Asignacion asigRef = new Asignacion();
+            asigRef.setId(auditoriaDTO.getIdAsignacion());
+            auditoria.setAsignacion(asigRef);
             auditoria.setNumeroEnAsignacion(auditoriaDAO.obtenerSiguienteNumeroEnAsignacion(auditoriaDTO.getProyectoId(), auditoriaDTO.getIdAsignacion()));
         }
 
@@ -280,6 +288,31 @@ public class AuditoriaServiceImpl implements AuditoriaService {
         resultadoDTO.setUmbralAprobacion(umbral);
 
         return resultadoDTO;
+    }
+
+    /**
+     * Refactoring: Extract Method (Martin Fowler)
+     * Verifica que el proyecto a auditar pertenezca al usuario en sesión.
+     */
+    private void verificarPertenenciaProyecto(AuditoriaDTO auditoriaDTO, Proyecto proyecto) {
+        if (auditoriaDTO.getUsuarioId() != null && proyecto.getUsuario() != null) {
+            if (!auditoriaDTO.getUsuarioId().equals(proyecto.getUsuario().getId())) {
+                throw new ExcepcionNegocio("No tiene permisos para auditar un proyecto que no le pertenece");
+            }
+        }
+    }
+
+    /**
+     * Refactoring: Extract Method (Martin Fowler)
+     * Valida mediante el ValidadorAccesoCurso que el estudiante esté matriculado en el curso de la asignación.
+     */
+    private void validarAccesoEstudianteACursoDeAsignacion(AuditoriaDTO auditoriaDTO) {
+        Asignacion asignacion = (asignacionesService != null)
+                ? asignacionesService.buscarPorId(auditoriaDTO.getIdAsignacion())
+                : null;
+        if (asignacion != null && asignacion.getCurso() != null && auditoriaDTO.getUsuarioId() != null) {
+            validadorAccesoCurso.validarAccesoEstudianteACurso(asignacion.getCurso(), auditoriaDTO.getUsuarioId());
+        }
     }
 
     @Override

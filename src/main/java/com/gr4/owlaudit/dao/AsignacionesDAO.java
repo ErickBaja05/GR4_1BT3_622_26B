@@ -12,6 +12,8 @@ public interface AsignacionesDAO {
 
     List<Asignacion> consultarAsignacionesDisponibles();
 
+    List<Asignacion> consultarAsignacionesDeCurso(Long idCurso);
+
     List<Regla> consultarReglasDeAsignacion(Long idAsignacion);
 
     double consultarUmbralAprobacion(Long idAsignacion);

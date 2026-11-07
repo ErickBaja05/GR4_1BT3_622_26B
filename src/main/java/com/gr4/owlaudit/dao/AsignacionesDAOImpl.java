@@ -128,13 +128,28 @@ public class AsignacionesDAOImpl implements AsignacionesDAO {
     }
 
     @Override
+    public List<Asignacion> consultarAsignacionesDeCurso(Long idCurso) {
+        if (idCurso == null) {
+            return java.util.Collections.emptyList();
+        }
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            return session.createQuery(
+                "SELECT DISTINCT a FROM Asignacion a LEFT JOIN FETCH a.reglas LEFT JOIN FETCH a.curso WHERE a.curso.id = :idCurso ORDER BY a.id ASC", Asignacion.class)
+                .setParameter("idCurso", idCurso)
+                .list();
+        } catch (Exception e) {
+            throw new RuntimeException("Error al consultar asignaciones del curso: " + e.getMessage(), e);
+        }
+    }
+
+    @Override
     public Asignacion buscarPorId(Long id) {
         if (id == null) {
             return null;
         }
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
             return session.createQuery(
-                "SELECT DISTINCT a FROM Asignacion a LEFT JOIN FETCH a.reglas WHERE a.id = :id", Asignacion.class)
+                "SELECT DISTINCT a FROM Asignacion a LEFT JOIN FETCH a.reglas LEFT JOIN FETCH a.curso c LEFT JOIN FETCH c.listadoEstudiantes le LEFT JOIN FETCH le.estudiante WHERE a.id = :id", Asignacion.class)
                 .setParameter("id", id)
                 .uniqueResult();
         } catch (Exception e) {

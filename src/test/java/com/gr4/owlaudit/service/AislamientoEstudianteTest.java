@@ -24,6 +24,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -52,30 +53,18 @@ public class AislamientoEstudianteTest {
     }
 
     @Test
-    @DisplayName("Aislamiento: Estudiante no puede auditar un proyecto creado por otro estudiante en auditoría general")
-    void testEstudianteNoPuedeAuditarProyectoAjenoEnAuditoriaGeneral() {
-        Long usuarioEstudianteA = 1L;
-        Long usuarioEstudianteB = 2L;
-
-        Proyecto proyectoB = new Proyecto();
-        proyectoB.setId(20L);
-        proyectoB.setNombre("Repo de B");
-        proyectoB.setUrlGithub("https://github.com/userB/repo");
-        Usuario usuarioB = new Usuario();
-        usuarioB.setId(usuarioEstudianteB);
-        proyectoB.setUsuario(usuarioB);
-
-        when(proyectoDAO.buscarPorId(20L)).thenReturn(proyectoB);
-
+    @DisplayName("Aislamiento: Intento de auditoría libre es bloqueado y exige asignación de curso")
+    void testEstudianteNoPuedeAuditarLibreSinAsignacionDeCurso() {
         AuditoriaDTO dto = new AuditoriaDTO();
         dto.setProyectoId(20L);
         dto.setUrl("https://github.com/userB/repo");
-        dto.setUsuarioId(usuarioEstudianteA); // Estudiante A intentando auditar proyecto de B
+        dto.setUsuarioId(1L);
+        dto.setIdAsignacion(null);
 
         ExcepcionNegocio ex = assertThrows(ExcepcionNegocio.class,
-                () -> auditoriaService.confirmarEjecucionDeAuditoria(dto));
+                () -> auditoriaService.ejecutarAuditoriaDeAsignacion(dto));
 
-        assertEquals("No tiene permisos para auditar un proyecto que no le pertenece", ex.getMessage());
+        assertTrue(ex.getMessage().contains("No se permiten auditorías libres"));
     }
 
     @Test
