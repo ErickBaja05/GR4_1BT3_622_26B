@@ -1,6 +1,9 @@
 package com.gr4.owlaudit.dao;
 
 import com.gr4.owlaudit.common.config.HibernateUtil;
+import com.gr4.owlaudit.model.Docente;
+import com.gr4.owlaudit.model.Estudiante;
+import com.gr4.owlaudit.model.RolEnum;
 import com.gr4.owlaudit.model.Usuario;
 import org.hibernate.Session;
 import org.hibernate.Transaction;
@@ -44,7 +47,18 @@ public class UsuarioDAOImpl implements UsuarioDAO {
         Transaction tx = null;
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
             tx = session.beginTransaction();
-            session.persist(usuario);
+            Usuario entidad = usuario;
+            if (usuario != null && !(usuario instanceof Docente) && !(usuario instanceof Estudiante)) {
+                if (usuario.getRol() == RolEnum.DOCENTE) {
+                    entidad = Docente.desdeUsuario(usuario);
+                } else if (usuario.getRol() == RolEnum.ESTUDIANTE) {
+                    entidad = Estudiante.desdeUsuario(usuario);
+                }
+            }
+            session.persist(entidad);
+            if (entidad != usuario && usuario != null) {
+                usuario.setId(entidad.getId());
+            }
             tx.commit();
         } catch (Exception e) {
             if (tx != null && tx.isActive()) {

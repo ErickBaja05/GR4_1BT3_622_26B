@@ -4,8 +4,8 @@ import com.gr4.owlaudit.common.exception.ExcepcionNegocio;
 import com.gr4.owlaudit.dao.ProyectoDAO;
 import com.gr4.owlaudit.dao.ProyectoDAOImpl;
 import com.gr4.owlaudit.dto.NuevoProyectoDTO;
+import com.gr4.owlaudit.model.Estudiante;
 import com.gr4.owlaudit.model.Proyecto;
-import com.gr4.owlaudit.model.Usuario;
 
 import java.util.regex.Pattern;
 
@@ -43,9 +43,9 @@ public class ProyectoServiceImpl implements ProyectoService {
         // Instanciación y persistencia
         Proyecto proyecto = new Proyecto(dto);
         if (dto.getUsuarioId() != null) {
-            Usuario u = new Usuario();
-            u.setId(dto.getUsuarioId());
-            proyecto.setUsuario(u);
+            Estudiante e = new Estudiante();
+            e.setId(dto.getUsuarioId());
+            proyecto.setEstudiante(e);
 
             java.util.List<Proyecto> existentes = proyectoDAO.listarPorUsuarioId(dto.getUsuarioId());
             long proximoId = (existentes != null ? existentes.size() : 0) + 1L;

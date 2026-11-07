@@ -132,12 +132,12 @@ public class AuditoriaServiceImpl implements AuditoriaService {
         }
 
         auditoria.setProyecto(proyecto);
-        if (proyecto.getUsuario() != null) {
-            auditoria.setUsuario(proyecto.getUsuario());
+        if (proyecto.getEstudiante() != null) {
+            auditoria.setEstudiante(proyecto.getEstudiante());
         } else if (dto.getUsuarioId() != null) {
-            com.gr4.owlaudit.model.Usuario u = new com.gr4.owlaudit.model.Usuario();
-            u.setId(dto.getUsuarioId());
-            auditoria.setUsuario(u);
+            com.gr4.owlaudit.model.Estudiante e = new com.gr4.owlaudit.model.Estudiante();
+            e.setId(dto.getUsuarioId());
+            auditoria.setEstudiante(e);
         }
 
         return auditoria;

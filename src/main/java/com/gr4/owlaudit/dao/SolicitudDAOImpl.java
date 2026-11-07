@@ -8,15 +8,16 @@ import org.hibernate.Transaction;
 public class SolicitudDAOImpl implements SolicitudDAO {
 
     private static final String FETCH_DETALLE_SOLICITUD =
-        "LEFT JOIN FETCH s.usuario " +
+        "LEFT JOIN FETCH s.estudiante " +
+        "LEFT JOIN FETCH s.docente " +
         "LEFT JOIN FETCH s.hallazgo h " +
         "LEFT JOIN FETCH h.resultadoRegla r " +
         "LEFT JOIN FETCH r.regla " +
         "LEFT JOIN FETCH r.auditoria a " +
-        "LEFT JOIN FETCH a.usuario " +
+        "LEFT JOIN FETCH a.estudiante " +
         "LEFT JOIN FETCH a.proyecto p " +
         "LEFT JOIN FETCH a.asignacion " +
-        "LEFT JOIN FETCH p.usuario ";
+        "LEFT JOIN FETCH p.estudiante ";
 
     @Override
     public SolicitudRetroalimentacion buscarPorHallazgoId(Long hallazgoId) {
@@ -45,12 +46,12 @@ public class SolicitudDAOImpl implements SolicitudDAO {
                 com.gr4.owlaudit.model.Hallazgo h = session.get(com.gr4.owlaudit.model.Hallazgo.class, solicitud.getHallazgo().getId());
                 if (h != null) {
                     solicitud.setHallazgo(h);
-                    if (solicitud.getUsuario() == null && h.getResultadoRegla() != null && h.getResultadoRegla().getAuditoria() != null) {
+                    if (solicitud.getEstudiante() == null && h.getResultadoRegla() != null && h.getResultadoRegla().getAuditoria() != null) {
                         com.gr4.owlaudit.model.Auditoria a = h.getResultadoRegla().getAuditoria();
-                        if (a.getUsuario() != null) {
-                            solicitud.setUsuario(a.getUsuario());
-                        } else if (a.getProyecto() != null && a.getProyecto().getUsuario() != null) {
-                            solicitud.setUsuario(a.getProyecto().getUsuario());
+                        if (a.getEstudiante() != null) {
+                            solicitud.setEstudiante(a.getEstudiante());
+                        } else if (a.getProyecto() != null && a.getProyecto().getEstudiante() != null) {
+                            solicitud.setEstudiante(a.getProyecto().getEstudiante());
                         }
                     }
                 } else {
@@ -169,7 +170,7 @@ public class SolicitudDAOImpl implements SolicitudDAO {
             return session.createQuery(
                 "SELECT DISTINCT s FROM SolicitudRetroalimentacion s " +
                 FETCH_DETALLE_SOLICITUD +
-                "WHERE (s.usuario.id = :usuarioId OR a.usuario.id = :usuarioId OR p.usuario.id = :usuarioId) " +
+                "WHERE (s.estudiante.id = :usuarioId OR a.estudiante.id = :usuarioId OR p.estudiante.id = :usuarioId) " +
                 "ORDER BY s.id DESC",
                 SolicitudRetroalimentacion.class
             )

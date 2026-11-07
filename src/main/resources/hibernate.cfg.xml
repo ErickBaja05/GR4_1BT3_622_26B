@@ -26,6 +26,10 @@
         <mapping class="com.gr4.owlaudit.model.Regla"/>
         <mapping class="com.gr4.owlaudit.model.Proyecto"/>
         <mapping class="com.gr4.owlaudit.model.Usuario"/>
+        <mapping class="com.gr4.owlaudit.model.Docente"/>
+        <mapping class="com.gr4.owlaudit.model.Estudiante"/>
+        <mapping class="com.gr4.owlaudit.model.Curso"/>
+        <mapping class="com.gr4.owlaudit.model.ListadoEstudiantes"/>
         <mapping class="com.gr4.owlaudit.model.Auditoria"/>
         <mapping class="com.gr4.owlaudit.model.ResultadoRegla"/>
         <mapping class="com.gr4.owlaudit.model.Hallazgo"/>
