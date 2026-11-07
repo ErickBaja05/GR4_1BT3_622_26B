@@ -14,6 +14,9 @@ public class Docente extends Usuario {
     @OneToMany(mappedBy = "docente", fetch = FetchType.LAZY)
     private List<Curso> cursos = new ArrayList<>();
 
+    @OneToMany(mappedBy = "docente", fetch = FetchType.LAZY)
+    private List<SolicitudRetroalimentacion> solicitudesAtendidas = new ArrayList<>();
+
     public Docente() {
         super();
         setRol(RolEnum.DOCENTE);
@@ -43,5 +46,13 @@ public class Docente extends Usuario {
 
     public void setCursos(List<Curso> cursos) {
         this.cursos = cursos != null ? new ArrayList<>(cursos) : new ArrayList<>();
+    }
+
+    public List<SolicitudRetroalimentacion> getSolicitudesAtendidas() {
+        return solicitudesAtendidas;
+    }
+
+    public void setSolicitudesAtendidas(List<SolicitudRetroalimentacion> solicitudesAtendidas) {
+        this.solicitudesAtendidas = solicitudesAtendidas != null ? new ArrayList<>(solicitudesAtendidas) : new ArrayList<>();
     }
 }

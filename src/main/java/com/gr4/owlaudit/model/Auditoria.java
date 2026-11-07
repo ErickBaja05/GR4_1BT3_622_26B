@@ -23,16 +23,16 @@ public class Auditoria {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne
-    @JoinColumn(name = "proyecto_id")
+    @ManyToOne(optional = false)
+    @JoinColumn(name = "proyecto_id", nullable = false)
     private Proyecto proyecto;
 
-    @ManyToOne
-    @JoinColumn(name = "usuario_id")
-    private Usuario usuario;
+    @ManyToOne(optional = false)
+    @JoinColumn(name = "usuario_id", nullable = false)
+    private Estudiante estudiante;
 
-    @ManyToOne
-    @JoinColumn(name = "asignacion_id", nullable = true)
+    @ManyToOne(optional = false)
+    @JoinColumn(name = "asignacion_id", nullable = false)
     private Asignacion asignacion;
 
     @Column(name = "dictamen", nullable = true)
@@ -170,12 +170,20 @@ public class Auditoria {
         this.proyecto = proyecto;
     }
 
+    public Estudiante getEstudiante() {
+        return estudiante;
+    }
+
+    public void setEstudiante(Estudiante estudiante) {
+        this.estudiante = estudiante;
+    }
+
     public Usuario getUsuario() {
-        return usuario;
+        return estudiante;
     }
 
     public void setUsuario(Usuario usuario) {
-        this.usuario = usuario;
+        this.estudiante = Estudiante.desdeUsuario(usuario);
     }
 
     public Asignacion getAsignacion() {

@@ -5,11 +5,14 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "solicitudes_retroalimentacion")
@@ -29,31 +32,40 @@ public class SolicitudRetroalimentacion {
     @Column(name = "estado", nullable = false, length = 20)
     private EstadoRetroEnum estado;
 
-    @jakarta.persistence.ManyToOne
+    @ManyToOne(optional = false)
     @JoinColumn(name = "hallazgo_id", nullable = false)
     private Hallazgo hallazgo;
 
-    @jakarta.persistence.ManyToOne
-    @JoinColumn(name = "usuario_id")
-    private Usuario usuario;
+    @ManyToOne(optional = false)
+    @JoinColumn(name = "usuario_id", nullable = false)
+    private Estudiante estudiante;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "id_docente", nullable = true)
+    private Docente docente;
+
+    @Column(name = "fecha_solicitud")
+    private LocalDateTime fechaSolicitud;
 
     public SolicitudRetroalimentacion() {
         this.estado = EstadoRetroEnum.PENDIENTE;
+        this.fechaSolicitud = LocalDateTime.now();
     }
 
     public SolicitudRetroalimentacion(SolicitudDTO dto) {
         this.justificacion = dto != null ? dto.getJustificacion() : null;
         this.orientacionTecnica = dto != null ? dto.getOrientacion() : null;
         this.estado = EstadoRetroEnum.PENDIENTE;
+        this.fechaSolicitud = LocalDateTime.now();
         if (dto != null && dto.getHallazgoId() != null) {
             Hallazgo h = new Hallazgo();
             h.setId(dto.getHallazgoId());
             this.hallazgo = h;
         }
         if (dto != null && dto.getUsuarioId() != null) {
-            Usuario u = new Usuario();
-            u.setId(dto.getUsuarioId());
-            this.usuario = u;
+            Estudiante e = new Estudiante();
+            e.setId(dto.getUsuarioId());
+            this.estudiante = e;
         }
     }
 
@@ -97,15 +109,44 @@ public class SolicitudRetroalimentacion {
         this.hallazgo = hallazgo;
     }
 
+    public Estudiante getEstudiante() {
+        return estudiante;
+    }
+
+    public void setEstudiante(Estudiante estudiante) {
+        this.estudiante = estudiante;
+    }
+
+    public Docente getDocente() {
+        return docente;
+    }
+
+    public void setDocente(Docente docente) {
+        this.docente = docente;
+    }
+
+    public LocalDateTime getFechaSolicitud() {
+        return fechaSolicitud;
+    }
+
+    public void setFechaSolicitud(LocalDateTime fechaSolicitud) {
+        this.fechaSolicitud = fechaSolicitud;
+    }
+
     public Usuario getUsuario() {
-        return usuario;
+        return estudiante;
     }
 
     public void setUsuario(Usuario usuario) {
-        this.usuario = usuario;
+        this.estudiante = Estudiante.desdeUsuario(usuario);
     }
 
     public void marcarSolicitudComoAtendida() {
+        this.estado = EstadoRetroEnum.ATENDIDA;
+    }
+
+    public void marcarSolicitudComoAtendida(Docente docente) {
+        this.docente = docente;
         this.estado = EstadoRetroEnum.ATENDIDA;
     }
 }
