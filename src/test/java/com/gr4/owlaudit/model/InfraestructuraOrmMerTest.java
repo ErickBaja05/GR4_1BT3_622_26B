@@ -211,3 +211,4 @@ class InfraestructuraOrmMerTest {
         assertEquals(EstadoRetroEnum.ATENDIDA, solicitud.getEstado());
     }
 }
+

@@ -53,3 +53,4 @@ public class ListadoEstudiantesId implements Serializable {
         return Objects.hash(idCurso, idEstudiante);
     }
 }
+

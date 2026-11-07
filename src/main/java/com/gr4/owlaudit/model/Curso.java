@@ -135,3 +135,4 @@ public class Curso {
         return docenteId != null && this.docente != null && docenteId.equals(this.docente.getId());
     }
 }
+
