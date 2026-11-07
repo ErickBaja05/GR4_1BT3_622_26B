@@ -48,7 +48,7 @@ entity "ListadoEstudiantes" as ListadoEstudiantes {
 entity "ReglaEvaluacion" as ReglaEvaluacion {
     * id_regla : BIGINT <<PK>>
     --
-    id_curso : BIGINT <<FK>>
+    * id_curso : BIGINT <<FK>>
     nombre_representativo : VARCHAR(100)
     descripcion_detallada : VARCHAR(200)
     tipo_motor : VARCHAR(50)
