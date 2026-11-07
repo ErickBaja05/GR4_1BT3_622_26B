@@ -62,7 +62,7 @@ public class AislamientoEstudianteTest {
         dto.setIdAsignacion(null);
 
         ExcepcionNegocio ex = assertThrows(ExcepcionNegocio.class,
-                () -> auditoriaService.confirmarEjecucionDeAuditoria(dto));
+                () -> auditoriaService.ejecutarAuditoriaDeAsignacion(dto));
 
         assertTrue(ex.getMessage().contains("No se permiten auditorías libres"));
     }

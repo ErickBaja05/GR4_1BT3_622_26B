@@ -141,7 +141,7 @@ public class AislamientoAuditoriasCursoTest {
         dtoLibre.setIdAsignacion(null);
 
         ExcepcionNegocio ex = assertThrows(ExcepcionNegocio.class,
-                () -> auditoriaService.confirmarEjecucionDeAuditoria(dtoLibre),
+                () -> auditoriaService.ejecutarAuditoriaDeAsignacion(dtoLibre),
                 "No debe permitirse ejecutar auditorías sin especificar asignación vinculada a curso");
 
         assertTrue(ex.getMessage().contains("asignación") || ex.getMessage().contains("curso"),

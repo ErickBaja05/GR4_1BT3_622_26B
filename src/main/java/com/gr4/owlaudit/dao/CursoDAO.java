@@ -16,3 +16,4 @@ public interface CursoDAO {
 
     boolean estaEstudianteMatriculado(Long idCurso, Long idEstudiante);
 }
+

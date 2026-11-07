@@ -75,6 +75,7 @@ public class CursoDAOImpl implements CursoDAO {
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
             return session.createQuery(
                     "SELECT DISTINCT c FROM Curso c " +
+                    "LEFT JOIN FETCH c.docente " +
                     "WHERE c.docente.id = :idDocente " +
                     "ORDER BY c.nombre ASC", Curso.class)
                     .setParameter("idDocente", idDocente)
@@ -102,3 +103,4 @@ public class CursoDAOImpl implements CursoDAO {
         }
     }
 }
+

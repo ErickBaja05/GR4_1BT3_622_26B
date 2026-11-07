@@ -36,6 +36,7 @@ public class AuditoriaServiceImpl implements AuditoriaService {
     private final GitHubClient gitHubClient;
     private final EvaluadorReglaFactory evaluadorFactory;
     private final ProyectoDAO proyectoDAO;
+    private final ValidadorAccesoCurso validadorAccesoCurso;
     private AsignacionesService asignacionesService;
 
     public AuditoriaServiceImpl() {
@@ -56,7 +57,8 @@ public class AuditoriaServiceImpl implements AuditoriaService {
         this.gitHubClient = gitHubClient;
         this.evaluadorFactory = evaluadorFactory;
         this.proyectoDAO = proyectoDAO;
-        this.asignacionesService = new AsignacionesServiceImpl();
+        this.validadorAccesoCurso = new ValidadorAccesoCurso(null);
+        this.asignacionesService = null;
     }
 
     public AuditoriaServiceImpl(ReglaDAO reglaDAO, AuditoriaDAO auditoriaDAO,
@@ -82,10 +84,37 @@ public class AuditoriaServiceImpl implements AuditoriaService {
 
     @Override
     public ResultadoDTO confirmarEjecucionDeAuditoria(AuditoriaDTO dto) {
-        if (dto == null || dto.getIdAsignacion() == null) {
-            throw new ExcepcionNegocio("No se permiten auditorías libres. Debe seleccionar una asignación válida dentro de sus cursos matriculados.");
+        if (dto != null && dto.getIdAsignacion() != null) {
+            return ejecutarAuditoriaDeAsignacion(dto);
         }
-        return ejecutarAuditoriaDeAsignacion(dto);
+
+        if (dto != null && dto.getProyectoId() != null && proyectoDAO != null) {
+            Proyecto proyecto = proyectoDAO.buscarPorId(dto.getProyectoId());
+            if (proyecto != null && dto.getUsuarioId() != null && proyecto.getUsuario() != null) {
+                if (!dto.getUsuarioId().equals(proyecto.getUsuario().getId())) {
+                    throw new ExcepcionNegocio("No tiene permisos para auditar un proyecto que no le pertenece");
+                }
+            }
+        }
+
+        String urlRepositorio = dto == null ? null : dto.getUrl();
+        List<String> rutas = gitHubClient.obtenerEstructuraDelRepositorio(urlRepositorio);
+        List<Regla> reglas = obtenerReglasVigentes();
+
+        Auditoria auditoria = crearAuditoria(dto);
+        auditoria.setTipoAuditoria("GENERAL");
+        if (dto != null && dto.getProyectoId() != null) {
+            auditoria.setNumeroEnProyecto(auditoriaDAO.obtenerSiguienteNumeroGeneralEnProyecto(dto.getProyectoId()));
+        }
+        evaluarReglas(auditoria, reglas, rutas, urlRepositorio);
+
+        calcularPuntajesDeLaAuditoria(auditoria);
+        auditoria.setDictamen(auditoria.determinarDictamen());
+        auditoriaDAO.registrarAuditoriaEnElHistorial(auditoria);
+
+        ResultadoDTO resultadoDTO = crearResultadoDTO(auditoria);
+        resultadoDTO.setUmbralAprobacion(Auditoria.UMBRAL_MINIMO_APROBACION);
+        return resultadoDTO;
     }
 
     private List<Regla> obtenerReglasVigentes() {
@@ -225,18 +254,8 @@ public class AuditoriaServiceImpl implements AuditoriaService {
             throw new ExcepcionNegocio("Debe seleccionar un proyecto válido");
         }
 
-        if (auditoriaDTO.getUsuarioId() != null && proyecto.getUsuario() != null) {
-            if (!auditoriaDTO.getUsuarioId().equals(proyecto.getUsuario().getId())) {
-                throw new ExcepcionNegocio("No tiene permisos para auditar un proyecto que no le pertenece");
-            }
-        }
-
-        Asignacion asignacion = (asignacionesService != null) ? asignacionesService.buscarPorId(auditoriaDTO.getIdAsignacion()) : null;
-        if (asignacion != null && asignacion.getCurso() != null && auditoriaDTO.getUsuarioId() != null) {
-            if (!estaMatriculadoEnCurso(asignacion.getCurso(), auditoriaDTO.getUsuarioId())) {
-                throw new ExcepcionNegocio("No tienes permisos para acceder a las asignaciones de un curso en el que no estás matriculado");
-            }
-        }
+        verificarPertenenciaProyecto(auditoriaDTO, proyecto);
+        validarAccesoEstudianteACursoDeAsignacion(auditoriaDTO);
 
         String urlRepositorio = (proyecto.getUrlGithub() != null && !proyecto.getUrlGithub().isBlank())
                 ? proyecto.getUrlGithub()
@@ -271,18 +290,29 @@ public class AuditoriaServiceImpl implements AuditoriaService {
         return resultadoDTO;
     }
 
-    private boolean estaMatriculadoEnCurso(Curso curso, Long usuarioId) {
-        if (curso == null || usuarioId == null) {
-            return false;
-        }
-        if (curso.getListadoEstudiantes() != null && !curso.getListadoEstudiantes().isEmpty()) {
-            for (ListadoEstudiantes le : curso.getListadoEstudiantes()) {
-                if (le != null && le.getEstudiante() != null && usuarioId.equals(le.getEstudiante().getId())) {
-                    return "ACTIVO".equalsIgnoreCase(le.getEstado());
-                }
+    /**
+     * Refactoring: Extract Method (Martin Fowler)
+     * Verifica que el proyecto a auditar pertenezca al usuario en sesión.
+     */
+    private void verificarPertenenciaProyecto(AuditoriaDTO auditoriaDTO, Proyecto proyecto) {
+        if (auditoriaDTO.getUsuarioId() != null && proyecto.getUsuario() != null) {
+            if (!auditoriaDTO.getUsuarioId().equals(proyecto.getUsuario().getId())) {
+                throw new ExcepcionNegocio("No tiene permisos para auditar un proyecto que no le pertenece");
             }
         }
-        return false;
+    }
+
+    /**
+     * Refactoring: Extract Method (Martin Fowler)
+     * Valida mediante el ValidadorAccesoCurso que el estudiante esté matriculado en el curso de la asignación.
+     */
+    private void validarAccesoEstudianteACursoDeAsignacion(AuditoriaDTO auditoriaDTO) {
+        Asignacion asignacion = (asignacionesService != null)
+                ? asignacionesService.buscarPorId(auditoriaDTO.getIdAsignacion())
+                : null;
+        if (asignacion != null && asignacion.getCurso() != null && auditoriaDTO.getUsuarioId() != null) {
+            validadorAccesoCurso.validarAccesoEstudianteACurso(asignacion.getCurso(), auditoriaDTO.getUsuarioId());
+        }
     }
 
     @Override

@@ -35,33 +35,64 @@ public class AuditoriaServlet extends HttpServlet {
     private final AuditoriaService auditoriaService;
     private final ProyectoDAO proyectoDAO;
     private final CalculadoraDeudaTecnica calculadoraDeudaTecnica;
+    private final com.gr4.owlaudit.service.AsignacionesService asignacionesService;
+    private final com.gr4.owlaudit.service.ValidadorAccesoCurso validadorAccesoCurso;
 
     public AuditoriaServlet() {
-        this(new AuditoriaServiceImpl(), new ProyectoDAOImpl(), new CalculadoraDeudaTecnica());
+        this(new AuditoriaServiceImpl(), new ProyectoDAOImpl(), new CalculadoraDeudaTecnica(),
+                new com.gr4.owlaudit.service.AsignacionesServiceImpl(), new com.gr4.owlaudit.service.ValidadorAccesoCurso(new com.gr4.owlaudit.dao.CursoDAOImpl()));
     }
 
     public AuditoriaServlet(AuditoriaService auditoriaService, ProyectoDAO proyectoDAO) {
-        this(auditoriaService, proyectoDAO, new CalculadoraDeudaTecnica());
+        this(auditoriaService, proyectoDAO, new CalculadoraDeudaTecnica(), null, null);
     }
 
     public AuditoriaServlet(AuditoriaService auditoriaService, ProyectoDAO proyectoDAO,
                             CalculadoraDeudaTecnica calculadoraDeudaTecnica) {
+        this(auditoriaService, proyectoDAO, calculadoraDeudaTecnica, null, null);
+    }
+
+    public AuditoriaServlet(AuditoriaService auditoriaService, ProyectoDAO proyectoDAO,
+                            CalculadoraDeudaTecnica calculadoraDeudaTecnica,
+                            com.gr4.owlaudit.service.AsignacionesService asignacionesService,
+                            com.gr4.owlaudit.service.ValidadorAccesoCurso validadorAccesoCurso) {
         this.auditoriaService = auditoriaService;
         this.proyectoDAO = proyectoDAO;
         this.calculadoraDeudaTecnica = calculadoraDeudaTecnica;
+        this.asignacionesService = asignacionesService;
+        this.validadorAccesoCurso = validadorAccesoCurso;
     }
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) 
             throws ServletException, IOException {
         
-        String idAsignacionParam = request.getParameter("idAsignacion");
+        String idAsignacionParam = obtenerIdAsignacionParam(request);
         if (idAsignacionParam == null || idAsignacionParam.isBlank()) {
             response.sendRedirect(request.getContextPath() + "/curso?error=sinAsignacion");
             return;
         }
 
-        UsuarioDTO usuario = (UsuarioDTO) request.getSession().getAttribute(LoginServlet.ATRIBUTO_USUARIO);
+        jakarta.servlet.http.HttpSession session = request.getSession(false);
+        UsuarioDTO usuario = (session != null)
+                ? (UsuarioDTO) session.getAttribute(LoginServlet.ATRIBUTO_USUARIO)
+                : null;
+
+        if (usuario != null && usuario.getRol() == RolEnum.ESTUDIANTE && validadorAccesoCurso != null && asignacionesService != null) {
+            try {
+                Long idAsignacion = Long.parseLong(idAsignacionParam.trim());
+                com.gr4.owlaudit.model.Asignacion asignacion = asignacionesService.buscarPorId(idAsignacion);
+                if (asignacion == null || asignacion.getCurso() == null ||
+                        !validadorAccesoCurso.estaEstudianteMatriculado(asignacion.getCurso(), usuario.getId())) {
+                    response.sendRedirect(request.getContextPath() + "/curso?error=permisos");
+                    return;
+                }
+            } catch (NumberFormatException e) {
+                response.sendRedirect(request.getContextPath() + "/curso?error=sinAsignacion");
+                return;
+            }
+        }
+
         List<Proyecto> proyectos = (usuario != null && usuario.getRol() == RolEnum.ESTUDIANTE)
                 ? proyectoDAO.listarPorUsuarioId(usuario.getId())
                 : proyectoDAO.listarTodos();
@@ -146,13 +177,31 @@ public class AuditoriaServlet extends HttpServlet {
     protected void doPost(HttpServletRequest request, HttpServletResponse response) 
             throws ServletException, IOException {
         
-        String idAsignacionParam = request.getParameter("idAsignacion");
+        String idAsignacionParam = obtenerIdAsignacionParam(request);
         if (idAsignacionParam == null || idAsignacionParam.isBlank()) {
             response.sendRedirect(request.getContextPath() + "/curso?error=sinAsignacion");
             return;
         }
 
-        UsuarioDTO usuario = (UsuarioDTO) request.getSession().getAttribute(LoginServlet.ATRIBUTO_USUARIO);
+        jakarta.servlet.http.HttpSession session = request.getSession(false);
+        UsuarioDTO usuario = (session != null)
+                ? (UsuarioDTO) session.getAttribute(LoginServlet.ATRIBUTO_USUARIO)
+                : null;
+
+        if (usuario != null && usuario.getRol() == RolEnum.ESTUDIANTE && validadorAccesoCurso != null && asignacionesService != null) {
+            try {
+                Long idAsignacion = Long.parseLong(idAsignacionParam.trim());
+                com.gr4.owlaudit.model.Asignacion asignacion = asignacionesService.buscarPorId(idAsignacion);
+                if (asignacion == null || asignacion.getCurso() == null ||
+                        !validadorAccesoCurso.estaEstudianteMatriculado(asignacion.getCurso(), usuario.getId())) {
+                    response.sendRedirect(request.getContextPath() + "/curso?error=permisos");
+                    return;
+                }
+            } catch (NumberFormatException e) {
+                response.sendRedirect(request.getContextPath() + "/curso?error=sinAsignacion");
+                return;
+            }
+        }
         request.setCharacterEncoding("UTF-8");
         String urlRepo = request.getParameter("urlGithub");
         String proyectoIdParam = request.getParameter("proyectoId");
@@ -200,10 +249,17 @@ public class AuditoriaServlet extends HttpServlet {
         }
 
         AuditoriaDTO dto = new AuditoriaDTO(proyectoId, urlRepo == null ? null : urlRepo.trim(), usuario != null ? usuario.getId() : null);
+        String idAsignacionStr = obtenerIdAsignacionParam(request);
+        if (idAsignacionStr != null && !idAsignacionStr.isBlank()) {
+            try {
+                dto.setIdAsignacion(Long.parseLong(idAsignacionStr.trim()));
+            } catch (NumberFormatException ignored) {
+            }
+        }
         request.setAttribute("auditoriaDTO", dto);
 
         try {
-            ResultadoDTO resultadoDTO = auditoriaService.confirmarEjecucionDeAuditoria(dto);
+            ResultadoDTO resultadoDTO = auditoriaService.ejecutarAuditoriaDeAsignacion(dto);
             request.setAttribute("resultadoDTO", resultadoDTO);
             request.setAttribute("mensajeExito", "Auditoría ejecutada y registrada en el historial correctamente.");
 
@@ -219,5 +275,12 @@ public class AuditoriaServlet extends HttpServlet {
         }
 
         request.getRequestDispatcher(VISTA).forward(request, response);
+    }
+
+    /**
+     * Refactoring: Replace Temp with Query (Martin Fowler)
+     */
+    private String obtenerIdAsignacionParam(HttpServletRequest request) {
+        return request.getParameter("idAsignacion");
     }
 }

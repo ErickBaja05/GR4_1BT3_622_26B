@@ -14,3 +14,4 @@ public interface CursoService {
 
     boolean estaEstudianteMatriculado(Long idCurso, Long idEstudiante);
 }
+

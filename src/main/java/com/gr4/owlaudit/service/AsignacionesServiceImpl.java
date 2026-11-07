@@ -29,6 +29,7 @@ public class AsignacionesServiceImpl implements AsignacionesService {
     private final ReglaDAO reglaDAO;
     private final ProyectoDAO proyectoDAO;
     private final CursoDAO cursoDAO;
+    private final ValidadorAccesoCurso validadorAccesoCurso;
     private AuditoriaService auditoriaService;
 
     public AsignacionesServiceImpl() {
@@ -45,7 +46,7 @@ public class AsignacionesServiceImpl implements AsignacionesService {
             AsignacionesDAO asignacionesDAO,
             ReglaDAO reglaDAO,
             ProyectoDAO proyectoDAO) {
-        this(asignacionesDAO, reglaDAO, proyectoDAO, new CursoDAOImpl());
+        this(asignacionesDAO, reglaDAO, proyectoDAO, (CursoDAO) null);
     }
 
     public AsignacionesServiceImpl(
@@ -57,6 +58,7 @@ public class AsignacionesServiceImpl implements AsignacionesService {
         this.reglaDAO = reglaDAO;
         this.proyectoDAO = proyectoDAO;
         this.cursoDAO = cursoDAO;
+        this.validadorAccesoCurso = new ValidadorAccesoCurso(cursoDAO);
     }
 
     public AsignacionesServiceImpl(
@@ -202,15 +204,7 @@ public class AsignacionesServiceImpl implements AsignacionesService {
             return Collections.emptyList();
         }
         if (idEstudiante != null) {
-            boolean matriculado = (cursoDAO != null) && cursoDAO.estaEstudianteMatriculado(idCurso, idEstudiante);
-            if (!matriculado) {
-                Curso curso = (cursoDAO != null) ? cursoDAO.buscarPorId(idCurso) : null;
-                if (curso != null && !estaMatriculadoEnCurso(curso, idEstudiante)) {
-                    throw new ExcepcionNegocio("No tienes permisos para acceder a las asignaciones de un curso en el que no estás matriculado");
-                } else if (curso == null) {
-                    throw new ExcepcionNegocio("No tienes permisos para acceder a las asignaciones de un curso en el que no estás matriculado");
-                }
-            }
+            validadorAccesoCurso.validarAccesoEstudianteACurso(idCurso, idEstudiante);
         }
         return asignacionesDAO.consultarAsignacionesDeCurso(idCurso);
     }
@@ -232,14 +226,7 @@ public class AsignacionesServiceImpl implements AsignacionesService {
 
     @Override
     public ResumenAsignacionDTO generarResumenAsignacion(Long idAsignacion, Long usuarioId) {
-        if (idAsignacion != null && usuarioId != null) {
-            Asignacion asignacion = asignacionesDAO.buscarPorId(idAsignacion);
-            if (asignacion != null && asignacion.getCurso() != null) {
-                if (!estaMatriculadoEnCurso(asignacion.getCurso(), usuarioId)) {
-                    throw new ExcepcionNegocio("No tienes permisos para acceder a las asignaciones de un curso en el que no estás matriculado");
-                }
-            }
-        }
+        validarAccesoAsignacion(idAsignacion, usuarioId);
 
         List<Proyecto> proyectos = (usuarioId != null)
                 ? proyectoDAO.listarPorUsuarioId(usuarioId)
@@ -253,21 +240,18 @@ public class AsignacionesServiceImpl implements AsignacionesService {
                 obtenerNombreAsignacion(idAsignacion));
     }
 
-    private boolean estaMatriculadoEnCurso(Curso curso, Long usuarioId) {
-        if (curso == null || usuarioId == null) {
-            return false;
+    /**
+     * Refactoring: Extract Method (Martin Fowler)
+     * Extrae y centraliza la validación de acceso de la asignación consultada.
+     */
+    private void validarAccesoAsignacion(Long idAsignacion, Long usuarioId) {
+        if (idAsignacion == null || usuarioId == null) {
+            return;
         }
-        if (curso.getListadoEstudiantes() != null && !curso.getListadoEstudiantes().isEmpty()) {
-            for (ListadoEstudiantes le : curso.getListadoEstudiantes()) {
-                if (le != null && le.getEstudiante() != null && usuarioId.equals(le.getEstudiante().getId())) {
-                    return "ACTIVO".equalsIgnoreCase(le.getEstado());
-                }
-            }
+        Asignacion asignacion = asignacionesDAO.buscarPorId(idAsignacion);
+        if (asignacion != null && asignacion.getCurso() != null) {
+            validadorAccesoCurso.validarAccesoEstudianteACurso(asignacion.getCurso(), usuarioId);
         }
-        if (cursoDAO != null && curso.getId() != null) {
-            return cursoDAO.estaEstudianteMatriculado(curso.getId(), usuarioId);
-        }
-        return false;
     }
 
     private String obtenerNombreAsignacion(Long idAsignacion) {

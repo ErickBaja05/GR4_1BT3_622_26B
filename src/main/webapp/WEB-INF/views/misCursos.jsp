@@ -56,7 +56,7 @@
                 <h3><%= HtmlUtil.escape(c.getNombre()) %></h3>
                 <p>
                     <strong>Periodo:</strong> <%= HtmlUtil.escape(c.getPeriodoAcademico()) %><br>
-                    <% if (c.getDocente() != null) { %>
+                    <% if (c.getDocente() != null && c.getDocente().getNombre() != null) { %>
                         <strong>Docente:</strong> <%= HtmlUtil.escape(c.getDocente().getNombre()) %><br>
                     <% } %>
                     <%= c.getDescripcion() != null ? HtmlUtil.escape(c.getDescripcion()) : "" %>
@@ -64,7 +64,7 @@
                 <div style="margin-top: 1rem;">
                     <% if (usuario != null && usuario.getRol() == RolEnum.ESTUDIANTE) { %>
                         <a class="btn btn-primary btn-block"
-                           href="<%= ctx %>/asignaciones?idCurso=<%= c.getId() %>&vista=estudiante">
+                           href="<%= ctx %>/asignaciones?idCurso=<%= c.getId() %>">
                             Ver asignaciones del curso
                         </a>
                     <% } else { %>
@@ -86,3 +86,4 @@
 
 </body>
 </html>
+

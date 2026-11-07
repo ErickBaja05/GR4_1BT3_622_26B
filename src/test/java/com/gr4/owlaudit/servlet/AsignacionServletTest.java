@@ -248,4 +248,47 @@ class AsignacionServletTest {
         verify(request).getRequestDispatcher(VISTA_DETALLE_ESTUDIANTE);
         verify(dispatcher).forward(request, response);
     }
+
+    @Test
+    @DisplayName("Punto 1 UI: Estudiante no matriculado es bloqueado y redirigido en GET de asignaciones de curso ajeno")
+    void given_estudianteNoMatriculado_when_doGetAsignacionesCursoAjeno_then_redirigeACursoConErrorPermisos() throws Exception {
+        jakarta.servlet.http.HttpSession session = org.mockito.Mockito.mock(jakarta.servlet.http.HttpSession.class);
+        com.gr4.owlaudit.dto.UsuarioDTO usuarioSofia = new com.gr4.owlaudit.dto.UsuarioDTO(
+                99L, "Sofía Torres", "sofia@epn.edu.ec", com.gr4.owlaudit.model.RolEnum.ESTUDIANTE);
+
+        when(request.getSession(false)).thenReturn(session);
+        when(session.getAttribute(LoginServlet.ATRIBUTO_USUARIO)).thenReturn(usuarioSofia);
+        when(request.getParameter("idCurso")).thenReturn("1");
+        when(request.getContextPath()).thenReturn("/Owl_Audit_App");
+
+        com.gr4.owlaudit.dao.CursoDAO cursoDAOMock = org.mockito.Mockito.mock(com.gr4.owlaudit.dao.CursoDAO.class);
+        when(cursoDAOMock.estaEstudianteMatriculado(1L, 99L)).thenReturn(false);
+
+        AsignacionServlet servletProtegido = new AsignacionServlet(
+                asignacionesService, reglaDAO, auditoriaService, proyectoDAO, auditoriaDAO, cursoDAOMock);
+
+        servletProtegido.doGet(request, response);
+
+        verify(response).sendRedirect("/Owl_Audit_App/curso?error=permisos");
+        verify(dispatcher, never()).forward(request, response);
+    }
+
+    @Test
+    @DisplayName("Punto 1 UI: Estudiante sin curso ni asignación es redirigido en GET a /curso?error=sinCurso")
+    void given_estudianteSinCurso_when_doGetAsignaciones_then_redirigeACursoConErrorSinCurso() throws Exception {
+        jakarta.servlet.http.HttpSession session = org.mockito.Mockito.mock(jakarta.servlet.http.HttpSession.class);
+        com.gr4.owlaudit.dto.UsuarioDTO usuarioEstudiante = new com.gr4.owlaudit.dto.UsuarioDTO(
+                10L, "Carlos Mendoza", "carlos@epn.edu.ec", com.gr4.owlaudit.model.RolEnum.ESTUDIANTE);
+
+        when(request.getSession(false)).thenReturn(session);
+        when(session.getAttribute(LoginServlet.ATRIBUTO_USUARIO)).thenReturn(usuarioEstudiante);
+        when(request.getParameter("idCurso")).thenReturn(null);
+        when(request.getParameter("idAsignacion")).thenReturn(null);
+        when(request.getContextPath()).thenReturn("/Owl_Audit_App");
+
+        servlet.doGet(request, response);
+
+        verify(response).sendRedirect("/Owl_Audit_App/curso?error=sinCurso");
+        verify(dispatcher, never()).forward(request, response);
+    }
 }
