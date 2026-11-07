@@ -241,7 +241,7 @@ public class AuditoriaDAOImpl implements AuditoriaDAO {
                 "LEFT JOIN FETCH r.hallazgo " +
                 "WHERE a.asignacion.id = :asigId ";
             if (usuarioId != null) {
-                hql += "AND (p.usuario.id = :uid OR a.usuario.id = :uid) ";
+                hql += "AND (p.estudiante.id = :uid OR a.estudiante.id = :uid) ";
             }
             hql += "ORDER BY a.fechaHora DESC, a.id DESC";
 
@@ -481,7 +481,7 @@ public class AuditoriaDAOImpl implements AuditoriaDAO {
                 "LEFT JOIN FETCH a.resultados r " +
                 "LEFT JOIN FETCH r.regla " +
                 "LEFT JOIN FETCH r.hallazgo " +
-                "WHERE a.usuario.id = :usuarioId OR a.proyecto.usuario.id = :usuarioId " +
+                "WHERE a.estudiante.id = :usuarioId OR a.proyecto.estudiante.id = :usuarioId " +
                 "ORDER BY a.fechaHora DESC",
                 Auditoria.class
             )

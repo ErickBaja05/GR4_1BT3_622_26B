@@ -52,7 +52,7 @@ public class ProyectoDAOImpl implements ProyectoDAO {
             session = HibernateUtil.getSessionFactory().openSession();
             tx = session.beginTransaction();
             List<Proyecto> lista = session.createQuery(
-                "SELECT p FROM Proyecto p WHERE p.usuario.id = :usuarioId ORDER BY p.id ASC", 
+                "SELECT p FROM Proyecto p WHERE p.estudiante.id = :usuarioId ORDER BY p.id ASC", 
                 Proyecto.class
             )
             .setParameter("usuarioId", usuarioId)
@@ -106,14 +106,14 @@ public class ProyectoDAOImpl implements ProyectoDAO {
         }
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
             Proyecto p = session.createQuery(
-                "SELECT p FROM Proyecto p WHERE p.id = :pid AND p.usuario.id = :uid", Proyecto.class)
+                "SELECT p FROM Proyecto p WHERE p.id = :pid AND p.estudiante.id = :uid", Proyecto.class)
                 .setParameter("pid", proyectoId)
                 .setParameter("uid", usuarioId)
                 .uniqueResult();
             if (p != null) return p;
 
             return session.createQuery(
-                "SELECT p FROM Proyecto p WHERE p.idEstudiante = :pid AND p.usuario.id = :uid", Proyecto.class)
+                "SELECT p FROM Proyecto p WHERE p.idEstudiante = :pid AND p.estudiante.id = :uid", Proyecto.class)
                 .setParameter("pid", proyectoId)
                 .setParameter("uid", usuarioId)
                 .uniqueResult();
@@ -216,7 +216,7 @@ public class ProyectoDAOImpl implements ProyectoDAO {
             session = HibernateUtil.getSessionFactory().openSession();
             tx = session.beginTransaction();
             List<Proyecto> restantes = session.createQuery(
-                "SELECT p FROM Proyecto p WHERE p.usuario.id = :usuarioId ORDER BY p.id ASC",
+                "SELECT p FROM Proyecto p WHERE p.estudiante.id = :usuarioId ORDER BY p.id ASC",
                 Proyecto.class
             ).setParameter("usuarioId", usuarioId).list();
 

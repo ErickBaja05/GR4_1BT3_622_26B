@@ -26,9 +26,9 @@ public class Proyecto {
     @Column(name = "fecha_registro", nullable = false)
     private LocalDateTime fechaRegistro;
 
-    @jakarta.persistence.ManyToOne
-    @jakarta.persistence.JoinColumn(name = "usuario_id")
-    private Usuario usuario;
+    @jakarta.persistence.ManyToOne(optional = false)
+    @jakarta.persistence.JoinColumn(name = "usuario_id", nullable = false)
+    private Estudiante estudiante;
 
     @Column(name = "id_estudiante")
     private Long idEstudiante;
@@ -43,9 +43,9 @@ public class Proyecto {
             this.fechaRegistro = LocalDateTime.now();
             this.idEstudiante = dto.getIdEstudiante();
             if (dto.getUsuarioId() != null) {
-                Usuario u = new Usuario();
-                u.setId(dto.getUsuarioId());
-                this.usuario = u;
+                Estudiante e = new Estudiante();
+                e.setId(dto.getUsuarioId());
+                this.estudiante = e;
             }
         }
     }
@@ -86,12 +86,20 @@ public class Proyecto {
         this.fechaRegistro = fechaRegistro;
     }
 
+    public Estudiante getEstudiante() {
+        return estudiante;
+    }
+
+    public void setEstudiante(Estudiante estudiante) {
+        this.estudiante = estudiante;
+    }
+
     public Usuario getUsuario() {
-        return usuario;
+        return estudiante;
     }
 
     public void setUsuario(Usuario usuario) {
-        this.usuario = usuario;
+        this.estudiante = Estudiante.desdeUsuario(usuario);
     }
 
     public Long getIdEstudiante() {
@@ -107,7 +115,7 @@ public class Proyecto {
     }
 
     public boolean esPropietario(Long usuarioId) {
-        return usuarioId != null && this.usuario != null && usuarioId.equals(this.usuario.getId());
+        return usuarioId != null && this.estudiante != null && usuarioId.equals(this.estudiante.getId());
     }
 
     /**

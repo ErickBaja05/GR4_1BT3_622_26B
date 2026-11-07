@@ -1,0 +1,181 @@
+@startuml
+hide circle
+skinparam linetype ortho
+skinparam entity {
+    BackgroundColor White
+    BorderColor #555555
+}
+
+entity "Usuario" as Usuario {
+    * id_usuario : BIGINT <<PK>>
+    --
+    nombre : VARCHAR(100)
+    correo : VARCHAR(100) <<UNIQUE>>
+    contrasena : VARCHAR(255)
+    rol : VARCHAR(20)
+}
+
+entity "Docente" as Docente <<Rol>> {
+    * id_docente : BIGINT <<PK, FK>>
+    --
+    ' Especialización de Usuario con rol = 'DOCENTE'
+}
+
+entity "Estudiante" as Estudiante <<Rol>> {
+    * id_estudiante : BIGINT <<PK, FK>>
+    --
+    ' Especialización de Usuario con rol = 'ESTUDIANTE'
+}
+
+entity "Curso" as Curso {
+    * id_curso : BIGINT <<PK>>
+    --
+    * id_docente : BIGINT <<FK>>
+    codigo : VARCHAR(50) <<UNIQUE>>
+    nombre : VARCHAR(100)
+    periodo_academico : VARCHAR(20)
+    descripcion : TEXT
+}
+
+entity "ListadoEstudiantes" as ListadoEstudiantes {
+    * id_curso : BIGINT <<PK, FK>>
+    * id_estudiante : BIGINT <<PK, FK>>
+    --
+    fecha_matricula : TIMESTAMP
+    estado : VARCHAR(20)
+}
+
+entity "ReglaEvaluacion" as ReglaEvaluacion {
+    * id_regla : BIGINT <<PK>>
+    --
+    * id_curso : BIGINT <<FK>>
+    nombre_representativo : VARCHAR(100)
+    descripcion_detallada : VARCHAR(200)
+    tipo_motor : VARCHAR(50)
+    parametro_exacto : VARCHAR(100)
+    nivel_severidad : VARCHAR(20)
+    ponderacion : INT
+    vigencia : VARCHAR(20)
+    activa : BOOLEAN
+    .. Restricción ..
+    UNIQUE(id_curso, nombre_representativo)
+}
+
+entity "Asignacion" as Asignacion {
+    * id_asignacion : BIGINT <<PK>>
+    --
+    * id_curso : BIGINT <<FK>>
+    nombre : VARCHAR(100)
+    descripcion : TEXT
+    umbral_aprobacion : DECIMAL(5,2)
+    id_secuencial : BIGINT
+    numero_intentos : INT
+    fecha_inicio : TIMESTAMP
+    fecha_limite : TIMESTAMP
+    .. Restricción ..
+    UNIQUE(id_curso, nombre)
+}
+
+entity "AsignacionRegla" as AsignacionRegla {
+    * id_asignacion : BIGINT <<PK, FK>>
+    * id_regla : BIGINT <<PK, FK>>
+}
+
+entity "Proyecto" as Proyecto {
+    * id_proyecto : BIGINT <<PK>>
+    --
+    id_estudiante : BIGINT <<FK>>
+    nombre : VARCHAR(150)
+    repositorio_url : VARCHAR(255)
+    fecha_registro : TIMESTAMP
+    id_secuencial_estudiante : BIGINT
+}
+
+entity "Auditoria" as Auditoria {
+    * id_auditoria : BIGINT <<PK>>
+    --
+    * id_asignacion : BIGINT <<FK>>
+    * id_proyecto : BIGINT <<FK>>
+    * id_estudiante : BIGINT <<FK>>
+    tipo_auditoria : VARCHAR(30)
+    fecha_auditoria : TIMESTAMP
+    puntaje_obtenido : INT
+    puntaje_maximo : INT
+    porcentaje : DECIMAL(5,2)
+    dictamen : VARCHAR(20)
+    numero_intento : INT
+    numero_en_proyecto : INT
+}
+
+entity "ResultadoRegla" as ResultadoRegla {
+    * id_resultado : BIGINT <<PK>>
+    --
+    id_auditoria : BIGINT <<FK>>
+    id_regla : BIGINT <<FK>>
+    cumple : BOOLEAN
+    puntos_obtenidos : INT
+}
+
+entity "Hallazgo" as Hallazgo {
+    * id_hallazgo : BIGINT <<PK>>
+    --
+    id_resultado : BIGINT <<FK, UNIQUE>>
+    nivel_severidad : VARCHAR(20)
+    evidencia : VARCHAR(500)
+    recomendacion : VARCHAR(500)
+}
+
+entity "SolicitudRetroalimentacion" as SolicitudRetroalimentacion {
+    * id_solicitud : BIGINT <<PK>>
+    --
+    id_hallazgo : BIGINT <<FK>>
+    id_estudiante : BIGINT <<FK>>
+    id_docente : BIGINT <<FK, NULLABLE>>
+    estado : VARCHAR(20)
+    justificacion : VARCHAR(1000)
+    orientacion_tecnica : VARCHAR(1000)
+    fecha_solicitud : TIMESTAMP
+}
+
+' Especialización de Usuarios
+Usuario ||--|| Docente : subtipo
+Usuario ||--|| Estudiante : subtipo
+
+' Docentes y cursos
+Docente ||--o{ Curso : imparte
+
+' Estudiantes y cursos (Matrícula)
+Curso ||--o{ ListadoEstudiantes : registra
+Estudiante ||--o{ ListadoEstudiantes : se matricula
+
+' Cursos y catálogo de reglas
+Curso ||--o{ ReglaEvaluacion : define
+
+' Cursos y asignaciones
+Curso ||--o{ Asignacion : contiene
+
+' Asignaciones y reglas (N:M pura)
+Asignacion ||--o{ AsignacionRegla : incluye
+ReglaEvaluacion ||--o{ AsignacionRegla : es utilizada en
+
+' Estudiantes y proyectos
+Estudiante ||--o{ Proyecto : registra
+
+' Auditorias vinculadas estrictamente a asignacion, proyecto y estudiante
+Asignacion ||--o{ Auditoria : evalua en
+Proyecto ||--o{ Auditoria : es evaluado en
+Estudiante ||--o{ Auditoria : ejecuta
+
+' Resultados de auditoria y evaluacion de reglas
+Auditoria ||--|{ ResultadoRegla : desglosa
+ReglaEvaluacion ||--o{ ResultadoRegla : es evaluada en
+
+' Hallazgos de incumplimiento
+ResultadoRegla ||--o| Hallazgo : genera
+
+' Retroalimentacion tecnica
+Hallazgo ||--o{ SolicitudRetroalimentacion : origina
+Estudiante ||--o{ SolicitudRetroalimentacion : solicita
+Docente |o--o{ SolicitudRetroalimentacion : atiende
+
+@enduml
