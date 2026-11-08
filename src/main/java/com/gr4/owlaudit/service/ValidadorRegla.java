@@ -49,18 +49,9 @@ public class ValidadorRegla {
 
     private TipoMotorEnum validarTipoMotor(String tipoMotorStr) {
         String trimmed = tipoMotorStr.trim();
-        if ("Convención de Commits".equalsIgnoreCase(trimmed) || "Convencion de Commits".equalsIgnoreCase(trimmed)) {
-            return TipoMotorEnum.CONVENCION_COMMITS;
-        }
-        if ("Restricción de Archivos".equalsIgnoreCase(trimmed) || "Restriccion de Archivos".equalsIgnoreCase(trimmed)
-                || "Restricción de Archivo".equalsIgnoreCase(trimmed) || "Restriccion de Archivo".equalsIgnoreCase(trimmed)) {
-            return TipoMotorEnum.RESTRICCION_ARCHIVOS;
-        }
-        if ("Estructura de Carpetas".equalsIgnoreCase(trimmed)) {
-            return TipoMotorEnum.ESTRUCTURA_CARPETAS;
-        }
-        if ("Presencia de Archivo".equalsIgnoreCase(trimmed)) {
-            return TipoMotorEnum.PRESENCIA_ARCHIVO;
+        TipoMotorEnum motorDetectado = parsearTipoMotorAmigable(trimmed);
+        if (motorDetectado != null) {
+            return motorDetectado;
         }
         try {
             return TipoMotorEnum.valueOf(trimmed.toUpperCase());
@@ -68,6 +59,23 @@ public class ValidadorRegla {
             throw new ExcepcionNegocio("El tipo de motor '" + trimmed
                     + "' no es válido. Debe ser PRESENCIA_ARCHIVO, RESTRICCION_ARCHIVOS, ESTRUCTURA_CARPETAS o CONVENCION_COMMITS.");
         }
+    }
+
+    private TipoMotorEnum parsearTipoMotorAmigable(String nombre) {
+        String normalizado = nombre.toLowerCase().replace("ó", "o");
+        if (normalizado.contains("commit")) {
+            return TipoMotorEnum.CONVENCION_COMMITS;
+        }
+        if (normalizado.contains("restriccion")) {
+            return TipoMotorEnum.RESTRICCION_ARCHIVOS;
+        }
+        if (normalizado.contains("carpeta")) {
+            return TipoMotorEnum.ESTRUCTURA_CARPETAS;
+        }
+        if (normalizado.contains("presencia")) {
+            return TipoMotorEnum.PRESENCIA_ARCHIVO;
+        }
+        return null;
     }
 
     private void validarNombreRepresentativo(String nombre) {
