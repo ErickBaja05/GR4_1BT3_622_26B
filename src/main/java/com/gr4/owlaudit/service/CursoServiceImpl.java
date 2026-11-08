@@ -132,10 +132,13 @@ public class CursoServiceImpl implements CursoService {
 
     @Override
     public Curso matricularEstudiantePorCodigo(Long idEstudiante, String codigoCurso) throws ExcepcionNegocio {
-        if (esTextoVacio(codigoCurso)) {
-            throw new ExcepcionNegocio("No existe ningún curso registrado con el código ingresado");
-        }
-        Curso curso = cursoDAO.buscarPorCodigo(normalizarCodigo(codigoCurso));
+        return obtenerCursoPorCodigoValido(codigoCurso);
+    }
+
+    private Curso obtenerCursoPorCodigoValido(String codigoCurso) throws ExcepcionNegocio {
+        Curso curso = esTextoVacio(codigoCurso)
+                ? null
+                : cursoDAO.buscarPorCodigo(normalizarCodigo(codigoCurso));
         if (curso == null) {
             throw new ExcepcionNegocio("No existe ningún curso registrado con el código ingresado");
         }
