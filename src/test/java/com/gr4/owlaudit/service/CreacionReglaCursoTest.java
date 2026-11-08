@@ -19,9 +19,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 
+import java.util.List;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -37,9 +39,6 @@ import static org.mockito.Mockito.when;
 @MockitoSettings(strictness = Strictness.LENIENT)
 public class CreacionReglaCursoTest {
 
-    public static final String MENSAJE_DUPLICADO_CURSO =
-            "Ya existe una regla con ese nombre representativo en este curso";
-
     @Mock
     private ReglaDAO reglaDAO;
 
@@ -50,6 +49,7 @@ public class CreacionReglaCursoTest {
     private ReglaServiceImpl reglaService;
 
     private Curso cursoCSW;
+    private Curso cursoCAL;
     private Curso cursoARQ;
 
     @BeforeEach
@@ -64,10 +64,14 @@ public class CreacionReglaCursoTest {
         cursoCSW = new Curso(docente, "CSW-2026B", "Construcción de Software", "2026B", "Curso CSW");
         cursoCSW.setId(10L);
 
+        cursoCAL = new Curso(docente, "CAL-2026B", "Calidad de Software", "2026B", "Curso CAL");
+        cursoCAL.setId(20L);
+
         cursoARQ = new Curso(docente, "ARQ-2026B", "Arquitectura de Software", "2026B", "Curso ARQ");
         cursoARQ.setId(30L);
 
         when(cursoDAO.buscarPorId(10L)).thenReturn(cursoCSW);
+        when(cursoDAO.buscarPorId(20L)).thenReturn(cursoCAL);
         when(cursoDAO.buscarPorId(30L)).thenReturn(cursoARQ);
     }
 
@@ -170,7 +174,7 @@ public class CreacionReglaCursoTest {
                 reglaService.registrarReglaEvaluacionTecnica(dto)
         );
 
-        assertEquals(MENSAJE_DUPLICADO_CURSO, ex.getMessage());
+        assertEquals(ReglaServiceImpl.MENSAJE_DUPLICADO_CURSO, ex.getMessage());
         verify(reglaDAO, never()).guardar(any(Regla.class));
     }
 
@@ -205,5 +209,64 @@ public class CreacionReglaCursoTest {
         assertEquals("Validar Estructura MVC", guardada.getNombreRepresentativo());
         assertNotNull(guardada.getCurso());
         assertEquals(30L, guardada.getCurso().getId());
+    }
+
+    // ========================================================================
+    // CA1 - Escenario 1.1: Registro exitoso con estado VIGENTE asociado al curso
+    // ========================================================================
+    @Test
+    @DisplayName("CA1 - Escenario 1.1: Given docente en detalle de curso CSW-2026B, When registra regla con valores validos, Then regla queda asociada al curso y con estado VIGENTE")
+    void givenDocenteEnDetalleCurso_whenRegistraReglaConValoresValidos_thenReglaQuedaAsociadaAlCursoYEnEstadoVigente() {
+        NuevaReglaDTO dto = new NuevaReglaDTO(
+                "PRESENCIA_ARCHIVO",
+                "Exigir README",
+                "Verifica la presencia de README.md en la raíz",
+                "README.md",
+                "ALTA",
+                25
+        );
+        dto.setIdCurso(10L);
+
+        when(reglaDAO.existeNombreEnCurso("Exigir README", 10L)).thenReturn(false);
+
+        reglaService.registrarReglaEvaluacionTecnica(dto);
+
+        ArgumentCaptor<Regla> reglaCaptor = ArgumentCaptor.forClass(Regla.class);
+        verify(reglaDAO).guardar(reglaCaptor.capture());
+
+        Regla guardada = reglaCaptor.getValue();
+        assertNotNull(guardada);
+        assertEquals("Exigir README", guardada.getNombreRepresentativo());
+        assertEquals("README.md", guardada.getParametroExacto());
+        assertEquals(com.gr4.owlaudit.model.EstadoVigencia.VIGENTE, guardada.getVigencia());
+        assertNotNull(guardada.getCurso());
+        assertEquals(10L, guardada.getCurso().getId());
+    }
+
+    // ========================================================================
+    // CA1 - Escenario 1.2: Independencia del catálogo de reglas entre distintos cursos
+    // ========================================================================
+    @Test
+    @DisplayName("CA1 - Escenario 1.2: Given reglas registradas en distintos cursos, When docente consulta catalogo de curso CAL-2026B, Then lista unicamente las reglas pertenecientes a ese curso")
+    void givenReglasRegistradasEnDistintosCursos_whenDocenteConsultaCatalogoDeUnCurso_thenListaUnicamenteReglasPertenecientesAEseCurso() {
+        Regla reglaCSW = new Regla();
+        reglaCSW.setId(101L);
+        reglaCSW.setNombreRepresentativo("Exigir README");
+        reglaCSW.setCurso(cursoCSW);
+
+        Regla reglaCAL = new Regla();
+        reglaCAL.setId(201L);
+        reglaCAL.setNombreRepresentativo("Estructura src/main/java");
+        reglaCAL.setCurso(cursoCAL);
+
+        when(reglaDAO.listarPorCurso(10L)).thenReturn(java.util.List.of(reglaCSW));
+        when(reglaDAO.listarPorCurso(20L)).thenReturn(java.util.List.of(reglaCAL));
+
+        java.util.List<Regla> catalogoCAL = reglaService.listarReglasPorCurso(20L);
+
+        assertNotNull(catalogoCAL, "El catálogo del curso no debe ser nulo");
+        assertEquals(1, catalogoCAL.size());
+        assertEquals("Estructura src/main/java", catalogoCAL.get(0).getNombreRepresentativo());
+        assertTrue(catalogoCAL.stream().noneMatch(r -> "Exigir README".equals(r.getNombreRepresentativo())));
     }
 }

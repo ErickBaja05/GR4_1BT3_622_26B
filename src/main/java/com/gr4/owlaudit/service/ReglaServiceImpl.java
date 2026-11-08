@@ -9,8 +9,11 @@ import com.gr4.owlaudit.dto.NuevaReglaDTO;
 import com.gr4.owlaudit.model.Curso;
 import com.gr4.owlaudit.model.EstadoVigencia;
 import com.gr4.owlaudit.model.Regla;
+import java.util.List;
 
 public class ReglaServiceImpl implements ReglaService {
+
+    public static final String MENSAJE_DUPLICADO_CURSO = "Ya existe una regla con ese nombre representativo en este curso";
 
     private final ReglaDAO reglaDAO;
     private final CursoDAO cursoDAO;
@@ -54,16 +57,19 @@ public class ReglaServiceImpl implements ReglaService {
         }
 
         // 3. Verificar unicidad por nombre dentro del curso
-        if (reglaDAO.existeNombreEnCurso(dto.getNombreRepresentativo(), dto.getIdCurso())) {
-            throw new ExcepcionNegocio(
-                    "Ya existe una regla con ese nombre representativo en este curso");
-        }
+        validarUnicidadEnCurso(dto.getNombreRepresentativo(), dto.getIdCurso());
 
         // 4. Instanciar entidad, asociar al curso y persistir
         Regla regla = new Regla(dto);
         regla.setCurso(curso);
         regla.setVigencia(EstadoVigencia.VIGENTE);
         reglaDAO.guardar(regla);
+    }
+
+    private void validarUnicidadEnCurso(String nombre, Long idCurso) {
+        if (reglaDAO.existeNombreEnCurso(nombre, idCurso)) {
+            throw new ExcepcionNegocio(MENSAJE_DUPLICADO_CURSO);
+        }
     }
 
     @Override
@@ -84,6 +90,16 @@ public class ReglaServiceImpl implements ReglaService {
         // 3. Actualizar el estado en el objeto de dominio y persistir invocando al DAO
         reglaActual.setVigencia(nuevoEstado);
         return reglaDAO.actualizarEstadoVigencia(nombreRegla, nuevoEstado);
+    }
+
+    @Override
+    public List<Regla> listarReglasPorCurso(Long idCurso) {
+        return null;
+    }
+
+    @Override
+    public List<Regla> listarReglasVigentesPorCurso(Long idCurso) {
+        return null;
     }
 
 }
