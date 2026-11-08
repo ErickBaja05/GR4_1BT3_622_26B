@@ -113,6 +113,11 @@ public class ReglaServiceImpl implements ReglaService {
     }
 
     @Override
+    public void modificarDescripcionYVigencia(Long idRegla, Long idCurso, Long idDocente, String descripcion, EstadoVigencia vigencia) {
+        // Fase TEST: sin implementar todavía
+    }
+
+    @Override
     public List<Regla> listarReglasPorCurso(Long idCurso) {
         if (idCurso == null) {
             return Collections.emptyList();

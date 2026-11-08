@@ -12,6 +12,8 @@ public interface ReglaService {
 
     boolean cambiarEstadoVigenciaDeUnaRegla(Long idRegla, Long idCurso, EstadoVigencia nuevoEstado);
 
+    void modificarDescripcionYVigencia(Long idRegla, Long idCurso, Long idDocente, String descripcion, EstadoVigencia vigencia);
+
     List<Regla> listarReglasPorCurso(Long idCurso);
 
     List<Regla> listarReglasVigentesPorCurso(Long idCurso);

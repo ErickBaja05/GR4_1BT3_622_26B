@@ -54,4 +54,8 @@ public interface ReglaDAO {
     default boolean actualizarEstadoVigenciaPorIdYCurso(Long idRegla, Long idCurso, EstadoVigencia nuevoEstado) {
         return false;
     }
+
+    default boolean actualizarDescripcionYVigencia(Long idRegla, Long idCurso, String descripcion, EstadoVigencia vigencia) {
+        return false;
+    }
 }
