@@ -1,5 +1,6 @@
 package com.gr4.owlaudit.dto;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -17,7 +18,10 @@ import java.util.List;
  */
 public class NuevaAsignacionDTO {
 
+    private Long idCurso;
     private String nombre;
+    private LocalDateTime fechaLimite;
+    private Integer intentosPermitidos;
     private Double umbralAprobacion;
     private List<Long> reglasIds;
 
@@ -27,6 +31,24 @@ public class NuevaAsignacionDTO {
 
     public NuevaAsignacionDTO(String nombre, Double umbralAprobacion, List<Long> reglasIds) {
         this.nombre = nombre;
+        this.umbralAprobacion = umbralAprobacion;
+        this.reglasIds = (reglasIds != null) ? new ArrayList<>(reglasIds) : new ArrayList<>();
+    }
+
+    public NuevaAsignacionDTO(Long idCurso, String nombre, LocalDateTime fechaLimite, Integer intentosPermitidos, Double umbralAprobacion) {
+        this.idCurso = idCurso;
+        this.nombre = nombre;
+        this.fechaLimite = fechaLimite;
+        this.intentosPermitidos = intentosPermitidos;
+        this.umbralAprobacion = umbralAprobacion;
+        this.reglasIds = new ArrayList<>();
+    }
+
+    public NuevaAsignacionDTO(Long idCurso, String nombre, LocalDateTime fechaLimite, Integer intentosPermitidos, Double umbralAprobacion, List<Long> reglasIds) {
+        this.idCurso = idCurso;
+        this.nombre = nombre;
+        this.fechaLimite = fechaLimite;
+        this.intentosPermitidos = intentosPermitidos;
         this.umbralAprobacion = umbralAprobacion;
         this.reglasIds = (reglasIds != null) ? new ArrayList<>(reglasIds) : new ArrayList<>();
     }
@@ -47,6 +69,30 @@ public class NuevaAsignacionDTO {
         } catch (NumberFormatException e) {
             return null;
         }
+    }
+
+    public Long getIdCurso() {
+        return idCurso;
+    }
+
+    public void setIdCurso(Long idCurso) {
+        this.idCurso = idCurso;
+    }
+
+    public LocalDateTime getFechaLimite() {
+        return fechaLimite;
+    }
+
+    public void setFechaLimite(LocalDateTime fechaLimite) {
+        this.fechaLimite = fechaLimite;
+    }
+
+    public Integer getIntentosPermitidos() {
+        return intentosPermitidos;
+    }
+
+    public void setIntentosPermitidos(Integer intentosPermitidos) {
+        this.intentosPermitidos = intentosPermitidos;
     }
 
     public String getNombre() {

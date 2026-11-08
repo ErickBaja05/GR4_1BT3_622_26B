@@ -31,6 +31,8 @@ public class AsignacionesServiceImpl implements AsignacionesService {
     private final CursoDAO cursoDAO;
     private final ValidadorAccesoCurso validadorAccesoCurso;
     private AuditoriaService auditoriaService;
+    private static final double UMBRAL_MINIMO_APROBACION = 50.0;
+    private static final double UMBRAL_MAXIMO_APROBACION = 100.0;
 
     public AsignacionesServiceImpl() {
         this(new AsignacionesDAOImpl(), new ReglaDAOImpl(), new ProyectoDAOImpl(), new CursoDAOImpl());
@@ -102,9 +104,54 @@ public class AsignacionesServiceImpl implements AsignacionesService {
 
         List<Regla> reglasParaAsociar = obtenerReglasVigentes(dto.getReglasIds());
 
-        return asignacionesDAO.crearAsignacion(
-                new Asignacion(dto.getNombre().trim(), valorUmbral, reglasParaAsociar)
+        return asignacionesDAO.crearAsignacion(        new Asignacion(dto.getNombre().trim(), valorUmbral, reglasParaAsociar)
         );
+    }
+
+    @Override
+    public Asignacion programarAsignacion(NuevaAsignacionDTO dto) {
+        if (dto == null) {
+            throw new IllegalArgumentException("Los datos de la asignación son obligatorios.");
+        }
+        validarNombreAsignacion(dto);
+        validarFechaLimite(dto.getFechaLimite());
+        validarIntentosPermitidos(dto.getIntentosPermitidos());
+        validarUmbralAprobacion(dto.getUmbralAprobacion());
+
+        Curso curso = null;
+        if (dto.getIdCurso() != null && cursoDAO != null) {
+            curso = cursoDAO.buscarPorId(dto.getIdCurso());
+        }
+
+        List<Regla> reglasParaAsociar = Collections.emptyList();
+        if (dto.getReglasIds() != null && !dto.getReglasIds().isEmpty()) {
+            reglasParaAsociar = obtenerReglasVigentes(dto.getReglasIds());
+        }
+
+        Asignacion nueva = new Asignacion(
+                curso,
+                dto.getNombre().trim(),
+                dto.getFechaLimite(),
+                dto.getIntentosPermitidos(),
+                dto.getUmbralAprobacion()
+        );
+        if (!reglasParaAsociar.isEmpty()) {
+            nueva.setReglas(reglasParaAsociar);
+        }
+
+        return asignacionesDAO.crearAsignacion(nueva);
+    }
+
+    private void validarFechaLimite(java.time.LocalDateTime fechaLimite) {
+        if (fechaLimite == null || !fechaLimite.isAfter(java.time.LocalDateTime.now())) {
+            throw new IllegalArgumentException("La fecha límite debe ser posterior a la fecha actual");
+        }
+    }
+
+    private void validarIntentosPermitidos(Integer intentosPermitidos) {
+        if (intentosPermitidos == null || intentosPermitidos <= 0) {
+            throw new IllegalArgumentException("El número de intentos permitidos debe ser al menos 1");
+        }
     }
 
     @Override
@@ -113,6 +160,7 @@ public class AsignacionesServiceImpl implements AsignacionesService {
     }
 
     @Override
+            
     public Asignacion buscarPorId(Long id) {
         if (id == null) return null;
         return asignacionesDAO.buscarPorId(id);
@@ -168,8 +216,8 @@ public class AsignacionesServiceImpl implements AsignacionesService {
             throw new IllegalArgumentException("El umbral de aprobación es obligatorio y debe ser un valor numérico válido.");
         }
 
-        if (umbralAprobacion < 50.0 || umbralAprobacion > 100.0) {
-            throw new IllegalArgumentException("El umbral de aprobación debe encontrarse en el rango válido entre 50% y 100%.");
+        if (umbralAprobacion < UMBRAL_MINIMO_APROBACION || umbralAprobacion > UMBRAL_MAXIMO_APROBACION) {
+            throw new IllegalArgumentException("El umbral de aprobación debe estar comprendido entre 50% y 100%");
         }
 
         return umbralAprobacion;

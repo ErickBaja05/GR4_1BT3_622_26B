@@ -1,4 +1,4 @@
-﻿<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ page import="java.util.List" %>
 <%@ page import="com.gr4.owlaudit.model.Regla" %>
 <%@ page import="com.gr4.owlaudit.model.NivelSeveridadEnum" %>
@@ -19,6 +19,9 @@
     // Preservar valores ingresados por el usuario si ocurrió un error de validación
     String nombrePrevio = request.getParameter("nombre") != null ? request.getParameter("nombre") : "";
     String umbralPrevio = request.getParameter("umbralAprobacion") != null ? request.getParameter("umbralAprobacion") : "";
+    String fechaLimitePrevia = request.getParameter("fechaLimite") != null ? request.getParameter("fechaLimite") : "";
+    String intentosPrevios = request.getParameter("intentosPermitidos") != null ? request.getParameter("intentosPermitidos") : (request.getParameter("numeroIntentos") != null ? request.getParameter("numeroIntentos") : "3");
+    String idCursoParam = request.getParameter("idCurso") != null ? request.getParameter("idCurso") : "";
 
     // Obtención de reglas vigentes (provistas por doGet en AsignacionServlet o fallback resiliente)
     @SuppressWarnings("unchecked")
@@ -96,22 +99,138 @@
             </h2>
 
             <form id="formCrearAsignacion" action="<%= ctx %>/asignaciones" method="POST">
+                <% if (idCursoParam != null && !idCursoParam.isBlank()) { %>
+                    <input type="hidden" name="idCurso" value="<%= HtmlUtil.escape(idCursoParam) %>">
+                <% } %>
                 
                 <!-- Campo: Nombre de la Asignación -->
                 <div class="form-group">
-                    <label for="nombre" class="form-label">Nombre de la Asignación *</label>
+                    <label for="nombre" class="form-label">Título de la Asignación *</label>
                     <input type="text" 
                            id="nombre" 
                            name="nombre" 
                            class="form-control" 
-                           placeholder="Ej. Taller 1 - Convenciones de Git y Calidad de Código" 
+                           placeholder="Ej. Entrega Parcial 1" 
                            value="<%= HtmlUtil.escape(nombrePrevio) %>" 
                            required 
                            autofocus>
                     <span class="input-hint">Ingrese una denominación representativa para identificar la asignación académica.</span>
                 </div>
+                <!-- Cards view for assignments -->
+                <div class="cards-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1rem; margin-top: 1rem;">
+                    <% for (Object objAsig : asignacionesExistentes) { %>
+                        <% Long idAsig = null; %>
+                        <% Long idVisible = null; %>
+                        <% String nomAsig = ""; %>
+                        <% Object umbralAsig = ""; %>
+                        <% int cantidadReglas = 0; %>
+                        <% java.util.List<Long> reglaIdsList = new java.util.ArrayList<>(); %>
+                        <% try { java.lang.reflect.Method mId = objAsig.getClass().getMethod("getId"); idAsig = (Long) mId.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% try { java.lang.reflect.Method mIdVis = objAsig.getClass().getMethod("getIdVisible"); idVisible = (Long) mIdVis.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% if (idVisible == null) { %>
+                            <% try { java.lang.reflect.Method mIdSec = objAsig.getClass().getMethod("getIdSecuencial"); idVisible = (Long) mIdSec.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% } %>
+                        <% if (idVisible == null) { idVisible = idAsig; } %>
+                        <% try { java.lang.reflect.Method mNom = objAsig.getClass().getMethod("getNombre"); nomAsig = (String) mNom.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% try { java.lang.reflect.Method mUmb = objAsig.getClass().getMethod("getUmbralAprobacion"); umbralAsig = mUmb.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% try { java.lang.reflect.Method mReg = objAsig.getClass().getMethod("getReglas"); Object listaR = mReg.invoke(objAsig); if (listaR instanceof java.util.Collection) { java.util.Collection<?> col = (java.util.Collection<?>) listaR; cantidadReglas = col.size(); for (Object rObj : col) { java.lang.reflect.Method mRegId = rObj.getClass().getMethod("getId"); reglaIdsList.add((Long) mRegId.invoke(rObj)); } } } catch (Exception ignored) {} %>
+                        <div class="card assignment-card" style="padding: 1rem; border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+                            <h3 style="margin-top:0; font-size:1.1rem;">#<%= idVisible != null ? idVisible : "-" %> - <%= HtmlUtil.escape(nomAsig) %></h3>
+                            <p><strong>Umbral:</strong> <span class="badge badge-docente" style="font-size:0.85rem;"><%= HtmlUtil.escape(umbralAsig) %></span></p>
+                            <p><strong>Reglas vinculadas:</strong> <span class="badge badge-muted"><%= cantidadReglas %> regla(s)</span></p>
+                            <div style="display:flex; gap:0.5rem;">
+                                <button type="button" class="btn-edit" onclick="abrirModalEditarAsignacion('<%= idAsig %>', '<%= HtmlUtil.escape(nomAsig) %>', '<%= HtmlUtil.escape(umbralAsig) %>', <%= reglaIdsList.toString() %>)">✏️ Editar</button>
+                                <button type="button" class="btn-delete" onclick="confirmarEliminarAsignacion('<%= idAsig %>', '<%= HtmlUtil.escape(nomAsig) %>')">🗑️ Eliminar</button>
+                            </div>
+                        </div>
+                    <% } %>
+                </div>
 
-                <!-- Campo: Umbral de Aprobación (text para permitir validación en backend de escenarios 2.2 y 2.3) -->
+                <!-- Campo: Fecha Límite de Entrega -->
+                <div class="form-group">
+                    <label for="fechaLimite" class="form-label">Fecha Límite *</label>
+                    <input type="datetime-local" 
+                           id="fechaLimite" 
+                           name="fechaLimite" 
+                           class="form-control" 
+                           value="<%= HtmlUtil.escape(fechaLimitePrevia) %>" 
+                           required>
+                    <span class="input-hint">La fecha límite debe ser posterior a la fecha actual.</span>
+                </div>
+                <!-- Cards view for assignments -->
+                <div class="cards-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1rem; margin-top: 1rem;">
+                    <% for (Object objAsig : asignacionesExistentes) { %>
+                        <% Long idAsig = null; %>
+                        <% Long idVisible = null; %>
+                        <% String nomAsig = ""; %>
+                        <% Object umbralAsig = ""; %>
+                        <% int cantidadReglas = 0; %>
+                        <% java.util.List<Long> reglaIdsList = new java.util.ArrayList<>(); %>
+                        <% try { java.lang.reflect.Method mId = objAsig.getClass().getMethod("getId"); idAsig = (Long) mId.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% try { java.lang.reflect.Method mIdVis = objAsig.getClass().getMethod("getIdVisible"); idVisible = (Long) mIdVis.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% if (idVisible == null) { %>
+                            <% try { java.lang.reflect.Method mIdSec = objAsig.getClass().getMethod("getIdSecuencial"); idVisible = (Long) mIdSec.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% } %>
+                        <% if (idVisible == null) { idVisible = idAsig; } %>
+                        <% try { java.lang.reflect.Method mNom = objAsig.getClass().getMethod("getNombre"); nomAsig = (String) mNom.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% try { java.lang.reflect.Method mUmb = objAsig.getClass().getMethod("getUmbralAprobacion"); umbralAsig = mUmb.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% try { java.lang.reflect.Method mReg = objAsig.getClass().getMethod("getReglas"); Object listaR = mReg.invoke(objAsig); if (listaR instanceof java.util.Collection) { java.util.Collection<?> col = (java.util.Collection<?>) listaR; cantidadReglas = col.size(); for (Object rObj : col) { java.lang.reflect.Method mRegId = rObj.getClass().getMethod("getId"); reglaIdsList.add((Long) mRegId.invoke(rObj)); } } } catch (Exception ignored) {} %>
+                        <div class="card assignment-card" style="padding: 1rem; border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+                            <h3 style="margin-top:0; font-size:1.1rem;">#<%= idVisible != null ? idVisible : "-" %> - <%= HtmlUtil.escape(nomAsig) %></h3>
+                            <p><strong>Umbral:</strong> <span class="badge badge-docente" style="font-size:0.85rem;"><%= HtmlUtil.escape(umbralAsig) %></span></p>
+                            <p><strong>Reglas vinculadas:</strong> <span class="badge badge-muted"><%= cantidadReglas %> regla(s)</span></p>
+                            <div style="display:flex; gap:0.5rem;">
+                                <button type="button" class="btn-edit" onclick="abrirModalEditarAsignacion('<%= idAsig %>', '<%= HtmlUtil.escape(nomAsig) %>', '<%= HtmlUtil.escape(umbralAsig) %>', <%= reglaIdsList.toString() %>)">✏️ Editar</button>
+                                <button type="button" class="btn-delete" onclick="confirmarEliminarAsignacion('<%= idAsig %>', '<%= HtmlUtil.escape(nomAsig) %>')">🗑️ Eliminar</button>
+                            </div>
+                        </div>
+                    <% } %>
+                </div>
+
+                <!-- Campo: Número de Intentos Permitidos -->
+                <div class="form-group">
+                    <label for="intentosPermitidos" class="form-label">Intentos Permitidos *</label>
+                    <input type="number" 
+                           id="intentosPermitidos" 
+                           name="intentosPermitidos" 
+                           class="form-control" 
+                           placeholder="Ej. 3" 
+                           min="1" 
+                           value="<%= HtmlUtil.escape(intentosPrevios) %>" 
+                           required>
+                    <span class="input-hint">El número de intentos permitidos debe ser al menos 1.</span>
+                </div>
+                <!-- Cards view for assignments -->
+                <div class="cards-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1rem; margin-top: 1rem;">
+                    <% for (Object objAsig : asignacionesExistentes) { %>
+                        <% Long idAsig = null; %>
+                        <% Long idVisible = null; %>
+                        <% String nomAsig = ""; %>
+                        <% Object umbralAsig = ""; %>
+                        <% int cantidadReglas = 0; %>
+                        <% java.util.List<Long> reglaIdsList = new java.util.ArrayList<>(); %>
+                        <% try { java.lang.reflect.Method mId = objAsig.getClass().getMethod("getId"); idAsig = (Long) mId.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% try { java.lang.reflect.Method mIdVis = objAsig.getClass().getMethod("getIdVisible"); idVisible = (Long) mIdVis.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% if (idVisible == null) { %>
+                            <% try { java.lang.reflect.Method mIdSec = objAsig.getClass().getMethod("getIdSecuencial"); idVisible = (Long) mIdSec.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% } %>
+                        <% if (idVisible == null) { idVisible = idAsig; } %>
+                        <% try { java.lang.reflect.Method mNom = objAsig.getClass().getMethod("getNombre"); nomAsig = (String) mNom.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% try { java.lang.reflect.Method mUmb = objAsig.getClass().getMethod("getUmbralAprobacion"); umbralAsig = mUmb.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% try { java.lang.reflect.Method mReg = objAsig.getClass().getMethod("getReglas"); Object listaR = mReg.invoke(objAsig); if (listaR instanceof java.util.Collection) { java.util.Collection<?> col = (java.util.Collection<?>) listaR; cantidadReglas = col.size(); for (Object rObj : col) { java.lang.reflect.Method mRegId = rObj.getClass().getMethod("getId"); reglaIdsList.add((Long) mRegId.invoke(rObj)); } } } catch (Exception ignored) {} %>
+                        <div class="card assignment-card" style="padding: 1rem; border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+                            <h3 style="margin-top:0; font-size:1.1rem;">#<%= idVisible != null ? idVisible : "-" %> - <%= HtmlUtil.escape(nomAsig) %></h3>
+                            <p><strong>Umbral:</strong> <span class="badge badge-docente" style="font-size:0.85rem;"><%= HtmlUtil.escape(umbralAsig) %></span></p>
+                            <p><strong>Reglas vinculadas:</strong> <span class="badge badge-muted"><%= cantidadReglas %> regla(s)</span></p>
+                            <div style="display:flex; gap:0.5rem;">
+                                <button type="button" class="btn-edit" onclick="abrirModalEditarAsignacion('<%= idAsig %>', '<%= HtmlUtil.escape(nomAsig) %>', '<%= HtmlUtil.escape(umbralAsig) %>', <%= reglaIdsList.toString() %>)">✏️ Editar</button>
+                                <button type="button" class="btn-delete" onclick="confirmarEliminarAsignacion('<%= idAsig %>', '<%= HtmlUtil.escape(nomAsig) %>')">🗑️ Eliminar</button>
+                            </div>
+                        </div>
+                    <% } %>
+                </div>
+
+                <!-- Campo: Umbral de Aprobación -->
                 <div class="form-group">
                     <label for="umbralAprobacion" class="form-label">Umbral de Aprobación (%) *</label>
                     <input type="text" 
@@ -121,7 +240,36 @@
                            placeholder="Ej. 70" 
                            value="<%= HtmlUtil.escape(umbralPrevio) %>" 
                            required>
-                    <span class="input-hint">El valor debe ser numérico y estar comprendido entre 50% y 100%.</span>
+                    <span class="input-hint">El umbral de aprobación debe estar comprendido entre 50% y 100%.</span>
+                </div>
+                <!-- Cards view for assignments -->
+                <div class="cards-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1rem; margin-top: 1rem;">
+                    <% for (Object objAsig : asignacionesExistentes) { %>
+                        <% Long idAsig = null; %>
+                        <% Long idVisible = null; %>
+                        <% String nomAsig = ""; %>
+                        <% Object umbralAsig = ""; %>
+                        <% int cantidadReglas = 0; %>
+                        <% java.util.List<Long> reglaIdsList = new java.util.ArrayList<>(); %>
+                        <% try { java.lang.reflect.Method mId = objAsig.getClass().getMethod("getId"); idAsig = (Long) mId.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% try { java.lang.reflect.Method mIdVis = objAsig.getClass().getMethod("getIdVisible"); idVisible = (Long) mIdVis.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% if (idVisible == null) { %>
+                            <% try { java.lang.reflect.Method mIdSec = objAsig.getClass().getMethod("getIdSecuencial"); idVisible = (Long) mIdSec.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% } %>
+                        <% if (idVisible == null) { idVisible = idAsig; } %>
+                        <% try { java.lang.reflect.Method mNom = objAsig.getClass().getMethod("getNombre"); nomAsig = (String) mNom.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% try { java.lang.reflect.Method mUmb = objAsig.getClass().getMethod("getUmbralAprobacion"); umbralAsig = mUmb.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% try { java.lang.reflect.Method mReg = objAsig.getClass().getMethod("getReglas"); Object listaR = mReg.invoke(objAsig); if (listaR instanceof java.util.Collection) { java.util.Collection<?> col = (java.util.Collection<?>) listaR; cantidadReglas = col.size(); for (Object rObj : col) { java.lang.reflect.Method mRegId = rObj.getClass().getMethod("getId"); reglaIdsList.add((Long) mRegId.invoke(rObj)); } } } catch (Exception ignored) {} %>
+                        <div class="card assignment-card" style="padding: 1rem; border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+                            <h3 style="margin-top:0; font-size:1.1rem;">#<%= idVisible != null ? idVisible : "-" %> - <%= HtmlUtil.escape(nomAsig) %></h3>
+                            <p><strong>Umbral:</strong> <span class="badge badge-docente" style="font-size:0.85rem;"><%= HtmlUtil.escape(umbralAsig) %></span></p>
+                            <p><strong>Reglas vinculadas:</strong> <span class="badge badge-muted"><%= cantidadReglas %> regla(s)</span></p>
+                            <div style="display:flex; gap:0.5rem;">
+                                <button type="button" class="btn-edit" onclick="abrirModalEditarAsignacion('<%= idAsig %>', '<%= HtmlUtil.escape(nomAsig) %>', '<%= HtmlUtil.escape(umbralAsig) %>', <%= reglaIdsList.toString() %>)">✏️ Editar</button>
+                                <button type="button" class="btn-delete" onclick="confirmarEliminarAsignacion('<%= idAsig %>', '<%= HtmlUtil.escape(nomAsig) %>')">🗑️ Eliminar</button>
+                            </div>
+                        </div>
+                    <% } %>
                 </div>
 
                 <!-- Campo: Listado de Reglas Vigentes Seleccionables -->
@@ -142,12 +290,99 @@
                                     Seleccionadas: <strong id="seleccionadas-reglas-count">0</strong>
                                 </span>
                             </div>
+                <!-- Cards view for assignments -->
+                <div class="cards-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1rem; margin-top: 1rem;">
+                    <% for (Object objAsig : asignacionesExistentes) { %>
+                        <% Long idAsig = null; %>
+                        <% Long idVisible = null; %>
+                        <% String nomAsig = ""; %>
+                        <% Object umbralAsig = ""; %>
+                        <% int cantidadReglas = 0; %>
+                        <% java.util.List<Long> reglaIdsList = new java.util.ArrayList<>(); %>
+                        <% try { java.lang.reflect.Method mId = objAsig.getClass().getMethod("getId"); idAsig = (Long) mId.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% try { java.lang.reflect.Method mIdVis = objAsig.getClass().getMethod("getIdVisible"); idVisible = (Long) mIdVis.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% if (idVisible == null) { %>
+                            <% try { java.lang.reflect.Method mIdSec = objAsig.getClass().getMethod("getIdSecuencial"); idVisible = (Long) mIdSec.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% } %>
+                        <% if (idVisible == null) { idVisible = idAsig; } %>
+                        <% try { java.lang.reflect.Method mNom = objAsig.getClass().getMethod("getNombre"); nomAsig = (String) mNom.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% try { java.lang.reflect.Method mUmb = objAsig.getClass().getMethod("getUmbralAprobacion"); umbralAsig = mUmb.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% try { java.lang.reflect.Method mReg = objAsig.getClass().getMethod("getReglas"); Object listaR = mReg.invoke(objAsig); if (listaR instanceof java.util.Collection) { java.util.Collection<?> col = (java.util.Collection<?>) listaR; cantidadReglas = col.size(); for (Object rObj : col) { java.lang.reflect.Method mRegId = rObj.getClass().getMethod("getId"); reglaIdsList.add((Long) mRegId.invoke(rObj)); } } } catch (Exception ignored) {} %>
+                        <div class="card assignment-card" style="padding: 1rem; border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+                            <h3 style="margin-top:0; font-size:1.1rem;">#<%= idVisible != null ? idVisible : "-" %> - <%= HtmlUtil.escape(nomAsig) %></h3>
+                            <p><strong>Umbral:</strong> <span class="badge badge-docente" style="font-size:0.85rem;"><%= HtmlUtil.escape(umbralAsig) %></span></p>
+                            <p><strong>Reglas vinculadas:</strong> <span class="badge badge-muted"><%= cantidadReglas %> regla(s)</span></p>
+                            <div style="display:flex; gap:0.5rem;">
+                                <button type="button" class="btn-edit" onclick="abrirModalEditarAsignacion('<%= idAsig %>', '<%= HtmlUtil.escape(nomAsig) %>', '<%= HtmlUtil.escape(umbralAsig) %>', <%= reglaIdsList.toString() %>)">✏️ Editar</button>
+                                <button type="button" class="btn-delete" onclick="confirmarEliminarAsignacion('<%= idAsig %>', '<%= HtmlUtil.escape(nomAsig) %>')">🗑️ Eliminar</button>
+                            </div>
+                        </div>
+                    <% } %>
+                </div>
                             <div>
                                 <button type="button" class="btn-link-action" onclick="marcarTodasLasReglas(true)">Seleccionar todas</button>
                                 &nbsp;|&nbsp;
                                 <button type="button" class="btn-link-action" onclick="marcarTodasLasReglas(false)">Deseleccionar todas</button>
                             </div>
+                <!-- Cards view for assignments -->
+                <div class="cards-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1rem; margin-top: 1rem;">
+                    <% for (Object objAsig : asignacionesExistentes) { %>
+                        <% Long idAsig = null; %>
+                        <% Long idVisible = null; %>
+                        <% String nomAsig = ""; %>
+                        <% Object umbralAsig = ""; %>
+                        <% int cantidadReglas = 0; %>
+                        <% java.util.List<Long> reglaIdsList = new java.util.ArrayList<>(); %>
+                        <% try { java.lang.reflect.Method mId = objAsig.getClass().getMethod("getId"); idAsig = (Long) mId.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% try { java.lang.reflect.Method mIdVis = objAsig.getClass().getMethod("getIdVisible"); idVisible = (Long) mIdVis.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% if (idVisible == null) { %>
+                            <% try { java.lang.reflect.Method mIdSec = objAsig.getClass().getMethod("getIdSecuencial"); idVisible = (Long) mIdSec.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% } %>
+                        <% if (idVisible == null) { idVisible = idAsig; } %>
+                        <% try { java.lang.reflect.Method mNom = objAsig.getClass().getMethod("getNombre"); nomAsig = (String) mNom.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% try { java.lang.reflect.Method mUmb = objAsig.getClass().getMethod("getUmbralAprobacion"); umbralAsig = mUmb.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% try { java.lang.reflect.Method mReg = objAsig.getClass().getMethod("getReglas"); Object listaR = mReg.invoke(objAsig); if (listaR instanceof java.util.Collection) { java.util.Collection<?> col = (java.util.Collection<?>) listaR; cantidadReglas = col.size(); for (Object rObj : col) { java.lang.reflect.Method mRegId = rObj.getClass().getMethod("getId"); reglaIdsList.add((Long) mRegId.invoke(rObj)); } } } catch (Exception ignored) {} %>
+                        <div class="card assignment-card" style="padding: 1rem; border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+                            <h3 style="margin-top:0; font-size:1.1rem;">#<%= idVisible != null ? idVisible : "-" %> - <%= HtmlUtil.escape(nomAsig) %></h3>
+                            <p><strong>Umbral:</strong> <span class="badge badge-docente" style="font-size:0.85rem;"><%= HtmlUtil.escape(umbralAsig) %></span></p>
+                            <p><strong>Reglas vinculadas:</strong> <span class="badge badge-muted"><%= cantidadReglas %> regla(s)</span></p>
+                            <div style="display:flex; gap:0.5rem;">
+                                <button type="button" class="btn-edit" onclick="abrirModalEditarAsignacion('<%= idAsig %>', '<%= HtmlUtil.escape(nomAsig) %>', '<%= HtmlUtil.escape(umbralAsig) %>', <%= reglaIdsList.toString() %>)">✏️ Editar</button>
+                                <button type="button" class="btn-delete" onclick="confirmarEliminarAsignacion('<%= idAsig %>', '<%= HtmlUtil.escape(nomAsig) %>')">🗑️ Eliminar</button>
+                            </div>
                         </div>
+                    <% } %>
+                </div>
+                        </div>
+                <!-- Cards view for assignments -->
+                <div class="cards-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1rem; margin-top: 1rem;">
+                    <% for (Object objAsig : asignacionesExistentes) { %>
+                        <% Long idAsig = null; %>
+                        <% Long idVisible = null; %>
+                        <% String nomAsig = ""; %>
+                        <% Object umbralAsig = ""; %>
+                        <% int cantidadReglas = 0; %>
+                        <% java.util.List<Long> reglaIdsList = new java.util.ArrayList<>(); %>
+                        <% try { java.lang.reflect.Method mId = objAsig.getClass().getMethod("getId"); idAsig = (Long) mId.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% try { java.lang.reflect.Method mIdVis = objAsig.getClass().getMethod("getIdVisible"); idVisible = (Long) mIdVis.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% if (idVisible == null) { %>
+                            <% try { java.lang.reflect.Method mIdSec = objAsig.getClass().getMethod("getIdSecuencial"); idVisible = (Long) mIdSec.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% } %>
+                        <% if (idVisible == null) { idVisible = idAsig; } %>
+                        <% try { java.lang.reflect.Method mNom = objAsig.getClass().getMethod("getNombre"); nomAsig = (String) mNom.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% try { java.lang.reflect.Method mUmb = objAsig.getClass().getMethod("getUmbralAprobacion"); umbralAsig = mUmb.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% try { java.lang.reflect.Method mReg = objAsig.getClass().getMethod("getReglas"); Object listaR = mReg.invoke(objAsig); if (listaR instanceof java.util.Collection) { java.util.Collection<?> col = (java.util.Collection<?>) listaR; cantidadReglas = col.size(); for (Object rObj : col) { java.lang.reflect.Method mRegId = rObj.getClass().getMethod("getId"); reglaIdsList.add((Long) mRegId.invoke(rObj)); } } } catch (Exception ignored) {} %>
+                        <div class="card assignment-card" style="padding: 1rem; border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+                            <h3 style="margin-top:0; font-size:1.1rem;">#<%= idVisible != null ? idVisible : "-" %> - <%= HtmlUtil.escape(nomAsig) %></h3>
+                            <p><strong>Umbral:</strong> <span class="badge badge-docente" style="font-size:0.85rem;"><%= HtmlUtil.escape(umbralAsig) %></span></p>
+                            <p><strong>Reglas vinculadas:</strong> <span class="badge badge-muted"><%= cantidadReglas %> regla(s)</span></p>
+                            <div style="display:flex; gap:0.5rem;">
+                                <button type="button" class="btn-edit" onclick="abrirModalEditarAsignacion('<%= idAsig %>', '<%= HtmlUtil.escape(nomAsig) %>', '<%= HtmlUtil.escape(umbralAsig) %>', <%= reglaIdsList.toString() %>)">✏️ Editar</button>
+                                <button type="button" class="btn-delete" onclick="confirmarEliminarAsignacion('<%= idAsig %>', '<%= HtmlUtil.escape(nomAsig) %>')">🗑️ Eliminar</button>
+                            </div>
+                        </div>
+                    <% } %>
+                </div>
 
                         <% if (reglasVigentes.isEmpty()) { %>
                             <div style="text-align: center; padding: 2rem 1rem; color: var(--text-muted);">
@@ -158,6 +393,35 @@
                                     <a href="<%= ctx %>/regla" style="color: var(--brand-blue); font-weight: 600;">Catálogo de Reglas</a>.
                                 </p>
                             </div>
+                <!-- Cards view for assignments -->
+                <div class="cards-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1rem; margin-top: 1rem;">
+                    <% for (Object objAsig : asignacionesExistentes) { %>
+                        <% Long idAsig = null; %>
+                        <% Long idVisible = null; %>
+                        <% String nomAsig = ""; %>
+                        <% Object umbralAsig = ""; %>
+                        <% int cantidadReglas = 0; %>
+                        <% java.util.List<Long> reglaIdsList = new java.util.ArrayList<>(); %>
+                        <% try { java.lang.reflect.Method mId = objAsig.getClass().getMethod("getId"); idAsig = (Long) mId.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% try { java.lang.reflect.Method mIdVis = objAsig.getClass().getMethod("getIdVisible"); idVisible = (Long) mIdVis.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% if (idVisible == null) { %>
+                            <% try { java.lang.reflect.Method mIdSec = objAsig.getClass().getMethod("getIdSecuencial"); idVisible = (Long) mIdSec.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% } %>
+                        <% if (idVisible == null) { idVisible = idAsig; } %>
+                        <% try { java.lang.reflect.Method mNom = objAsig.getClass().getMethod("getNombre"); nomAsig = (String) mNom.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% try { java.lang.reflect.Method mUmb = objAsig.getClass().getMethod("getUmbralAprobacion"); umbralAsig = mUmb.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% try { java.lang.reflect.Method mReg = objAsig.getClass().getMethod("getReglas"); Object listaR = mReg.invoke(objAsig); if (listaR instanceof java.util.Collection) { java.util.Collection<?> col = (java.util.Collection<?>) listaR; cantidadReglas = col.size(); for (Object rObj : col) { java.lang.reflect.Method mRegId = rObj.getClass().getMethod("getId"); reglaIdsList.add((Long) mRegId.invoke(rObj)); } } } catch (Exception ignored) {} %>
+                        <div class="card assignment-card" style="padding: 1rem; border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+                            <h3 style="margin-top:0; font-size:1.1rem;">#<%= idVisible != null ? idVisible : "-" %> - <%= HtmlUtil.escape(nomAsig) %></h3>
+                            <p><strong>Umbral:</strong> <span class="badge badge-docente" style="font-size:0.85rem;"><%= HtmlUtil.escape(umbralAsig) %></span></p>
+                            <p><strong>Reglas vinculadas:</strong> <span class="badge badge-muted"><%= cantidadReglas %> regla(s)</span></p>
+                            <div style="display:flex; gap:0.5rem;">
+                                <button type="button" class="btn-edit" onclick="abrirModalEditarAsignacion('<%= idAsig %>', '<%= HtmlUtil.escape(nomAsig) %>', '<%= HtmlUtil.escape(umbralAsig) %>', <%= reglaIdsList.toString() %>)">✏️ Editar</button>
+                                <button type="button" class="btn-delete" onclick="confirmarEliminarAsignacion('<%= idAsig %>', '<%= HtmlUtil.escape(nomAsig) %>')">🗑️ Eliminar</button>
+                            </div>
+                        </div>
+                    <% } %>
+                </div>
                         <% } else { %>
                             <div class="rules-list-container">
                                 <% for (Regla regla : reglasVigentes) { 
@@ -180,6 +444,35 @@
                                                    <%= checked ? "checked" : "" %> 
                                                    onchange="actualizarContadorReglas()">
                                         </div>
+                <!-- Cards view for assignments -->
+                <div class="cards-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1rem; margin-top: 1rem;">
+                    <% for (Object objAsig : asignacionesExistentes) { %>
+                        <% Long idAsig = null; %>
+                        <% Long idVisible = null; %>
+                        <% String nomAsig = ""; %>
+                        <% Object umbralAsig = ""; %>
+                        <% int cantidadReglas = 0; %>
+                        <% java.util.List<Long> reglaIdsList = new java.util.ArrayList<>(); %>
+                        <% try { java.lang.reflect.Method mId = objAsig.getClass().getMethod("getId"); idAsig = (Long) mId.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% try { java.lang.reflect.Method mIdVis = objAsig.getClass().getMethod("getIdVisible"); idVisible = (Long) mIdVis.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% if (idVisible == null) { %>
+                            <% try { java.lang.reflect.Method mIdSec = objAsig.getClass().getMethod("getIdSecuencial"); idVisible = (Long) mIdSec.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% } %>
+                        <% if (idVisible == null) { idVisible = idAsig; } %>
+                        <% try { java.lang.reflect.Method mNom = objAsig.getClass().getMethod("getNombre"); nomAsig = (String) mNom.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% try { java.lang.reflect.Method mUmb = objAsig.getClass().getMethod("getUmbralAprobacion"); umbralAsig = mUmb.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% try { java.lang.reflect.Method mReg = objAsig.getClass().getMethod("getReglas"); Object listaR = mReg.invoke(objAsig); if (listaR instanceof java.util.Collection) { java.util.Collection<?> col = (java.util.Collection<?>) listaR; cantidadReglas = col.size(); for (Object rObj : col) { java.lang.reflect.Method mRegId = rObj.getClass().getMethod("getId"); reglaIdsList.add((Long) mRegId.invoke(rObj)); } } } catch (Exception ignored) {} %>
+                        <div class="card assignment-card" style="padding: 1rem; border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+                            <h3 style="margin-top:0; font-size:1.1rem;">#<%= idVisible != null ? idVisible : "-" %> - <%= HtmlUtil.escape(nomAsig) %></h3>
+                            <p><strong>Umbral:</strong> <span class="badge badge-docente" style="font-size:0.85rem;"><%= HtmlUtil.escape(umbralAsig) %></span></p>
+                            <p><strong>Reglas vinculadas:</strong> <span class="badge badge-muted"><%= cantidadReglas %> regla(s)</span></p>
+                            <div style="display:flex; gap:0.5rem;">
+                                <button type="button" class="btn-edit" onclick="abrirModalEditarAsignacion('<%= idAsig %>', '<%= HtmlUtil.escape(nomAsig) %>', '<%= HtmlUtil.escape(umbralAsig) %>', <%= reglaIdsList.toString() %>)">✏️ Editar</button>
+                                <button type="button" class="btn-delete" onclick="confirmarEliminarAsignacion('<%= idAsig %>', '<%= HtmlUtil.escape(nomAsig) %>')">🗑️ Eliminar</button>
+                            </div>
+                        </div>
+                    <% } %>
+                </div>
                                         <div class="rule-details">
                                             <div class="rule-title-line">
                                                 <label for="regla_<%= regla.getId() %>">
@@ -198,16 +491,219 @@
                                                         </span>
                                                     <% } %>
                                                 </div>
+                <!-- Cards view for assignments -->
+                <div class="cards-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1rem; margin-top: 1rem;">
+                    <% for (Object objAsig : asignacionesExistentes) { %>
+                        <% Long idAsig = null; %>
+                        <% Long idVisible = null; %>
+                        <% String nomAsig = ""; %>
+                        <% Object umbralAsig = ""; %>
+                        <% int cantidadReglas = 0; %>
+                        <% java.util.List<Long> reglaIdsList = new java.util.ArrayList<>(); %>
+                        <% try { java.lang.reflect.Method mId = objAsig.getClass().getMethod("getId"); idAsig = (Long) mId.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% try { java.lang.reflect.Method mIdVis = objAsig.getClass().getMethod("getIdVisible"); idVisible = (Long) mIdVis.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% if (idVisible == null) { %>
+                            <% try { java.lang.reflect.Method mIdSec = objAsig.getClass().getMethod("getIdSecuencial"); idVisible = (Long) mIdSec.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% } %>
+                        <% if (idVisible == null) { idVisible = idAsig; } %>
+                        <% try { java.lang.reflect.Method mNom = objAsig.getClass().getMethod("getNombre"); nomAsig = (String) mNom.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% try { java.lang.reflect.Method mUmb = objAsig.getClass().getMethod("getUmbralAprobacion"); umbralAsig = mUmb.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% try { java.lang.reflect.Method mReg = objAsig.getClass().getMethod("getReglas"); Object listaR = mReg.invoke(objAsig); if (listaR instanceof java.util.Collection) { java.util.Collection<?> col = (java.util.Collection<?>) listaR; cantidadReglas = col.size(); for (Object rObj : col) { java.lang.reflect.Method mRegId = rObj.getClass().getMethod("getId"); reglaIdsList.add((Long) mRegId.invoke(rObj)); } } } catch (Exception ignored) {} %>
+                        <div class="card assignment-card" style="padding: 1rem; border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+                            <h3 style="margin-top:0; font-size:1.1rem;">#<%= idVisible != null ? idVisible : "-" %> - <%= HtmlUtil.escape(nomAsig) %></h3>
+                            <p><strong>Umbral:</strong> <span class="badge badge-docente" style="font-size:0.85rem;"><%= HtmlUtil.escape(umbralAsig) %></span></p>
+                            <p><strong>Reglas vinculadas:</strong> <span class="badge badge-muted"><%= cantidadReglas %> regla(s)</span></p>
+                            <div style="display:flex; gap:0.5rem;">
+                                <button type="button" class="btn-edit" onclick="abrirModalEditarAsignacion('<%= idAsig %>', '<%= HtmlUtil.escape(nomAsig) %>', '<%= HtmlUtil.escape(umbralAsig) %>', <%= reglaIdsList.toString() %>)">✏️ Editar</button>
+                                <button type="button" class="btn-delete" onclick="confirmarEliminarAsignacion('<%= idAsig %>', '<%= HtmlUtil.escape(nomAsig) %>')">🗑️ Eliminar</button>
+                            </div>
+                        </div>
+                    <% } %>
+                </div>
                                             </div>
+                <!-- Cards view for assignments -->
+                <div class="cards-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1rem; margin-top: 1rem;">
+                    <% for (Object objAsig : asignacionesExistentes) { %>
+                        <% Long idAsig = null; %>
+                        <% Long idVisible = null; %>
+                        <% String nomAsig = ""; %>
+                        <% Object umbralAsig = ""; %>
+                        <% int cantidadReglas = 0; %>
+                        <% java.util.List<Long> reglaIdsList = new java.util.ArrayList<>(); %>
+                        <% try { java.lang.reflect.Method mId = objAsig.getClass().getMethod("getId"); idAsig = (Long) mId.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% try { java.lang.reflect.Method mIdVis = objAsig.getClass().getMethod("getIdVisible"); idVisible = (Long) mIdVis.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% if (idVisible == null) { %>
+                            <% try { java.lang.reflect.Method mIdSec = objAsig.getClass().getMethod("getIdSecuencial"); idVisible = (Long) mIdSec.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% } %>
+                        <% if (idVisible == null) { idVisible = idAsig; } %>
+                        <% try { java.lang.reflect.Method mNom = objAsig.getClass().getMethod("getNombre"); nomAsig = (String) mNom.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% try { java.lang.reflect.Method mUmb = objAsig.getClass().getMethod("getUmbralAprobacion"); umbralAsig = mUmb.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% try { java.lang.reflect.Method mReg = objAsig.getClass().getMethod("getReglas"); Object listaR = mReg.invoke(objAsig); if (listaR instanceof java.util.Collection) { java.util.Collection<?> col = (java.util.Collection<?>) listaR; cantidadReglas = col.size(); for (Object rObj : col) { java.lang.reflect.Method mRegId = rObj.getClass().getMethod("getId"); reglaIdsList.add((Long) mRegId.invoke(rObj)); } } } catch (Exception ignored) {} %>
+                        <div class="card assignment-card" style="padding: 1rem; border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+                            <h3 style="margin-top:0; font-size:1.1rem;">#<%= idVisible != null ? idVisible : "-" %> - <%= HtmlUtil.escape(nomAsig) %></h3>
+                            <p><strong>Umbral:</strong> <span class="badge badge-docente" style="font-size:0.85rem;"><%= HtmlUtil.escape(umbralAsig) %></span></p>
+                            <p><strong>Reglas vinculadas:</strong> <span class="badge badge-muted"><%= cantidadReglas %> regla(s)</span></p>
+                            <div style="display:flex; gap:0.5rem;">
+                                <button type="button" class="btn-edit" onclick="abrirModalEditarAsignacion('<%= idAsig %>', '<%= HtmlUtil.escape(nomAsig) %>', '<%= HtmlUtil.escape(umbralAsig) %>', <%= reglaIdsList.toString() %>)">✏️ Editar</button>
+                                <button type="button" class="btn-delete" onclick="confirmarEliminarAsignacion('<%= idAsig %>', '<%= HtmlUtil.escape(nomAsig) %>')">🗑️ Eliminar</button>
+                            </div>
+                        </div>
+                    <% } %>
+                </div>
                                             <% if (regla.getDescripcionDetallada() != null && !regla.getDescripcionDetallada().isBlank()) { %>
                                                 <p class="rule-desc"><%= HtmlUtil.escape(regla.getDescripcionDetallada()) %></p>
                                             <% } %>
                                         </div>
+                <!-- Cards view for assignments -->
+                <div class="cards-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1rem; margin-top: 1rem;">
+                    <% for (Object objAsig : asignacionesExistentes) { %>
+                        <% Long idAsig = null; %>
+                        <% Long idVisible = null; %>
+                        <% String nomAsig = ""; %>
+                        <% Object umbralAsig = ""; %>
+                        <% int cantidadReglas = 0; %>
+                        <% java.util.List<Long> reglaIdsList = new java.util.ArrayList<>(); %>
+                        <% try { java.lang.reflect.Method mId = objAsig.getClass().getMethod("getId"); idAsig = (Long) mId.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% try { java.lang.reflect.Method mIdVis = objAsig.getClass().getMethod("getIdVisible"); idVisible = (Long) mIdVis.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% if (idVisible == null) { %>
+                            <% try { java.lang.reflect.Method mIdSec = objAsig.getClass().getMethod("getIdSecuencial"); idVisible = (Long) mIdSec.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% } %>
+                        <% if (idVisible == null) { idVisible = idAsig; } %>
+                        <% try { java.lang.reflect.Method mNom = objAsig.getClass().getMethod("getNombre"); nomAsig = (String) mNom.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% try { java.lang.reflect.Method mUmb = objAsig.getClass().getMethod("getUmbralAprobacion"); umbralAsig = mUmb.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% try { java.lang.reflect.Method mReg = objAsig.getClass().getMethod("getReglas"); Object listaR = mReg.invoke(objAsig); if (listaR instanceof java.util.Collection) { java.util.Collection<?> col = (java.util.Collection<?>) listaR; cantidadReglas = col.size(); for (Object rObj : col) { java.lang.reflect.Method mRegId = rObj.getClass().getMethod("getId"); reglaIdsList.add((Long) mRegId.invoke(rObj)); } } } catch (Exception ignored) {} %>
+                        <div class="card assignment-card" style="padding: 1rem; border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+                            <h3 style="margin-top:0; font-size:1.1rem;">#<%= idVisible != null ? idVisible : "-" %> - <%= HtmlUtil.escape(nomAsig) %></h3>
+                            <p><strong>Umbral:</strong> <span class="badge badge-docente" style="font-size:0.85rem;"><%= HtmlUtil.escape(umbralAsig) %></span></p>
+                            <p><strong>Reglas vinculadas:</strong> <span class="badge badge-muted"><%= cantidadReglas %> regla(s)</span></p>
+                            <div style="display:flex; gap:0.5rem;">
+                                <button type="button" class="btn-edit" onclick="abrirModalEditarAsignacion('<%= idAsig %>', '<%= HtmlUtil.escape(nomAsig) %>', '<%= HtmlUtil.escape(umbralAsig) %>', <%= reglaIdsList.toString() %>)">✏️ Editar</button>
+                                <button type="button" class="btn-delete" onclick="confirmarEliminarAsignacion('<%= idAsig %>', '<%= HtmlUtil.escape(nomAsig) %>')">🗑️ Eliminar</button>
+                            </div>
+                        </div>
+                    <% } %>
+                </div>
                                     </div>
+                <!-- Cards view for assignments -->
+                <div class="cards-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1rem; margin-top: 1rem;">
+                    <% for (Object objAsig : asignacionesExistentes) { %>
+                        <% Long idAsig = null; %>
+                        <% Long idVisible = null; %>
+                        <% String nomAsig = ""; %>
+                        <% Object umbralAsig = ""; %>
+                        <% int cantidadReglas = 0; %>
+                        <% java.util.List<Long> reglaIdsList = new java.util.ArrayList<>(); %>
+                        <% try { java.lang.reflect.Method mId = objAsig.getClass().getMethod("getId"); idAsig = (Long) mId.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% try { java.lang.reflect.Method mIdVis = objAsig.getClass().getMethod("getIdVisible"); idVisible = (Long) mIdVis.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% if (idVisible == null) { %>
+                            <% try { java.lang.reflect.Method mIdSec = objAsig.getClass().getMethod("getIdSecuencial"); idVisible = (Long) mIdSec.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% } %>
+                        <% if (idVisible == null) { idVisible = idAsig; } %>
+                        <% try { java.lang.reflect.Method mNom = objAsig.getClass().getMethod("getNombre"); nomAsig = (String) mNom.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% try { java.lang.reflect.Method mUmb = objAsig.getClass().getMethod("getUmbralAprobacion"); umbralAsig = mUmb.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% try { java.lang.reflect.Method mReg = objAsig.getClass().getMethod("getReglas"); Object listaR = mReg.invoke(objAsig); if (listaR instanceof java.util.Collection) { java.util.Collection<?> col = (java.util.Collection<?>) listaR; cantidadReglas = col.size(); for (Object rObj : col) { java.lang.reflect.Method mRegId = rObj.getClass().getMethod("getId"); reglaIdsList.add((Long) mRegId.invoke(rObj)); } } } catch (Exception ignored) {} %>
+                        <div class="card assignment-card" style="padding: 1rem; border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+                            <h3 style="margin-top:0; font-size:1.1rem;">#<%= idVisible != null ? idVisible : "-" %> - <%= HtmlUtil.escape(nomAsig) %></h3>
+                            <p><strong>Umbral:</strong> <span class="badge badge-docente" style="font-size:0.85rem;"><%= HtmlUtil.escape(umbralAsig) %></span></p>
+                            <p><strong>Reglas vinculadas:</strong> <span class="badge badge-muted"><%= cantidadReglas %> regla(s)</span></p>
+                            <div style="display:flex; gap:0.5rem;">
+                                <button type="button" class="btn-edit" onclick="abrirModalEditarAsignacion('<%= idAsig %>', '<%= HtmlUtil.escape(nomAsig) %>', '<%= HtmlUtil.escape(umbralAsig) %>', <%= reglaIdsList.toString() %>)">✏️ Editar</button>
+                                <button type="button" class="btn-delete" onclick="confirmarEliminarAsignacion('<%= idAsig %>', '<%= HtmlUtil.escape(nomAsig) %>')">🗑️ Eliminar</button>
+                            </div>
+                        </div>
+                    <% } %>
+                </div>
                                 <% } %>
                             </div>
+                <!-- Cards view for assignments -->
+                <div class="cards-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1rem; margin-top: 1rem;">
+                    <% for (Object objAsig : asignacionesExistentes) { %>
+                        <% Long idAsig = null; %>
+                        <% Long idVisible = null; %>
+                        <% String nomAsig = ""; %>
+                        <% Object umbralAsig = ""; %>
+                        <% int cantidadReglas = 0; %>
+                        <% java.util.List<Long> reglaIdsList = new java.util.ArrayList<>(); %>
+                        <% try { java.lang.reflect.Method mId = objAsig.getClass().getMethod("getId"); idAsig = (Long) mId.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% try { java.lang.reflect.Method mIdVis = objAsig.getClass().getMethod("getIdVisible"); idVisible = (Long) mIdVis.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% if (idVisible == null) { %>
+                            <% try { java.lang.reflect.Method mIdSec = objAsig.getClass().getMethod("getIdSecuencial"); idVisible = (Long) mIdSec.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% } %>
+                        <% if (idVisible == null) { idVisible = idAsig; } %>
+                        <% try { java.lang.reflect.Method mNom = objAsig.getClass().getMethod("getNombre"); nomAsig = (String) mNom.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% try { java.lang.reflect.Method mUmb = objAsig.getClass().getMethod("getUmbralAprobacion"); umbralAsig = mUmb.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% try { java.lang.reflect.Method mReg = objAsig.getClass().getMethod("getReglas"); Object listaR = mReg.invoke(objAsig); if (listaR instanceof java.util.Collection) { java.util.Collection<?> col = (java.util.Collection<?>) listaR; cantidadReglas = col.size(); for (Object rObj : col) { java.lang.reflect.Method mRegId = rObj.getClass().getMethod("getId"); reglaIdsList.add((Long) mRegId.invoke(rObj)); } } } catch (Exception ignored) {} %>
+                        <div class="card assignment-card" style="padding: 1rem; border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+                            <h3 style="margin-top:0; font-size:1.1rem;">#<%= idVisible != null ? idVisible : "-" %> - <%= HtmlUtil.escape(nomAsig) %></h3>
+                            <p><strong>Umbral:</strong> <span class="badge badge-docente" style="font-size:0.85rem;"><%= HtmlUtil.escape(umbralAsig) %></span></p>
+                            <p><strong>Reglas vinculadas:</strong> <span class="badge badge-muted"><%= cantidadReglas %> regla(s)</span></p>
+                            <div style="display:flex; gap:0.5rem;">
+                                <button type="button" class="btn-edit" onclick="abrirModalEditarAsignacion('<%= idAsig %>', '<%= HtmlUtil.escape(nomAsig) %>', '<%= HtmlUtil.escape(umbralAsig) %>', <%= reglaIdsList.toString() %>)">✏️ Editar</button>
+                                <button type="button" class="btn-delete" onclick="confirmarEliminarAsignacion('<%= idAsig %>', '<%= HtmlUtil.escape(nomAsig) %>')">🗑️ Eliminar</button>
+                            </div>
+                        </div>
+                    <% } %>
+                </div>
                         <% } %>
                     </div>
+                <!-- Cards view for assignments -->
+                <div class="cards-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1rem; margin-top: 1rem;">
+                    <% for (Object objAsig : asignacionesExistentes) { %>
+                        <% Long idAsig = null; %>
+                        <% Long idVisible = null; %>
+                        <% String nomAsig = ""; %>
+                        <% Object umbralAsig = ""; %>
+                        <% int cantidadReglas = 0; %>
+                        <% java.util.List<Long> reglaIdsList = new java.util.ArrayList<>(); %>
+                        <% try { java.lang.reflect.Method mId = objAsig.getClass().getMethod("getId"); idAsig = (Long) mId.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% try { java.lang.reflect.Method mIdVis = objAsig.getClass().getMethod("getIdVisible"); idVisible = (Long) mIdVis.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% if (idVisible == null) { %>
+                            <% try { java.lang.reflect.Method mIdSec = objAsig.getClass().getMethod("getIdSecuencial"); idVisible = (Long) mIdSec.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% } %>
+                        <% if (idVisible == null) { idVisible = idAsig; } %>
+                        <% try { java.lang.reflect.Method mNom = objAsig.getClass().getMethod("getNombre"); nomAsig = (String) mNom.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% try { java.lang.reflect.Method mUmb = objAsig.getClass().getMethod("getUmbralAprobacion"); umbralAsig = mUmb.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% try { java.lang.reflect.Method mReg = objAsig.getClass().getMethod("getReglas"); Object listaR = mReg.invoke(objAsig); if (listaR instanceof java.util.Collection) { java.util.Collection<?> col = (java.util.Collection<?>) listaR; cantidadReglas = col.size(); for (Object rObj : col) { java.lang.reflect.Method mRegId = rObj.getClass().getMethod("getId"); reglaIdsList.add((Long) mRegId.invoke(rObj)); } } } catch (Exception ignored) {} %>
+                        <div class="card assignment-card" style="padding: 1rem; border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+                            <h3 style="margin-top:0; font-size:1.1rem;">#<%= idVisible != null ? idVisible : "-" %> - <%= HtmlUtil.escape(nomAsig) %></h3>
+                            <p><strong>Umbral:</strong> <span class="badge badge-docente" style="font-size:0.85rem;"><%= HtmlUtil.escape(umbralAsig) %></span></p>
+                            <p><strong>Reglas vinculadas:</strong> <span class="badge badge-muted"><%= cantidadReglas %> regla(s)</span></p>
+                            <div style="display:flex; gap:0.5rem;">
+                                <button type="button" class="btn-edit" onclick="abrirModalEditarAsignacion('<%= idAsig %>', '<%= HtmlUtil.escape(nomAsig) %>', '<%= HtmlUtil.escape(umbralAsig) %>', <%= reglaIdsList.toString() %>)">✏️ Editar</button>
+                                <button type="button" class="btn-delete" onclick="confirmarEliminarAsignacion('<%= idAsig %>', '<%= HtmlUtil.escape(nomAsig) %>')">🗑️ Eliminar</button>
+                            </div>
+                        </div>
+                    <% } %>
+                </div>
+                </div>
+                <!-- Cards view for assignments -->
+                <div class="cards-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1rem; margin-top: 1rem;">
+                    <% for (Object objAsig : asignacionesExistentes) { %>
+                        <% Long idAsig = null; %>
+                        <% Long idVisible = null; %>
+                        <% String nomAsig = ""; %>
+                        <% Object umbralAsig = ""; %>
+                        <% int cantidadReglas = 0; %>
+                        <% java.util.List<Long> reglaIdsList = new java.util.ArrayList<>(); %>
+                        <% try { java.lang.reflect.Method mId = objAsig.getClass().getMethod("getId"); idAsig = (Long) mId.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% try { java.lang.reflect.Method mIdVis = objAsig.getClass().getMethod("getIdVisible"); idVisible = (Long) mIdVis.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% if (idVisible == null) { %>
+                            <% try { java.lang.reflect.Method mIdSec = objAsig.getClass().getMethod("getIdSecuencial"); idVisible = (Long) mIdSec.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% } %>
+                        <% if (idVisible == null) { idVisible = idAsig; } %>
+                        <% try { java.lang.reflect.Method mNom = objAsig.getClass().getMethod("getNombre"); nomAsig = (String) mNom.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% try { java.lang.reflect.Method mUmb = objAsig.getClass().getMethod("getUmbralAprobacion"); umbralAsig = mUmb.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% try { java.lang.reflect.Method mReg = objAsig.getClass().getMethod("getReglas"); Object listaR = mReg.invoke(objAsig); if (listaR instanceof java.util.Collection) { java.util.Collection<?> col = (java.util.Collection<?>) listaR; cantidadReglas = col.size(); for (Object rObj : col) { java.lang.reflect.Method mRegId = rObj.getClass().getMethod("getId"); reglaIdsList.add((Long) mRegId.invoke(rObj)); } } } catch (Exception ignored) {} %>
+                        <div class="card assignment-card" style="padding: 1rem; border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+                            <h3 style="margin-top:0; font-size:1.1rem;">#<%= idVisible != null ? idVisible : "-" %> - <%= HtmlUtil.escape(nomAsig) %></h3>
+                            <p><strong>Umbral:</strong> <span class="badge badge-docente" style="font-size:0.85rem;"><%= HtmlUtil.escape(umbralAsig) %></span></p>
+                            <p><strong>Reglas vinculadas:</strong> <span class="badge badge-muted"><%= cantidadReglas %> regla(s)</span></p>
+                            <div style="display:flex; gap:0.5rem;">
+                                <button type="button" class="btn-edit" onclick="abrirModalEditarAsignacion('<%= idAsig %>', '<%= HtmlUtil.escape(nomAsig) %>', '<%= HtmlUtil.escape(umbralAsig) %>', <%= reglaIdsList.toString() %>)">✏️ Editar</button>
+                                <button type="button" class="btn-delete" onclick="confirmarEliminarAsignacion('<%= idAsig %>', '<%= HtmlUtil.escape(nomAsig) %>')">🗑️ Eliminar</button>
+                            </div>
+                        </div>
+                    <% } %>
                 </div>
 
                 <!-- Botones de Acción del Formulario -->
@@ -218,6 +714,35 @@
                     <a href="<%= ctx %>/vistas" class="btn btn-secondary">
                         Cancelar
                     </a>
+                </div>
+                <!-- Cards view for assignments -->
+                <div class="cards-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1rem; margin-top: 1rem;">
+                    <% for (Object objAsig : asignacionesExistentes) { %>
+                        <% Long idAsig = null; %>
+                        <% Long idVisible = null; %>
+                        <% String nomAsig = ""; %>
+                        <% Object umbralAsig = ""; %>
+                        <% int cantidadReglas = 0; %>
+                        <% java.util.List<Long> reglaIdsList = new java.util.ArrayList<>(); %>
+                        <% try { java.lang.reflect.Method mId = objAsig.getClass().getMethod("getId"); idAsig = (Long) mId.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% try { java.lang.reflect.Method mIdVis = objAsig.getClass().getMethod("getIdVisible"); idVisible = (Long) mIdVis.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% if (idVisible == null) { %>
+                            <% try { java.lang.reflect.Method mIdSec = objAsig.getClass().getMethod("getIdSecuencial"); idVisible = (Long) mIdSec.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% } %>
+                        <% if (idVisible == null) { idVisible = idAsig; } %>
+                        <% try { java.lang.reflect.Method mNom = objAsig.getClass().getMethod("getNombre"); nomAsig = (String) mNom.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% try { java.lang.reflect.Method mUmb = objAsig.getClass().getMethod("getUmbralAprobacion"); umbralAsig = mUmb.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% try { java.lang.reflect.Method mReg = objAsig.getClass().getMethod("getReglas"); Object listaR = mReg.invoke(objAsig); if (listaR instanceof java.util.Collection) { java.util.Collection<?> col = (java.util.Collection<?>) listaR; cantidadReglas = col.size(); for (Object rObj : col) { java.lang.reflect.Method mRegId = rObj.getClass().getMethod("getId"); reglaIdsList.add((Long) mRegId.invoke(rObj)); } } } catch (Exception ignored) {} %>
+                        <div class="card assignment-card" style="padding: 1rem; border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+                            <h3 style="margin-top:0; font-size:1.1rem;">#<%= idVisible != null ? idVisible : "-" %> - <%= HtmlUtil.escape(nomAsig) %></h3>
+                            <p><strong>Umbral:</strong> <span class="badge badge-docente" style="font-size:0.85rem;"><%= HtmlUtil.escape(umbralAsig) %></span></p>
+                            <p><strong>Reglas vinculadas:</strong> <span class="badge badge-muted"><%= cantidadReglas %> regla(s)</span></p>
+                            <div style="display:flex; gap:0.5rem;">
+                                <button type="button" class="btn-edit" onclick="abrirModalEditarAsignacion('<%= idAsig %>', '<%= HtmlUtil.escape(nomAsig) %>', '<%= HtmlUtil.escape(umbralAsig) %>', <%= reglaIdsList.toString() %>)">✏️ Editar</button>
+                                <button type="button" class="btn-delete" onclick="confirmarEliminarAsignacion('<%= idAsig %>', '<%= HtmlUtil.escape(nomAsig) %>')">🗑️ Eliminar</button>
+                            </div>
+                        </div>
+                    <% } %>
                 </div>
             </form>
         </div>
@@ -238,6 +763,35 @@
                     <p style="color: var(--text-muted); margin-bottom: 0;">
                         No existen asignaciones académicas registradas aún. Utilice el formulario superior para crear la primera.
                     </p>
+                </div>
+                <!-- Cards view for assignments -->
+                <div class="cards-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1rem; margin-top: 1rem;">
+                    <% for (Object objAsig : asignacionesExistentes) { %>
+                        <% Long idAsig = null; %>
+                        <% Long idVisible = null; %>
+                        <% String nomAsig = ""; %>
+                        <% Object umbralAsig = ""; %>
+                        <% int cantidadReglas = 0; %>
+                        <% java.util.List<Long> reglaIdsList = new java.util.ArrayList<>(); %>
+                        <% try { java.lang.reflect.Method mId = objAsig.getClass().getMethod("getId"); idAsig = (Long) mId.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% try { java.lang.reflect.Method mIdVis = objAsig.getClass().getMethod("getIdVisible"); idVisible = (Long) mIdVis.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% if (idVisible == null) { %>
+                            <% try { java.lang.reflect.Method mIdSec = objAsig.getClass().getMethod("getIdSecuencial"); idVisible = (Long) mIdSec.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% } %>
+                        <% if (idVisible == null) { idVisible = idAsig; } %>
+                        <% try { java.lang.reflect.Method mNom = objAsig.getClass().getMethod("getNombre"); nomAsig = (String) mNom.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% try { java.lang.reflect.Method mUmb = objAsig.getClass().getMethod("getUmbralAprobacion"); umbralAsig = mUmb.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% try { java.lang.reflect.Method mReg = objAsig.getClass().getMethod("getReglas"); Object listaR = mReg.invoke(objAsig); if (listaR instanceof java.util.Collection) { java.util.Collection<?> col = (java.util.Collection<?>) listaR; cantidadReglas = col.size(); for (Object rObj : col) { java.lang.reflect.Method mRegId = rObj.getClass().getMethod("getId"); reglaIdsList.add((Long) mRegId.invoke(rObj)); } } } catch (Exception ignored) {} %>
+                        <div class="card assignment-card" style="padding: 1rem; border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+                            <h3 style="margin-top:0; font-size:1.1rem;">#<%= idVisible != null ? idVisible : "-" %> - <%= HtmlUtil.escape(nomAsig) %></h3>
+                            <p><strong>Umbral:</strong> <span class="badge badge-docente" style="font-size:0.85rem;"><%= HtmlUtil.escape(umbralAsig) %></span></p>
+                            <p><strong>Reglas vinculadas:</strong> <span class="badge badge-muted"><%= cantidadReglas %> regla(s)</span></p>
+                            <div style="display:flex; gap:0.5rem;">
+                                <button type="button" class="btn-edit" onclick="abrirModalEditarAsignacion('<%= idAsig %>', '<%= HtmlUtil.escape(nomAsig) %>', '<%= HtmlUtil.escape(umbralAsig) %>', <%= reglaIdsList.toString() %>)">✏️ Editar</button>
+                                <button type="button" class="btn-delete" onclick="confirmarEliminarAsignacion('<%= idAsig %>', '<%= HtmlUtil.escape(nomAsig) %>')">🗑️ Eliminar</button>
+                            </div>
+                        </div>
+                    <% } %>
                 </div>
             <% } else { %>
                 <div class="table-responsive">
@@ -333,11 +887,69 @@
                                                 🗑️ Eliminar
                                             </button>
                                         </div>
+                <!-- Cards view for assignments -->
+                <div class="cards-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1rem; margin-top: 1rem;">
+                    <% for (Object objAsig : asignacionesExistentes) { %>
+                        <% Long idAsig = null; %>
+                        <% Long idVisible = null; %>
+                        <% String nomAsig = ""; %>
+                        <% Object umbralAsig = ""; %>
+                        <% int cantidadReglas = 0; %>
+                        <% java.util.List<Long> reglaIdsList = new java.util.ArrayList<>(); %>
+                        <% try { java.lang.reflect.Method mId = objAsig.getClass().getMethod("getId"); idAsig = (Long) mId.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% try { java.lang.reflect.Method mIdVis = objAsig.getClass().getMethod("getIdVisible"); idVisible = (Long) mIdVis.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% if (idVisible == null) { %>
+                            <% try { java.lang.reflect.Method mIdSec = objAsig.getClass().getMethod("getIdSecuencial"); idVisible = (Long) mIdSec.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% } %>
+                        <% if (idVisible == null) { idVisible = idAsig; } %>
+                        <% try { java.lang.reflect.Method mNom = objAsig.getClass().getMethod("getNombre"); nomAsig = (String) mNom.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% try { java.lang.reflect.Method mUmb = objAsig.getClass().getMethod("getUmbralAprobacion"); umbralAsig = mUmb.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% try { java.lang.reflect.Method mReg = objAsig.getClass().getMethod("getReglas"); Object listaR = mReg.invoke(objAsig); if (listaR instanceof java.util.Collection) { java.util.Collection<?> col = (java.util.Collection<?>) listaR; cantidadReglas = col.size(); for (Object rObj : col) { java.lang.reflect.Method mRegId = rObj.getClass().getMethod("getId"); reglaIdsList.add((Long) mRegId.invoke(rObj)); } } } catch (Exception ignored) {} %>
+                        <div class="card assignment-card" style="padding: 1rem; border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+                            <h3 style="margin-top:0; font-size:1.1rem;">#<%= idVisible != null ? idVisible : "-" %> - <%= HtmlUtil.escape(nomAsig) %></h3>
+                            <p><strong>Umbral:</strong> <span class="badge badge-docente" style="font-size:0.85rem;"><%= HtmlUtil.escape(umbralAsig) %></span></p>
+                            <p><strong>Reglas vinculadas:</strong> <span class="badge badge-muted"><%= cantidadReglas %> regla(s)</span></p>
+                            <div style="display:flex; gap:0.5rem;">
+                                <button type="button" class="btn-edit" onclick="abrirModalEditarAsignacion('<%= idAsig %>', '<%= HtmlUtil.escape(nomAsig) %>', '<%= HtmlUtil.escape(umbralAsig) %>', <%= reglaIdsList.toString() %>)">✏️ Editar</button>
+                                <button type="button" class="btn-delete" onclick="confirmarEliminarAsignacion('<%= idAsig %>', '<%= HtmlUtil.escape(nomAsig) %>')">🗑️ Eliminar</button>
+                            </div>
+                        </div>
+                    <% } %>
+                </div>
                                     </td>
                                 </tr>
                             <% } %>
                         </tbody>
                     </table>
+                </div>
+                <!-- Cards view for assignments -->
+                <div class="cards-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1rem; margin-top: 1rem;">
+                    <% for (Object objAsig : asignacionesExistentes) { %>
+                        <% Long idAsig = null; %>
+                        <% Long idVisible = null; %>
+                        <% String nomAsig = ""; %>
+                        <% Object umbralAsig = ""; %>
+                        <% int cantidadReglas = 0; %>
+                        <% java.util.List<Long> reglaIdsList = new java.util.ArrayList<>(); %>
+                        <% try { java.lang.reflect.Method mId = objAsig.getClass().getMethod("getId"); idAsig = (Long) mId.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% try { java.lang.reflect.Method mIdVis = objAsig.getClass().getMethod("getIdVisible"); idVisible = (Long) mIdVis.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% if (idVisible == null) { %>
+                            <% try { java.lang.reflect.Method mIdSec = objAsig.getClass().getMethod("getIdSecuencial"); idVisible = (Long) mIdSec.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% } %>
+                        <% if (idVisible == null) { idVisible = idAsig; } %>
+                        <% try { java.lang.reflect.Method mNom = objAsig.getClass().getMethod("getNombre"); nomAsig = (String) mNom.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% try { java.lang.reflect.Method mUmb = objAsig.getClass().getMethod("getUmbralAprobacion"); umbralAsig = mUmb.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% try { java.lang.reflect.Method mReg = objAsig.getClass().getMethod("getReglas"); Object listaR = mReg.invoke(objAsig); if (listaR instanceof java.util.Collection) { java.util.Collection<?> col = (java.util.Collection<?>) listaR; cantidadReglas = col.size(); for (Object rObj : col) { java.lang.reflect.Method mRegId = rObj.getClass().getMethod("getId"); reglaIdsList.add((Long) mRegId.invoke(rObj)); } } } catch (Exception ignored) {} %>
+                        <div class="card assignment-card" style="padding: 1rem; border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+                            <h3 style="margin-top:0; font-size:1.1rem;">#<%= idVisible != null ? idVisible : "-" %> - <%= HtmlUtil.escape(nomAsig) %></h3>
+                            <p><strong>Umbral:</strong> <span class="badge badge-docente" style="font-size:0.85rem;"><%= HtmlUtil.escape(umbralAsig) %></span></p>
+                            <p><strong>Reglas vinculadas:</strong> <span class="badge badge-muted"><%= cantidadReglas %> regla(s)</span></p>
+                            <div style="display:flex; gap:0.5rem;">
+                                <button type="button" class="btn-edit" onclick="abrirModalEditarAsignacion('<%= idAsig %>', '<%= HtmlUtil.escape(nomAsig) %>', '<%= HtmlUtil.escape(umbralAsig) %>', <%= reglaIdsList.toString() %>)">✏️ Editar</button>
+                                <button type="button" class="btn-delete" onclick="confirmarEliminarAsignacion('<%= idAsig %>', '<%= HtmlUtil.escape(nomAsig) %>')">🗑️ Eliminar</button>
+                            </div>
+                        </div>
+                    <% } %>
                 </div>
             <% } %>
         </div>
@@ -355,6 +967,35 @@
                     <h3 style="margin: 0; font-size: 1.2rem; color: var(--bg-primary);">Editar Asignación Académica</h3>
                     <button type="button" onclick="cerrarModalEditarAsignacion()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer;">&times;</button>
                 </div>
+                <!-- Cards view for assignments -->
+                <div class="cards-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1rem; margin-top: 1rem;">
+                    <% for (Object objAsig : asignacionesExistentes) { %>
+                        <% Long idAsig = null; %>
+                        <% Long idVisible = null; %>
+                        <% String nomAsig = ""; %>
+                        <% Object umbralAsig = ""; %>
+                        <% int cantidadReglas = 0; %>
+                        <% java.util.List<Long> reglaIdsList = new java.util.ArrayList<>(); %>
+                        <% try { java.lang.reflect.Method mId = objAsig.getClass().getMethod("getId"); idAsig = (Long) mId.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% try { java.lang.reflect.Method mIdVis = objAsig.getClass().getMethod("getIdVisible"); idVisible = (Long) mIdVis.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% if (idVisible == null) { %>
+                            <% try { java.lang.reflect.Method mIdSec = objAsig.getClass().getMethod("getIdSecuencial"); idVisible = (Long) mIdSec.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% } %>
+                        <% if (idVisible == null) { idVisible = idAsig; } %>
+                        <% try { java.lang.reflect.Method mNom = objAsig.getClass().getMethod("getNombre"); nomAsig = (String) mNom.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% try { java.lang.reflect.Method mUmb = objAsig.getClass().getMethod("getUmbralAprobacion"); umbralAsig = mUmb.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% try { java.lang.reflect.Method mReg = objAsig.getClass().getMethod("getReglas"); Object listaR = mReg.invoke(objAsig); if (listaR instanceof java.util.Collection) { java.util.Collection<?> col = (java.util.Collection<?>) listaR; cantidadReglas = col.size(); for (Object rObj : col) { java.lang.reflect.Method mRegId = rObj.getClass().getMethod("getId"); reglaIdsList.add((Long) mRegId.invoke(rObj)); } } } catch (Exception ignored) {} %>
+                        <div class="card assignment-card" style="padding: 1rem; border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+                            <h3 style="margin-top:0; font-size:1.1rem;">#<%= idVisible != null ? idVisible : "-" %> - <%= HtmlUtil.escape(nomAsig) %></h3>
+                            <p><strong>Umbral:</strong> <span class="badge badge-docente" style="font-size:0.85rem;"><%= HtmlUtil.escape(umbralAsig) %></span></p>
+                            <p><strong>Reglas vinculadas:</strong> <span class="badge badge-muted"><%= cantidadReglas %> regla(s)</span></p>
+                            <div style="display:flex; gap:0.5rem;">
+                                <button type="button" class="btn-edit" onclick="abrirModalEditarAsignacion('<%= idAsig %>', '<%= HtmlUtil.escape(nomAsig) %>', '<%= HtmlUtil.escape(umbralAsig) %>', <%= reglaIdsList.toString() %>)">✏️ Editar</button>
+                                <button type="button" class="btn-delete" onclick="confirmarEliminarAsignacion('<%= idAsig %>', '<%= HtmlUtil.escape(nomAsig) %>')">🗑️ Eliminar</button>
+                            </div>
+                        </div>
+                    <% } %>
+                </div>
                 <form action="<%= ctx %>/asignaciones" method="POST">
                     <input type="hidden" name="accion" value="actualizar">
                     <input type="hidden" id="editIdAsignacion" name="idAsignacion" value="">
@@ -363,12 +1004,70 @@
                         <label for="editNombreAsignacion" class="form-label">Nombre de la Asignación *</label>
                         <input type="text" id="editNombreAsignacion" name="nombre" class="form-control" required>
                     </div>
+                <!-- Cards view for assignments -->
+                <div class="cards-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1rem; margin-top: 1rem;">
+                    <% for (Object objAsig : asignacionesExistentes) { %>
+                        <% Long idAsig = null; %>
+                        <% Long idVisible = null; %>
+                        <% String nomAsig = ""; %>
+                        <% Object umbralAsig = ""; %>
+                        <% int cantidadReglas = 0; %>
+                        <% java.util.List<Long> reglaIdsList = new java.util.ArrayList<>(); %>
+                        <% try { java.lang.reflect.Method mId = objAsig.getClass().getMethod("getId"); idAsig = (Long) mId.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% try { java.lang.reflect.Method mIdVis = objAsig.getClass().getMethod("getIdVisible"); idVisible = (Long) mIdVis.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% if (idVisible == null) { %>
+                            <% try { java.lang.reflect.Method mIdSec = objAsig.getClass().getMethod("getIdSecuencial"); idVisible = (Long) mIdSec.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% } %>
+                        <% if (idVisible == null) { idVisible = idAsig; } %>
+                        <% try { java.lang.reflect.Method mNom = objAsig.getClass().getMethod("getNombre"); nomAsig = (String) mNom.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% try { java.lang.reflect.Method mUmb = objAsig.getClass().getMethod("getUmbralAprobacion"); umbralAsig = mUmb.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% try { java.lang.reflect.Method mReg = objAsig.getClass().getMethod("getReglas"); Object listaR = mReg.invoke(objAsig); if (listaR instanceof java.util.Collection) { java.util.Collection<?> col = (java.util.Collection<?>) listaR; cantidadReglas = col.size(); for (Object rObj : col) { java.lang.reflect.Method mRegId = rObj.getClass().getMethod("getId"); reglaIdsList.add((Long) mRegId.invoke(rObj)); } } } catch (Exception ignored) {} %>
+                        <div class="card assignment-card" style="padding: 1rem; border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+                            <h3 style="margin-top:0; font-size:1.1rem;">#<%= idVisible != null ? idVisible : "-" %> - <%= HtmlUtil.escape(nomAsig) %></h3>
+                            <p><strong>Umbral:</strong> <span class="badge badge-docente" style="font-size:0.85rem;"><%= HtmlUtil.escape(umbralAsig) %></span></p>
+                            <p><strong>Reglas vinculadas:</strong> <span class="badge badge-muted"><%= cantidadReglas %> regla(s)</span></p>
+                            <div style="display:flex; gap:0.5rem;">
+                                <button type="button" class="btn-edit" onclick="abrirModalEditarAsignacion('<%= idAsig %>', '<%= HtmlUtil.escape(nomAsig) %>', '<%= HtmlUtil.escape(umbralAsig) %>', <%= reglaIdsList.toString() %>)">✏️ Editar</button>
+                                <button type="button" class="btn-delete" onclick="confirmarEliminarAsignacion('<%= idAsig %>', '<%= HtmlUtil.escape(nomAsig) %>')">🗑️ Eliminar</button>
+                            </div>
+                        </div>
+                    <% } %>
+                </div>
 
                     <div class="form-group" style="margin-bottom: 1rem;">
                         <label for="editUmbralAprobacion" class="form-label">Umbral de Aprobación (%) *</label>
                         <input type="text" id="editUmbralAprobacion" name="umbralAprobacion" class="form-control" required>
                         <span class="input-hint">El valor debe ser entre 50% y 100%. Las auditorías previas se revalorizarán automáticamente con las nuevas reglas y umbral.</span>
                     </div>
+                <!-- Cards view for assignments -->
+                <div class="cards-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1rem; margin-top: 1rem;">
+                    <% for (Object objAsig : asignacionesExistentes) { %>
+                        <% Long idAsig = null; %>
+                        <% Long idVisible = null; %>
+                        <% String nomAsig = ""; %>
+                        <% Object umbralAsig = ""; %>
+                        <% int cantidadReglas = 0; %>
+                        <% java.util.List<Long> reglaIdsList = new java.util.ArrayList<>(); %>
+                        <% try { java.lang.reflect.Method mId = objAsig.getClass().getMethod("getId"); idAsig = (Long) mId.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% try { java.lang.reflect.Method mIdVis = objAsig.getClass().getMethod("getIdVisible"); idVisible = (Long) mIdVis.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% if (idVisible == null) { %>
+                            <% try { java.lang.reflect.Method mIdSec = objAsig.getClass().getMethod("getIdSecuencial"); idVisible = (Long) mIdSec.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% } %>
+                        <% if (idVisible == null) { idVisible = idAsig; } %>
+                        <% try { java.lang.reflect.Method mNom = objAsig.getClass().getMethod("getNombre"); nomAsig = (String) mNom.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% try { java.lang.reflect.Method mUmb = objAsig.getClass().getMethod("getUmbralAprobacion"); umbralAsig = mUmb.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% try { java.lang.reflect.Method mReg = objAsig.getClass().getMethod("getReglas"); Object listaR = mReg.invoke(objAsig); if (listaR instanceof java.util.Collection) { java.util.Collection<?> col = (java.util.Collection<?>) listaR; cantidadReglas = col.size(); for (Object rObj : col) { java.lang.reflect.Method mRegId = rObj.getClass().getMethod("getId"); reglaIdsList.add((Long) mRegId.invoke(rObj)); } } } catch (Exception ignored) {} %>
+                        <div class="card assignment-card" style="padding: 1rem; border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+                            <h3 style="margin-top:0; font-size:1.1rem;">#<%= idVisible != null ? idVisible : "-" %> - <%= HtmlUtil.escape(nomAsig) %></h3>
+                            <p><strong>Umbral:</strong> <span class="badge badge-docente" style="font-size:0.85rem;"><%= HtmlUtil.escape(umbralAsig) %></span></p>
+                            <p><strong>Reglas vinculadas:</strong> <span class="badge badge-muted"><%= cantidadReglas %> regla(s)</span></p>
+                            <div style="display:flex; gap:0.5rem;">
+                                <button type="button" class="btn-edit" onclick="abrirModalEditarAsignacion('<%= idAsig %>', '<%= HtmlUtil.escape(nomAsig) %>', '<%= HtmlUtil.escape(umbralAsig) %>', <%= reglaIdsList.toString() %>)">✏️ Editar</button>
+                                <button type="button" class="btn-delete" onclick="confirmarEliminarAsignacion('<%= idAsig %>', '<%= HtmlUtil.escape(nomAsig) %>')">🗑️ Eliminar</button>
+                            </div>
+                        </div>
+                    <% } %>
+                </div>
 
                     <div class="form-group" style="margin-bottom: 1rem;">
                         <label class="form-label">Reglas Técnicas Vigentes *</label>
@@ -379,6 +1078,35 @@
                                     <div class="rule-checkbox-wrapper">
                                         <input type="checkbox" name="reglasIds" value="<%= regla.getId() %>" class="edit-modal-regla-cb" id="edit_regla_<%= regla.getId() %>">
                                     </div>
+                <!-- Cards view for assignments -->
+                <div class="cards-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1rem; margin-top: 1rem;">
+                    <% for (Object objAsig : asignacionesExistentes) { %>
+                        <% Long idAsig = null; %>
+                        <% Long idVisible = null; %>
+                        <% String nomAsig = ""; %>
+                        <% Object umbralAsig = ""; %>
+                        <% int cantidadReglas = 0; %>
+                        <% java.util.List<Long> reglaIdsList = new java.util.ArrayList<>(); %>
+                        <% try { java.lang.reflect.Method mId = objAsig.getClass().getMethod("getId"); idAsig = (Long) mId.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% try { java.lang.reflect.Method mIdVis = objAsig.getClass().getMethod("getIdVisible"); idVisible = (Long) mIdVis.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% if (idVisible == null) { %>
+                            <% try { java.lang.reflect.Method mIdSec = objAsig.getClass().getMethod("getIdSecuencial"); idVisible = (Long) mIdSec.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% } %>
+                        <% if (idVisible == null) { idVisible = idAsig; } %>
+                        <% try { java.lang.reflect.Method mNom = objAsig.getClass().getMethod("getNombre"); nomAsig = (String) mNom.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% try { java.lang.reflect.Method mUmb = objAsig.getClass().getMethod("getUmbralAprobacion"); umbralAsig = mUmb.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% try { java.lang.reflect.Method mReg = objAsig.getClass().getMethod("getReglas"); Object listaR = mReg.invoke(objAsig); if (listaR instanceof java.util.Collection) { java.util.Collection<?> col = (java.util.Collection<?>) listaR; cantidadReglas = col.size(); for (Object rObj : col) { java.lang.reflect.Method mRegId = rObj.getClass().getMethod("getId"); reglaIdsList.add((Long) mRegId.invoke(rObj)); } } } catch (Exception ignored) {} %>
+                        <div class="card assignment-card" style="padding: 1rem; border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+                            <h3 style="margin-top:0; font-size:1.1rem;">#<%= idVisible != null ? idVisible : "-" %> - <%= HtmlUtil.escape(nomAsig) %></h3>
+                            <p><strong>Umbral:</strong> <span class="badge badge-docente" style="font-size:0.85rem;"><%= HtmlUtil.escape(umbralAsig) %></span></p>
+                            <p><strong>Reglas vinculadas:</strong> <span class="badge badge-muted"><%= cantidadReglas %> regla(s)</span></p>
+                            <div style="display:flex; gap:0.5rem;">
+                                <button type="button" class="btn-edit" onclick="abrirModalEditarAsignacion('<%= idAsig %>', '<%= HtmlUtil.escape(nomAsig) %>', '<%= HtmlUtil.escape(umbralAsig) %>', <%= reglaIdsList.toString() %>)">✏️ Editar</button>
+                                <button type="button" class="btn-delete" onclick="confirmarEliminarAsignacion('<%= idAsig %>', '<%= HtmlUtil.escape(nomAsig) %>')">🗑️ Eliminar</button>
+                            </div>
+                        </div>
+                    <% } %>
+                </div>
                                     <div class="rule-details">
                                         <label for="edit_regla_<%= regla.getId() %>" style="font-size: 0.9rem; font-weight: 600; cursor: pointer;">
                                             <%= HtmlUtil.escape(regla.getNombreRepresentativo()) %>
@@ -387,16 +1115,161 @@
                                             <%= regla.getPonderacion() %> pts
                                         </span>
                                     </div>
+                <!-- Cards view for assignments -->
+                <div class="cards-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1rem; margin-top: 1rem;">
+                    <% for (Object objAsig : asignacionesExistentes) { %>
+                        <% Long idAsig = null; %>
+                        <% Long idVisible = null; %>
+                        <% String nomAsig = ""; %>
+                        <% Object umbralAsig = ""; %>
+                        <% int cantidadReglas = 0; %>
+                        <% java.util.List<Long> reglaIdsList = new java.util.ArrayList<>(); %>
+                        <% try { java.lang.reflect.Method mId = objAsig.getClass().getMethod("getId"); idAsig = (Long) mId.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% try { java.lang.reflect.Method mIdVis = objAsig.getClass().getMethod("getIdVisible"); idVisible = (Long) mIdVis.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% if (idVisible == null) { %>
+                            <% try { java.lang.reflect.Method mIdSec = objAsig.getClass().getMethod("getIdSecuencial"); idVisible = (Long) mIdSec.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% } %>
+                        <% if (idVisible == null) { idVisible = idAsig; } %>
+                        <% try { java.lang.reflect.Method mNom = objAsig.getClass().getMethod("getNombre"); nomAsig = (String) mNom.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% try { java.lang.reflect.Method mUmb = objAsig.getClass().getMethod("getUmbralAprobacion"); umbralAsig = mUmb.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% try { java.lang.reflect.Method mReg = objAsig.getClass().getMethod("getReglas"); Object listaR = mReg.invoke(objAsig); if (listaR instanceof java.util.Collection) { java.util.Collection<?> col = (java.util.Collection<?>) listaR; cantidadReglas = col.size(); for (Object rObj : col) { java.lang.reflect.Method mRegId = rObj.getClass().getMethod("getId"); reglaIdsList.add((Long) mRegId.invoke(rObj)); } } } catch (Exception ignored) {} %>
+                        <div class="card assignment-card" style="padding: 1rem; border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+                            <h3 style="margin-top:0; font-size:1.1rem;">#<%= idVisible != null ? idVisible : "-" %> - <%= HtmlUtil.escape(nomAsig) %></h3>
+                            <p><strong>Umbral:</strong> <span class="badge badge-docente" style="font-size:0.85rem;"><%= HtmlUtil.escape(umbralAsig) %></span></p>
+                            <p><strong>Reglas vinculadas:</strong> <span class="badge badge-muted"><%= cantidadReglas %> regla(s)</span></p>
+                            <div style="display:flex; gap:0.5rem;">
+                                <button type="button" class="btn-edit" onclick="abrirModalEditarAsignacion('<%= idAsig %>', '<%= HtmlUtil.escape(nomAsig) %>', '<%= HtmlUtil.escape(umbralAsig) %>', <%= reglaIdsList.toString() %>)">✏️ Editar</button>
+                                <button type="button" class="btn-delete" onclick="confirmarEliminarAsignacion('<%= idAsig %>', '<%= HtmlUtil.escape(nomAsig) %>')">🗑️ Eliminar</button>
+                            </div>
+                        </div>
+                    <% } %>
+                </div>
                                 </div>
+                <!-- Cards view for assignments -->
+                <div class="cards-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1rem; margin-top: 1rem;">
+                    <% for (Object objAsig : asignacionesExistentes) { %>
+                        <% Long idAsig = null; %>
+                        <% Long idVisible = null; %>
+                        <% String nomAsig = ""; %>
+                        <% Object umbralAsig = ""; %>
+                        <% int cantidadReglas = 0; %>
+                        <% java.util.List<Long> reglaIdsList = new java.util.ArrayList<>(); %>
+                        <% try { java.lang.reflect.Method mId = objAsig.getClass().getMethod("getId"); idAsig = (Long) mId.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% try { java.lang.reflect.Method mIdVis = objAsig.getClass().getMethod("getIdVisible"); idVisible = (Long) mIdVis.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% if (idVisible == null) { %>
+                            <% try { java.lang.reflect.Method mIdSec = objAsig.getClass().getMethod("getIdSecuencial"); idVisible = (Long) mIdSec.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% } %>
+                        <% if (idVisible == null) { idVisible = idAsig; } %>
+                        <% try { java.lang.reflect.Method mNom = objAsig.getClass().getMethod("getNombre"); nomAsig = (String) mNom.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% try { java.lang.reflect.Method mUmb = objAsig.getClass().getMethod("getUmbralAprobacion"); umbralAsig = mUmb.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% try { java.lang.reflect.Method mReg = objAsig.getClass().getMethod("getReglas"); Object listaR = mReg.invoke(objAsig); if (listaR instanceof java.util.Collection) { java.util.Collection<?> col = (java.util.Collection<?>) listaR; cantidadReglas = col.size(); for (Object rObj : col) { java.lang.reflect.Method mRegId = rObj.getClass().getMethod("getId"); reglaIdsList.add((Long) mRegId.invoke(rObj)); } } } catch (Exception ignored) {} %>
+                        <div class="card assignment-card" style="padding: 1rem; border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+                            <h3 style="margin-top:0; font-size:1.1rem;">#<%= idVisible != null ? idVisible : "-" %> - <%= HtmlUtil.escape(nomAsig) %></h3>
+                            <p><strong>Umbral:</strong> <span class="badge badge-docente" style="font-size:0.85rem;"><%= HtmlUtil.escape(umbralAsig) %></span></p>
+                            <p><strong>Reglas vinculadas:</strong> <span class="badge badge-muted"><%= cantidadReglas %> regla(s)</span></p>
+                            <div style="display:flex; gap:0.5rem;">
+                                <button type="button" class="btn-edit" onclick="abrirModalEditarAsignacion('<%= idAsig %>', '<%= HtmlUtil.escape(nomAsig) %>', '<%= HtmlUtil.escape(umbralAsig) %>', <%= reglaIdsList.toString() %>)">✏️ Editar</button>
+                                <button type="button" class="btn-delete" onclick="confirmarEliminarAsignacion('<%= idAsig %>', '<%= HtmlUtil.escape(nomAsig) %>')">🗑️ Eliminar</button>
+                            </div>
+                        </div>
+                    <% } %>
+                </div>
                             <%     }
                                } %>
                         </div>
+                <!-- Cards view for assignments -->
+                <div class="cards-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1rem; margin-top: 1rem;">
+                    <% for (Object objAsig : asignacionesExistentes) { %>
+                        <% Long idAsig = null; %>
+                        <% Long idVisible = null; %>
+                        <% String nomAsig = ""; %>
+                        <% Object umbralAsig = ""; %>
+                        <% int cantidadReglas = 0; %>
+                        <% java.util.List<Long> reglaIdsList = new java.util.ArrayList<>(); %>
+                        <% try { java.lang.reflect.Method mId = objAsig.getClass().getMethod("getId"); idAsig = (Long) mId.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% try { java.lang.reflect.Method mIdVis = objAsig.getClass().getMethod("getIdVisible"); idVisible = (Long) mIdVis.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% if (idVisible == null) { %>
+                            <% try { java.lang.reflect.Method mIdSec = objAsig.getClass().getMethod("getIdSecuencial"); idVisible = (Long) mIdSec.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% } %>
+                        <% if (idVisible == null) { idVisible = idAsig; } %>
+                        <% try { java.lang.reflect.Method mNom = objAsig.getClass().getMethod("getNombre"); nomAsig = (String) mNom.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% try { java.lang.reflect.Method mUmb = objAsig.getClass().getMethod("getUmbralAprobacion"); umbralAsig = mUmb.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% try { java.lang.reflect.Method mReg = objAsig.getClass().getMethod("getReglas"); Object listaR = mReg.invoke(objAsig); if (listaR instanceof java.util.Collection) { java.util.Collection<?> col = (java.util.Collection<?>) listaR; cantidadReglas = col.size(); for (Object rObj : col) { java.lang.reflect.Method mRegId = rObj.getClass().getMethod("getId"); reglaIdsList.add((Long) mRegId.invoke(rObj)); } } } catch (Exception ignored) {} %>
+                        <div class="card assignment-card" style="padding: 1rem; border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+                            <h3 style="margin-top:0; font-size:1.1rem;">#<%= idVisible != null ? idVisible : "-" %> - <%= HtmlUtil.escape(nomAsig) %></h3>
+                            <p><strong>Umbral:</strong> <span class="badge badge-docente" style="font-size:0.85rem;"><%= HtmlUtil.escape(umbralAsig) %></span></p>
+                            <p><strong>Reglas vinculadas:</strong> <span class="badge badge-muted"><%= cantidadReglas %> regla(s)</span></p>
+                            <div style="display:flex; gap:0.5rem;">
+                                <button type="button" class="btn-edit" onclick="abrirModalEditarAsignacion('<%= idAsig %>', '<%= HtmlUtil.escape(nomAsig) %>', '<%= HtmlUtil.escape(umbralAsig) %>', <%= reglaIdsList.toString() %>)">✏️ Editar</button>
+                                <button type="button" class="btn-delete" onclick="confirmarEliminarAsignacion('<%= idAsig %>', '<%= HtmlUtil.escape(nomAsig) %>')">🗑️ Eliminar</button>
+                            </div>
+                        </div>
+                    <% } %>
+                </div>
                     </div>
+                <!-- Cards view for assignments -->
+                <div class="cards-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1rem; margin-top: 1rem;">
+                    <% for (Object objAsig : asignacionesExistentes) { %>
+                        <% Long idAsig = null; %>
+                        <% Long idVisible = null; %>
+                        <% String nomAsig = ""; %>
+                        <% Object umbralAsig = ""; %>
+                        <% int cantidadReglas = 0; %>
+                        <% java.util.List<Long> reglaIdsList = new java.util.ArrayList<>(); %>
+                        <% try { java.lang.reflect.Method mId = objAsig.getClass().getMethod("getId"); idAsig = (Long) mId.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% try { java.lang.reflect.Method mIdVis = objAsig.getClass().getMethod("getIdVisible"); idVisible = (Long) mIdVis.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% if (idVisible == null) { %>
+                            <% try { java.lang.reflect.Method mIdSec = objAsig.getClass().getMethod("getIdSecuencial"); idVisible = (Long) mIdSec.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% } %>
+                        <% if (idVisible == null) { idVisible = idAsig; } %>
+                        <% try { java.lang.reflect.Method mNom = objAsig.getClass().getMethod("getNombre"); nomAsig = (String) mNom.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% try { java.lang.reflect.Method mUmb = objAsig.getClass().getMethod("getUmbralAprobacion"); umbralAsig = mUmb.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% try { java.lang.reflect.Method mReg = objAsig.getClass().getMethod("getReglas"); Object listaR = mReg.invoke(objAsig); if (listaR instanceof java.util.Collection) { java.util.Collection<?> col = (java.util.Collection<?>) listaR; cantidadReglas = col.size(); for (Object rObj : col) { java.lang.reflect.Method mRegId = rObj.getClass().getMethod("getId"); reglaIdsList.add((Long) mRegId.invoke(rObj)); } } } catch (Exception ignored) {} %>
+                        <div class="card assignment-card" style="padding: 1rem; border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+                            <h3 style="margin-top:0; font-size:1.1rem;">#<%= idVisible != null ? idVisible : "-" %> - <%= HtmlUtil.escape(nomAsig) %></h3>
+                            <p><strong>Umbral:</strong> <span class="badge badge-docente" style="font-size:0.85rem;"><%= HtmlUtil.escape(umbralAsig) %></span></p>
+                            <p><strong>Reglas vinculadas:</strong> <span class="badge badge-muted"><%= cantidadReglas %> regla(s)</span></p>
+                            <div style="display:flex; gap:0.5rem;">
+                                <button type="button" class="btn-edit" onclick="abrirModalEditarAsignacion('<%= idAsig %>', '<%= HtmlUtil.escape(nomAsig) %>', '<%= HtmlUtil.escape(umbralAsig) %>', <%= reglaIdsList.toString() %>)">✏️ Editar</button>
+                                <button type="button" class="btn-delete" onclick="confirmarEliminarAsignacion('<%= idAsig %>', '<%= HtmlUtil.escape(nomAsig) %>')">🗑️ Eliminar</button>
+                            </div>
+                        </div>
+                    <% } %>
+                </div>
 
                     <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1.25rem;">
                         <button type="button" class="btn btn-secondary" onclick="cerrarModalEditarAsignacion()">Cancelar</button>
                         <button type="submit" class="btn btn-primary">Guardar Cambios y Revalorizar</button>
                     </div>
+                <!-- Cards view for assignments -->
+                <div class="cards-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1rem; margin-top: 1rem;">
+                    <% for (Object objAsig : asignacionesExistentes) { %>
+                        <% Long idAsig = null; %>
+                        <% Long idVisible = null; %>
+                        <% String nomAsig = ""; %>
+                        <% Object umbralAsig = ""; %>
+                        <% int cantidadReglas = 0; %>
+                        <% java.util.List<Long> reglaIdsList = new java.util.ArrayList<>(); %>
+                        <% try { java.lang.reflect.Method mId = objAsig.getClass().getMethod("getId"); idAsig = (Long) mId.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% try { java.lang.reflect.Method mIdVis = objAsig.getClass().getMethod("getIdVisible"); idVisible = (Long) mIdVis.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% if (idVisible == null) { %>
+                            <% try { java.lang.reflect.Method mIdSec = objAsig.getClass().getMethod("getIdSecuencial"); idVisible = (Long) mIdSec.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% } %>
+                        <% if (idVisible == null) { idVisible = idAsig; } %>
+                        <% try { java.lang.reflect.Method mNom = objAsig.getClass().getMethod("getNombre"); nomAsig = (String) mNom.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% try { java.lang.reflect.Method mUmb = objAsig.getClass().getMethod("getUmbralAprobacion"); umbralAsig = mUmb.invoke(objAsig); } catch (Exception ignored) {} %>
+                        <% try { java.lang.reflect.Method mReg = objAsig.getClass().getMethod("getReglas"); Object listaR = mReg.invoke(objAsig); if (listaR instanceof java.util.Collection) { java.util.Collection<?> col = (java.util.Collection<?>) listaR; cantidadReglas = col.size(); for (Object rObj : col) { java.lang.reflect.Method mRegId = rObj.getClass().getMethod("getId"); reglaIdsList.add((Long) mRegId.invoke(rObj)); } } } catch (Exception ignored) {} %>
+                        <div class="card assignment-card" style="padding: 1rem; border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+                            <h3 style="margin-top:0; font-size:1.1rem;">#<%= idVisible != null ? idVisible : "-" %> - <%= HtmlUtil.escape(nomAsig) %></h3>
+                            <p><strong>Umbral:</strong> <span class="badge badge-docente" style="font-size:0.85rem;"><%= HtmlUtil.escape(umbralAsig) %></span></p>
+                            <p><strong>Reglas vinculadas:</strong> <span class="badge badge-muted"><%= cantidadReglas %> regla(s)</span></p>
+                            <div style="display:flex; gap:0.5rem;">
+                                <button type="button" class="btn-edit" onclick="abrirModalEditarAsignacion('<%= idAsig %>', '<%= HtmlUtil.escape(nomAsig) %>', '<%= HtmlUtil.escape(umbralAsig) %>', <%= reglaIdsList.toString() %>)">✏️ Editar</button>
+                                <button type="button" class="btn-delete" onclick="confirmarEliminarAsignacion('<%= idAsig %>', '<%= HtmlUtil.escape(nomAsig) %>')">🗑️ Eliminar</button>
+                            </div>
+                        </div>
+                    <% } %>
+                </div>
                 </form>
             </div>
         </div>

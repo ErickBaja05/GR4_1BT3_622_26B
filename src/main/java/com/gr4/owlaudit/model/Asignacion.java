@@ -48,6 +48,9 @@ public class Asignacion {
     @Column(name = "numero_intentos")
     private Integer numeroIntentos;
 
+    @Column(name = "intentos_permitidos")
+    private Integer intentosPermitidos;
+
     @Column(name = "fecha_inicio")
     private LocalDateTime fechaInicio;
 
@@ -80,6 +83,17 @@ public class Asignacion {
     public Asignacion(Curso curso, String nombre, Double umbralAprobacion, List<Regla> reglas) {
         this(nombre, umbralAprobacion, reglas);
         this.curso = curso;
+    }
+
+    public Asignacion(Curso curso, String nombre, LocalDateTime fechaLimite, Integer intentosPermitidos, Double umbralAprobacion) {
+        this.curso = curso;
+        this.nombre = nombre;
+        this.fechaLimite = fechaLimite;
+        this.intentosPermitidos = intentosPermitidos;
+        this.numeroIntentos = intentosPermitidos;
+        this.umbralAprobacion = umbralAprobacion;
+        this.reglas = new ArrayList<>();
+        this.auditorias = new ArrayList<>();
     }
 
     public Long getId() {
@@ -155,6 +169,15 @@ public class Asignacion {
 
     public void setNumeroIntentos(Integer numeroIntentos) {
         this.numeroIntentos = numeroIntentos;
+    }
+
+    public Integer getIntentosPermitidos() {
+        return intentosPermitidos != null ? intentosPermitidos : numeroIntentos;
+    }
+
+    public void setIntentosPermitidos(Integer intentosPermitidos) {
+        this.intentosPermitidos = intentosPermitidos;
+        this.numeroIntentos = intentosPermitidos;
     }
 
     public LocalDateTime getFechaInicio() {
