@@ -69,11 +69,11 @@ public class CreacionReglaCursoTest {
     }
 
     @ParameterizedTest(name = "Motor: {0} | Parámetro inválido: {1}")
-    @CsvSource({
-            "CONVENCION_COMMITS, 'mensaje_sin_dos_puntos', 'Para CONVENCION_COMMITS, el patrón debe incluir el formato esperado con separador ':'.' ",
-            "RESTRICCION_ARCHIVOS, 'src/test/archivo.class', 'Para RESTRICCION_ARCHIVOS, el parámetro no puede contener barras separadoras '/'.' ",
-            "ESTRUCTURA_CARPETAS, '/src/main/java/', 'Para ESTRUCTURA_CARPETAS, la ruta no puede empezar ni terminar con '/'.' ",
-            "PRESENCIA_ARCHIVO, 'doc?.pdf', 'El parámetro exacto contiene el carácter prohibido: '?'.' "
+    @CsvSource(delimiter = ';', value = {
+            "CONVENCION_COMMITS; mensaje_sin_dos_puntos; Para CONVENCION_COMMITS, el patrón debe incluir el separador ':'.",
+            "RESTRICCION_ARCHIVOS; src/test/archivo.class; Para RESTRICCION_ARCHIVOS, el parámetro no puede contener barras separadoras '/'.",
+            "ESTRUCTURA_CARPETAS; /src/main/java/; Para ESTRUCTURA_CARPETAS, la ruta no puede empezar ni terminar con '/'.",
+            "PRESENCIA_ARCHIVO; doc?.pdf; El parámetro exacto contiene el carácter prohibido: '?'."
     })
     @DisplayName("CA3 - Escenario 3.2: Given motor seleccionado, When ingresa parametro sintacticamente invalido, Then rechaza registro con mensaje indicando formato esperado")
     void givenDocenteSeleccionaTipoMotor_whenIngresaParametroInvalidoParaEseMotor_thenRechazaRegistroConMensajeFormatoEsperado(

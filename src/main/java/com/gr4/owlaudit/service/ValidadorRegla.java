@@ -49,8 +49,21 @@ public class ValidadorRegla {
 
     private TipoMotorEnum validarTipoMotor(String tipoMotorStr) {
         String trimmed = tipoMotorStr.trim();
+        if ("Convención de Commits".equalsIgnoreCase(trimmed) || "Convencion de Commits".equalsIgnoreCase(trimmed)) {
+            return TipoMotorEnum.CONVENCION_COMMITS;
+        }
+        if ("Restricción de Archivos".equalsIgnoreCase(trimmed) || "Restriccion de Archivos".equalsIgnoreCase(trimmed)
+                || "Restricción de Archivo".equalsIgnoreCase(trimmed) || "Restriccion de Archivo".equalsIgnoreCase(trimmed)) {
+            return TipoMotorEnum.RESTRICCION_ARCHIVOS;
+        }
+        if ("Estructura de Carpetas".equalsIgnoreCase(trimmed)) {
+            return TipoMotorEnum.ESTRUCTURA_CARPETAS;
+        }
+        if ("Presencia de Archivo".equalsIgnoreCase(trimmed)) {
+            return TipoMotorEnum.PRESENCIA_ARCHIVO;
+        }
         try {
-            return TipoMotorEnum.valueOf(trimmed);
+            return TipoMotorEnum.valueOf(trimmed.toUpperCase());
         } catch (IllegalArgumentException e) {
             throw new ExcepcionNegocio("El tipo de motor '" + trimmed
                     + "' no es válido. Debe ser PRESENCIA_ARCHIVO, RESTRICCION_ARCHIVOS, ESTRUCTURA_CARPETAS o CONVENCION_COMMITS.");
