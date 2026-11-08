@@ -10,6 +10,8 @@ import java.util.List;
 public interface AsignacionesService {
     Asignacion crearAsignacion(NuevaAsignacionDTO dto);
 
+    Asignacion programarAsignacion(NuevaAsignacionDTO dto);
+
     List<Asignacion> listarAsignaciones();
 
     List<Asignacion> consultarAsignacionesDisponibles();

@@ -108,6 +108,12 @@ public class AsignacionesServiceImpl implements AsignacionesService {
     }
 
     @Override
+    public Asignacion programarAsignacion(NuevaAsignacionDTO dto) {
+        // Cascarón para Fase Roja (TDD) - Implementación de negocio pendiente para Fase Verde
+        return null;
+    }
+
+    @Override
     public List<Asignacion> listarAsignaciones() {
         return asignacionesDAO.listarAsignaciones();
     }
