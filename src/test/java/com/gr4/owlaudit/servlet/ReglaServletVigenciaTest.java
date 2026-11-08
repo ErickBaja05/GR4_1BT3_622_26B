@@ -51,8 +51,9 @@ class ReglaServletVigenciaTest {
         when(request.getRequestDispatcher(anyString())).thenReturn(dispatcher);
     }
 
-    /** Simula el formulario del catálogo: POST /regla con accion=cambiarVigencia. */
+    /** Simula el formulario del catálogo: POST /regla con accion=cambiarVigencia y contexto de curso. */
     private void simularSolicitudDeCambio(String nombreRegla, String nuevoEstado) {
+        when(request.getParameter("idCurso")).thenReturn("10");
         when(request.getParameter("accion")).thenReturn("cambiarVigencia");
         when(request.getParameter("nombreRegla")).thenReturn(nombreRegla);
         when(request.getParameter("nuevoEstado")).thenReturn(nuevoEstado);

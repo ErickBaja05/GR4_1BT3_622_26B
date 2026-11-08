@@ -22,6 +22,10 @@ import java.util.List;
 public class CursoServlet extends HttpServlet {
 
     private static final String VISTA_MIS_CURSOS = "/WEB-INF/views/misCursos.jsp";
+    static final String MENSAJE_PERMISOS_DOCENTE =
+            "No tiene permisos para gestionar un curso del que no es docente titular.";
+    static final String MENSAJE_PERMISOS_ESTUDIANTE =
+            "No tienes permisos para acceder a las asignaciones de un curso en el que no estás matriculado.";
 
     private final CursoService cursoService;
 
@@ -52,8 +56,9 @@ public class CursoServlet extends HttpServlet {
             request.setAttribute("mensajeError",
                     "Debe seleccionar una asignación dentro de sus cursos matriculados para ejecutar una auditoría.");
         } else if ("permisos".equalsIgnoreCase(errorParam)) {
-            request.setAttribute("mensajeError",
-                    "No tienes permisos para acceder a las asignaciones de un curso en el que no estás matriculado.");
+            request.setAttribute("mensajeError", esDocente(usuario)
+                    ? MENSAJE_PERMISOS_DOCENTE
+                    : MENSAJE_PERMISOS_ESTUDIANTE);
         } else if ("sinCurso".equalsIgnoreCase(errorParam)) {
             request.setAttribute("mensajeError",
                     "Debe ingresar a las asignaciones a través de uno de sus cursos matriculados.");

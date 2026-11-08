@@ -1,4 +1,4 @@
-﻿<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ page import="java.util.List" %>
 <%@ page import="com.gr4.owlaudit.dto.NuevaReglaDTO" %>
 <%@ page import="com.gr4.owlaudit.model.Regla" %>
@@ -64,7 +64,7 @@
                     <p class="card-subtitle" style="margin-bottom: 0;">Cree políticas de calidad de código para ser evaluadas automáticamente en los repositorios.</p>
                 </div>
                 <div>
-                    <a href="${pageContext.request.contextPath}/regla" class="btn btn-secondary" style="display: inline-flex; align-items: center; gap: 0.4rem;">
+                    <a href="${pageContext.request.contextPath}/regla<%= request.getAttribute("idCurso") != null ? "?idCurso=" + request.getAttribute("idCurso") : "" %>" class="btn btn-secondary" style="display: inline-flex; align-items: center; gap: 0.4rem;">
                         <span>📋</span> Volver al Catálogo de Reglas
                     </a>
                 </div>
@@ -72,6 +72,11 @@
 
             <form action="${pageContext.request.contextPath}/regla" method="POST">
                 <input type="hidden" name="accion" value="registrar">
+                <% if (request.getAttribute("idCurso") != null) { %>
+                    <input type="hidden" name="idCurso" value="<%= request.getAttribute("idCurso") %>">
+                <% } else if (dto != null && dto.getIdCurso() != null) { %>
+                    <input type="hidden" name="idCurso" value="<%= dto.getIdCurso() %>">
+                <% } %>
                 <div class="form-group">
                     <label for="tipoMotor" class="form-label">Tipo de Motor de Evaluación</label>
                     <select id="tipoMotor" name="tipoMotor" class="form-control" required>
@@ -188,6 +193,11 @@
                                     <td style="padding: 0.65rem 0.5rem; text-align: center;">
                                         <form action="${pageContext.request.contextPath}/regla" method="POST" style="margin: 0; display: inline-block;">
                                             <input type="hidden" name="accion" value="cambiarVigencia">
+                                            <% if (request.getAttribute("idCurso") != null) { %>
+                                                <input type="hidden" name="idCurso" value="<%= request.getAttribute("idCurso") %>">
+                                            <% } else if (dto != null && dto.getIdCurso() != null) { %>
+                                                <input type="hidden" name="idCurso" value="<%= dto.getIdCurso() %>">
+                                            <% } %>
                                             <input type="hidden" name="nombreRegla" value="<%= HtmlUtil.escape(r.getNombreRepresentativo()) %>">
                                             <input type="hidden" name="idRegla" value="<%= r.getId() %>">
                                             <input type="hidden" name="nuevoEstado" value="<%= nuevoEstado %>">

@@ -113,4 +113,47 @@ public class ReglaDAOImpl implements ReglaDAO {
             ).list();
         }
     }
+
+    @Override
+    public boolean existeNombreEnCurso(String nombre, Long idCurso) {
+        if (nombre == null || nombre.trim().isEmpty() || idCurso == null) {
+            return false;
+        }
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            Query<Long> query = session.createQuery(
+                    "SELECT COUNT(r) FROM Regla r WHERE LOWER(TRIM(r.nombreRepresentativo)) = LOWER(TRIM(:nombre)) AND r.curso.id = :idCurso",
+                    Long.class);
+            query.setParameter("nombre", nombre);
+            query.setParameter("idCurso", idCurso);
+            Long count = query.uniqueResult();
+            return count != null && count > 0;
+        }
+    }
+
+    @Override
+    public List<Regla> listarPorCurso(Long idCurso) {
+        if (idCurso == null) {
+            return List.of();
+        }
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            return session.createQuery(
+                    "SELECT r FROM Regla r WHERE r.curso.id = :idCurso ORDER BY r.id ASC",
+                    Regla.class
+            ).setParameter("idCurso", idCurso).list();
+        }
+    }
+
+    @Override
+    public List<Regla> listarVigentesPorCurso(Long idCurso) {
+        if (idCurso == null) {
+            return List.of();
+        }
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            return session.createQuery(
+                    "SELECT r FROM Regla r WHERE r.curso.id = :idCurso AND r.vigencia = :vigencia ORDER BY r.id ASC",
+                    Regla.class
+            ).setParameter("idCurso", idCurso)
+             .setParameter("vigencia", EstadoVigencia.VIGENTE).list();
+        }
+    }
 }

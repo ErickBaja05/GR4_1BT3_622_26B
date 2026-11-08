@@ -11,6 +11,7 @@ import java.util.regex.PatternSyntaxException;
 
 public class ValidadorRegla {
 
+    public static final String MENSAJE_CAMPOS_OBLIGATORIOS = "Todos los campos de la regla son obligatorios.";
     private static final int PONDERACION_MINIMA = 1;
     private static final int PONDERACION_MAXIMA = 100;
     private static final char[] CARACTERES_PROHIBIDOS_RUTA = { ':', '\\', '"', '<', '>', '|', '?' };
@@ -37,31 +38,44 @@ public class ValidadorRegla {
     }
 
     private void validarCamposObligatorios(NuevaReglaDTO dto) {
-        if (dto.getTipoMotor() == null || dto.getTipoMotor().trim().isEmpty()) {
-            throw new ExcepcionNegocio("El tipo de motor es obligatorio.");
-        }
-        if (dto.getNombreRepresentativo() == null || dto.getNombreRepresentativo().trim().isEmpty()) {
-            throw new ExcepcionNegocio("El nombre representativo es obligatorio.");
-        }
-        if (dto.getDescripcionDetallada() == null || dto.getDescripcionDetallada().trim().isEmpty()) {
-            throw new ExcepcionNegocio("La descripción detallada es obligatoria.");
-        }
-        if (dto.getParametroExacto() == null || dto.getParametroExacto().isEmpty()) {
-            throw new ExcepcionNegocio("El parámetro exacto es obligatorio.");
-        }
-        if (dto.getNivelSeveridad() == null || dto.getNivelSeveridad().trim().isEmpty()) {
-            throw new ExcepcionNegocio("El nivel de severidad es obligatorio.");
+        if (dto.getIdCurso() == null
+                || dto.getTipoMotor() == null || dto.getTipoMotor().trim().isEmpty()
+                || dto.getNombreRepresentativo() == null || dto.getNombreRepresentativo().trim().isEmpty()
+                || dto.getDescripcionDetallada() == null || dto.getDescripcionDetallada().trim().isEmpty()
+                || dto.getParametroExacto() == null || dto.getParametroExacto().trim().isEmpty()) {
+            throw new ExcepcionNegocio(MENSAJE_CAMPOS_OBLIGATORIOS);
         }
     }
 
     private TipoMotorEnum validarTipoMotor(String tipoMotorStr) {
         String trimmed = tipoMotorStr.trim();
+        TipoMotorEnum motorDetectado = parsearTipoMotorAmigable(trimmed);
+        if (motorDetectado != null) {
+            return motorDetectado;
+        }
         try {
-            return TipoMotorEnum.valueOf(trimmed);
+            return TipoMotorEnum.valueOf(trimmed.toUpperCase());
         } catch (IllegalArgumentException e) {
             throw new ExcepcionNegocio("El tipo de motor '" + trimmed
                     + "' no es válido. Debe ser PRESENCIA_ARCHIVO, RESTRICCION_ARCHIVOS, ESTRUCTURA_CARPETAS o CONVENCION_COMMITS.");
         }
+    }
+
+    private TipoMotorEnum parsearTipoMotorAmigable(String nombre) {
+        String normalizado = nombre.toLowerCase().replace("ó", "o");
+        if (normalizado.contains("commit")) {
+            return TipoMotorEnum.CONVENCION_COMMITS;
+        }
+        if (normalizado.contains("restriccion")) {
+            return TipoMotorEnum.RESTRICCION_ARCHIVOS;
+        }
+        if (normalizado.contains("carpeta")) {
+            return TipoMotorEnum.ESTRUCTURA_CARPETAS;
+        }
+        if (normalizado.contains("presencia")) {
+            return TipoMotorEnum.PRESENCIA_ARCHIVO;
+        }
+        return null;
     }
 
     private void validarNombreRepresentativo(String nombre) {
