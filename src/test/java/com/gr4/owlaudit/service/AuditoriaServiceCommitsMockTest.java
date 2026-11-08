@@ -63,6 +63,8 @@ class AuditoriaServiceCommitsMockTest {
         reglaDTO.setNivelSeveridad("MEDIA");
         reglaDTO.setPonderacion(20);
         Regla reglaCommits = new Regla(reglaDTO);
+        // new Regla(dto) ya no copia la ponderación: pertenece a la configuración de la asignación
+        reglaCommits.setPonderacion(20);
 
         when(reglaDAO.consultarReglasDeEvaluacionVigentes()).thenReturn(List.of(reglaCommits));
         when(gitHubClient.obtenerEstructuraDelRepositorio(anyString())).thenReturn(List.of("README.md"));

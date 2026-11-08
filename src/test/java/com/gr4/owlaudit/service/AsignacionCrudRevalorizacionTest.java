@@ -2,6 +2,7 @@ package com.gr4.owlaudit.service;
 
 import com.gr4.owlaudit.client.GitHubClient;
 import com.gr4.owlaudit.common.exception.ExcepcionNegocio;
+import com.gr4.owlaudit.dao.AsignacionReglaDAO;
 import com.gr4.owlaudit.dao.AsignacionesDAO;
 import com.gr4.owlaudit.dao.AuditoriaDAO;
 import com.gr4.owlaudit.dao.ReglaDAO;
@@ -48,12 +49,17 @@ public class AsignacionCrudRevalorizacionTest {
     @Mock
     private GitHubClient gitHubClient;
 
+    @Mock
+    private AsignacionReglaDAO asignacionReglaDAO;
+
     private AsignacionesServiceImpl asignacionesService;
 
     @BeforeEach
     void setUp() {
         asignacionesService = new AsignacionesServiceImpl(asignacionesDAO, reglaDAO);
         asignacionesService.setAuditoriaService(auditoriaService);
+        // Evita que el servicio cree el DAO real y escriba en la base de datos
+        asignacionesService.setAsignacionReglaDAO(asignacionReglaDAO);
     }
 
     @Test
