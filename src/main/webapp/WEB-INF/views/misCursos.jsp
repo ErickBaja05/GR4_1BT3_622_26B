@@ -59,11 +59,9 @@
                                                             <% if (esDocente) { %>
                                                                 Gestione sus cursos, comparta el código único con sus
                                                                 estudiantes y configure las asignaciones académicas.
-                                                                <% } else { %>
-                                                                    Consulte las asignaciones y políticas técnicas de
-                                                                    calidad configuradas exclusivamente para sus cursos
-                                                                    inscritos.
-                                                                    <% } %>
+                                                            <% } else { %>
+                                                                Revise sus cursos inscritos y entregue sus asignaciones académicas a tiempo.
+                                                            <% } %>
                                                         </p>
                                                     </div>
 
@@ -72,7 +70,12 @@
                                                             onclick="toggleFormularioCurso()">
                                                             + Crear un nuevo curso
                                                         </button>
-                                                        <% } %>
+                                                    <% } else { %>
+                                                        <button type="button" class="btn btn-primary"
+                                                            onclick="abrirModalUnirseCurso()">
+                                                            + Unirme a un curso
+                                                        </button>
+                                                    <% } %>
                                                 </div>
 
                                                 <!-- Alertas de Error (CA2, CA3) y Éxito (CA1.1) -->
@@ -148,7 +151,29 @@
                                                                         </form>
                                                                     </div>
                                                                     <% } %>
-
+                                                                <!-- Modal Emergente para Unirse a Curso (Solo Estudiante) -->
+                                                                <% if (!esDocente) { %>
+                                                                    <div id="modalUnirseCurso" class="modal-overlay">
+                                                                        <div class="modal-content">
+                                                                            <h2 class="card-title" style="font-size: 1.25rem; margin-bottom: 0.5rem;">Unirme a un curso</h2>
+                                                                            <p class="card-subtitle" style="margin-bottom: 1.25rem;">
+                                                                                Pídele a tu profesor el código del curso e introdúcelo aquí.
+                                                                            </p>
+                                                                            <form action="<%= ctx %>/curso" method="post" novalidate>
+                                                                                <input type="hidden" name="accion" value="unirse">
+                                                                                <div class="form-group" style="margin-bottom: 1.5rem;">
+                                                                                    <label for="codigoCursoEstudiante" class="form-label" style="font-weight: 600;">Código del curso *</label>
+                                                                                    <input type="text" id="codigoCursoEstudiante" name="codigo" class="form-control"
+                                                                                        placeholder="Código de clase ej: CSW-2026B" required>
+                                                                                </div>
+                                                                                <div style="display: flex; justify-content: flex-end; gap: 0.75rem;">
+                                                                                    <button type="button" class="btn btn-secondary" onclick="cerrarModalUnirseCurso()">Cancelar</button>
+                                                                                    <button type="submit" class="btn btn-primary">Unirme</button>
+                                                                                </div>
+                                                                            </form>
+                                                                        </div>
+                                                                    </div>
+                                                                <% } %>
                                                                         <!-- Listado de Tarjetas de Cursos (CA1.2) -->
                                                                         <div class="menu-grid"
                                                                             style="margin-top: 1.5rem;">
@@ -254,12 +279,25 @@
                                                                                     <% } %>
                                                                         </div>
                                             </main>
-
                                             <script>
                                                 function toggleFormularioCurso() {
                                                     var formDiv = document.getElementById('contenedorFormCurso');
                                                     if (formDiv) {
                                                         formDiv.hidden = !formDiv.hidden;
+                                                    }
+                                                }
+
+                                                function abrirModalUnirseCurso() {
+                                                    var modal = document.getElementById('modalUnirseCurso');
+                                                    if (modal) {
+                                                        modal.style.display = 'flex';
+                                                    }
+                                                }
+
+                                                function cerrarModalUnirseCurso() {
+                                                    var modal = document.getElementById('modalUnirseCurso');
+                                                    if (modal) {
+                                                        modal.style.display = 'none';
                                                     }
                                                 }
                                             </script>
