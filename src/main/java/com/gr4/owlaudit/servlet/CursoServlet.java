@@ -22,10 +22,8 @@ import java.util.List;
 public class CursoServlet extends HttpServlet {
 
     private static final String VISTA_MIS_CURSOS = "/WEB-INF/views/misCursos.jsp";
-    static final String MENSAJE_PERMISOS_DOCENTE =
-            "No tiene permisos para gestionar un curso del que no es docente titular.";
-    static final String MENSAJE_PERMISOS_ESTUDIANTE =
-            "No tienes permisos para acceder a las asignaciones de un curso en el que no estás matriculado.";
+    static final String MENSAJE_PERMISOS_DOCENTE = "No tiene permisos para gestionar un curso del que no es docente titular.";
+    static final String MENSAJE_PERMISOS_ESTUDIANTE = "No tienes permisos para acceder a las asignaciones de un curso en el que no estás matriculado.";
 
     private final CursoService cursoService;
 
@@ -86,6 +84,10 @@ public class CursoServlet extends HttpServlet {
             response.sendRedirect(request.getContextPath() + "/login");
             return;
         }
+        if (esEstudiante(usuario)) {
+            procesarMatriculaEstudiante(request, response, usuario);
+            return;
+        }
         if (!esDocente(usuario)) {
             response.sendRedirect(request.getContextPath() + "/curso?error=permisos");
             return;
@@ -102,6 +104,24 @@ public class CursoServlet extends HttpServlet {
         }
 
         cargarVistaCursosDocente(request, response, usuario.getCorreo());
+    }
+
+    private boolean esEstudiante(UsuarioDTO usuario) {
+        return usuario != null && usuario.getRol() == RolEnum.ESTUDIANTE;
+    }
+
+    private void procesarMatriculaEstudiante(HttpServletRequest request, HttpServletResponse response,
+            UsuarioDTO estudiante) throws ServletException, IOException {
+        String codigo = request.getParameter("codigo");
+        try {
+            Curso cursoMatriculado = cursoService.matricularEstudiantePorCodigo(estudiante.getId(), codigo);
+            request.setAttribute("mensajeExito",
+                    "Matriculación exitosa en el curso: " + cursoMatriculado.getNombre());
+        } catch (ExcepcionNegocio e) {
+            request.setAttribute("error", e.getMessage());
+        }
+        request.setAttribute("cursos", cursoService.listarCursosPorEstudiante(estudiante.getId()));
+        request.getRequestDispatcher(VISTA_MIS_CURSOS).forward(request, response);
     }
 
     private UsuarioDTO obtenerUsuarioAutenticado(HttpServletRequest request) {
