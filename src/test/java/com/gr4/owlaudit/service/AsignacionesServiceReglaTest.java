@@ -2,6 +2,7 @@ package com.gr4.owlaudit.service;
 
 import com.gr4.owlaudit.dto.ReglaAsignacionDTO;
 import com.gr4.owlaudit.model.NivelSeveridadEnum;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -26,8 +27,17 @@ class AsignacionesServiceReglaTest {
     @Mock
     private com.gr4.owlaudit.dao.ReglaDAO reglaDAO;
 
+    @Mock
+    private com.gr4.owlaudit.dao.AsignacionReglaDAO asignacionReglaDAO;
+
     @InjectMocks
     private AsignacionesServiceImpl asignacionesService;
+
+    @BeforeEach
+    void setUp() {
+        // Evita que el servicio cree el DAO real y escriba en la base de datos
+        asignacionesService.setAsignacionReglaDAO(asignacionReglaDAO);
+    }
 
     @Test
     @DisplayName("Escenario exitoso: parametriza severidad y ponderación > 0")
