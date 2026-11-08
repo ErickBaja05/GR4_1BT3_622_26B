@@ -197,64 +197,37 @@
                                                                                             %>
                                                                                     </h3>
                                                                                     <p>
-                                                                                        <% if (c.getPeriodoAcademico()
-                                                                                            !=null &&
-                                                                                            !c.getPeriodoAcademico().isBlank())
-                                                                                            { %>
-                                                                                            <strong>Periodo:</strong>
-                                                                                            <%= HtmlUtil.escape(c.getPeriodoAcademico())
-                                                                                                %><br>
-                                                                                                <% } %>
-                                                                                                    <% if
-                                                                                                        (c.getDocente()
-                                                                                                        !=null &&
-                                                                                                        c.getDocente().getNombre()
-                                                                                                        !=null) { %>
-                                                                                                        <strong>Docente:</strong>
-                                                                                                        <%= HtmlUtil.escape(c.getDocente().getNombre())
-                                                                                                            %><br>
-                                                                                                            <% } %>
-                                                                                                                <strong>Estudiantes
-                                                                                                                    matriculados:</strong>
-                                                                                                                <%= totalMatriculados
-                                                                                                                    %>
-                                                                                                                    <br>
-                                                                                                                    <% if
-                                                                                                                        (c.getDescripcion()
-                                                                                                                        !=null
-                                                                                                                        &&
-                                                                                                                        !c.getDescripcion().isBlank())
-                                                                                                                        {
-                                                                                                                        %>
-                                                                                                                        <span
-                                                                                                                            style="display: block; margin-top: 0.5rem;">
-                                                                                                                            <%= HtmlUtil.escape(c.getDescripcion())
-                                                                                                                                %>
-                                                                                                                        </span>
-                                                                                                                        <% }
-                                                                                                                            %>
+                                                                                        <% if (esDocente && c.getPeriodoAcademico() != null && !c.getPeriodoAcademico().isBlank()) { %>
+                                                                                            <strong>Periodo:</strong> <%= HtmlUtil.escape(c.getPeriodoAcademico()) %><br>
+                                                                                        <% } %>
+                                                                                        <% if (c.getDocente() != null && c.getDocente().getNombre() != null) { %>
+                                                                                            <strong>Docente:</strong> <%= HtmlUtil.escape(c.getDocente().getNombre()) %><br>
+                                                                                        <% } %>
+                                                                                        <% if (esDocente) { %>
+                                                                                            <strong>Estudiantes matriculados:</strong> <%= totalMatriculados %><br>
+                                                                                        <% } %>
+                                                                                        <% if (c.getDescripcion() != null && !c.getDescripcion().isBlank()) { %>
+                                                                                            <span style="display: block; margin-top: 0.5rem;">
+                                                                                                <%= HtmlUtil.escape(c.getDescripcion()) %>
+                                                                                            </span>
+                                                                                        <% } %>
                                                                                     </p>
                                                                                     <div style="margin-top: 1rem;">
-                                                                                        <% if (usuario !=null &&
-                                                                                            usuario.getRol()==RolEnum.ESTUDIANTE)
-                                                                                            { %>
+                                                                                        <% if (!esDocente) { %>
                                                                                             <a class="btn btn-primary btn-block"
                                                                                                 href="<%= ctx %>/asignaciones?idCurso=<%= c.getId() %>">
-                                                                                                Ver asignaciones del
-                                                                                                curso
+                                                                                                Ver asignaciones
                                                                                             </a>
-                                                                                            <% } else { %>
-                                                                                                <a class="btn btn-primary btn-block"
-                                                                                                    href="<%= ctx %>/asignaciones?idCurso=<%= c.getId() %>">
-                                                                                                    Ver detalles del
-                                                                                                    curso
-                                                                                                </a>
-                                                                                                <!-- EP-01 FT-02 HU-01: Catálogo de reglas propio del curso -->
-                                                                                                <a class="btn btn-secondary btn-block" style="margin-top: 0.5rem;"
-                                                                                                    href="<%= ctx %>/regla?idCurso=<%= c.getId() %>">
-                                                                                                    Gestionar Reglas del Curso
-                                                                                                </a>
-                                                                                                <% } %>
+                                                                                        <% } else { %>
+                                                                                            <a class="btn btn-primary btn-block"
+                                                                                                href="<%= ctx %>/asignaciones?idCurso=<%= c.getId() %>">
+                                                                                                Ver detalles del curso
+                                                                                            </a>
+                                                                                            <a class="btn btn-secondary btn-block" style="margin-top: 0.5rem;"
+                                                                                                href="<%= ctx %>/regla?idCurso=<%= c.getId() %>">
+                                                                                                Gestionar Reglas del Curso
+                                                                                            </a>
+                                                                                        <% } %>
                                                                                     </div>
                                                                                 </div>
                                                                                 <% } } else { %>
