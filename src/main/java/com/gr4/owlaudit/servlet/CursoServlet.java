@@ -52,8 +52,13 @@ public class CursoServlet extends HttpServlet {
             request.setAttribute("mensajeError",
                     "Debe seleccionar una asignación dentro de sus cursos matriculados para ejecutar una auditoría.");
         } else if ("permisos".equalsIgnoreCase(errorParam)) {
-            request.setAttribute("mensajeError",
-                    "No tienes permisos para acceder a las asignaciones de un curso en el que no estás matriculado.");
+            if (usuario.getRol() == RolEnum.DOCENTE) {
+                request.setAttribute("mensajeError",
+                        "No tiene permisos para gestionar un curso del que no es docente titular.");
+            } else {
+                request.setAttribute("mensajeError",
+                        "No tienes permisos para acceder a las asignaciones de un curso en el que no estás matriculado.");
+            }
         } else if ("sinCurso".equalsIgnoreCase(errorParam)) {
             request.setAttribute("mensajeError",
                     "Debe ingresar a las asignaciones a través de uno de sus cursos matriculados.");

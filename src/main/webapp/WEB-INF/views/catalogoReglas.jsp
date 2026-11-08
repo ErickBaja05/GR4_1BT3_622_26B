@@ -3,7 +3,6 @@
 <%@ page import="com.gr4.owlaudit.model.Regla" %>
 <%@ page import="com.gr4.owlaudit.dto.NuevaReglaDTO" %>
 <%@ page import="com.gr4.owlaudit.common.util.HtmlUtil" %>
-<%@ page import="com.gr4.owlaudit.dao.ReglaDAOImpl" %>
 <%
     String mensajeExito = (String) request.getAttribute("mensajeExito");
     String mensajeError = (String) request.getAttribute("mensajeError");
@@ -14,11 +13,7 @@
     if (reglas == null) {
         reglas = (List<Regla>) request.getAttribute("reglasVigentes");
     }
-    if (reglas == null) {
-        try {
-            reglas = new ReglaDAOImpl().consultarTodasLasReglas();
-        } catch (Exception ignored) {}
-    }
+    // CA1.2: el catálogo solo muestra reglas del curso cargadas por ReglaServlet (sin consulta global de respaldo)
 
     NuevaReglaDTO valores = (mensajeError != null && dto != null) ? dto : new NuevaReglaDTO();
     String motorSel = valores.getTipoMotor();
@@ -48,7 +43,7 @@
             <div>
                 <button type="button" id="btnToggleFormulario" class="btn btn-primary" onclick="toggleFormularioRegistro()"
                         style="display: inline-flex; align-items: center; gap: 0.4rem;">
-                    <span id="iconoToggle">➕</span> <span id="textoToggle">Registrar Nueva Regla</span>
+                    <span id="iconoToggle">➕</span> <span id="textoToggle">Crear nueva Regla</span>
                 </button>
             </div>
         </div>
@@ -259,7 +254,7 @@
                 card.scrollIntoView({ behavior: 'smooth', block: 'start' });
             } else {
                 card.style.display = 'none';
-                if (btnTexto) btnTexto.textContent = 'Registrar Nueva Regla';
+                if (btnTexto) btnTexto.textContent = 'Crear nueva Regla';
                 if (btnIcono) btnIcono.textContent = '➕';
             }
         }
