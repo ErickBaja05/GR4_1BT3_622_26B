@@ -16,5 +16,7 @@ public interface CursoService {
 
     boolean estaEstudianteMatriculado(Long idCurso, Long idEstudiante);
 
-    Curso crearCurso(NuevoCursoDTO dto, Long idDocente) throws ExcepcionNegocio;
+    Curso crearCurso(NuevoCursoDTO dto, String correoDocente) throws ExcepcionNegocio;
+
+    public List<Curso> listarCursosPorCorreoDocente(String correoDocente);
 }

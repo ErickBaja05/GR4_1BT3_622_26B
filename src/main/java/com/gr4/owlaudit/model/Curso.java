@@ -59,6 +59,16 @@ public class Curso {
         this.descripcion = descripcion;
     }
 
+    // Añadir dentro de Curso.java
+    public static Curso construirNuevoCurso(String nombre, String codigo, String descripcion, Docente docente) {
+        Curso curso = new Curso();
+        curso.setNombre(nombre != null ? nombre.trim() : null);
+        curso.setCodigo(codigo != null ? codigo.trim().toUpperCase() : null);
+        curso.setDescripcion(descripcion != null ? descripcion.trim() : null);
+        curso.setDocente(docente);
+        return curso;
+    }
+
     public Long getId() {
         return id;
     }
@@ -150,4 +160,3 @@ public class Curso {
                         && "ACTIVO".equalsIgnoreCase(le.getEstado()));
     }
 }
-

@@ -1,7 +1,6 @@
 package com.gr4.owlaudit.dao;
 
 import com.gr4.owlaudit.common.config.HibernateUtil;
-import com.gr4.owlaudit.dto.NuevoCursoDTO;
 import com.gr4.owlaudit.model.Curso;
 import org.hibernate.Session;
 import org.hibernate.Transaction;
@@ -80,6 +79,7 @@ public class CursoDAOImpl implements CursoDAO {
             return session.createQuery(
                     "SELECT DISTINCT c FROM Curso c " +
                             "LEFT JOIN FETCH c.docente " +
+                            "LEFT JOIN FETCH c.listadoEstudiantes " +
                             "WHERE c.docente.id = :idDocente " +
                             "ORDER BY c.nombre ASC",
                     Curso.class)
@@ -87,6 +87,24 @@ public class CursoDAOImpl implements CursoDAO {
                     .list();
         } catch (Exception e) {
             return Collections.emptyList();
+        }
+    }
+
+    @Override
+    public void guardar(Curso curso) {
+        if (curso == null) {
+            return;
+        }
+        Transaction tx = null;
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            tx = session.beginTransaction();
+            session.persist(curso);
+            tx.commit();
+        } catch (Exception e) {
+            if (tx != null && tx.isActive()) {
+                tx.rollback();
+            }
+            throw new RuntimeException("Error al guardar el curso: " + e.getMessage(), e);
         }
     }
 
@@ -109,8 +127,4 @@ public class CursoDAOImpl implements CursoDAO {
         }
     }
 
-    @Override
-    public void guardar(NuevoCursoDTO nuevoCursoDTO) {
-        return null;
-    }
 }

@@ -50,7 +50,7 @@ class CursoServiceCamposObligatoriosTest {
         NuevoCursoDTO dto = new NuevoCursoDTO(nombre, codigo, descripcion);
 
         ExcepcionNegocio excepcion = assertThrows(ExcepcionNegocio.class, () -> {
-            cursoService.crearCurso(dto, 1L);
+            cursoService.crearCurso(dto, "correo@correo.com");
         });
 
         assertEquals("Todos los campos (nombre, código y descripción) son obligatorios para crear el curso",
@@ -62,7 +62,7 @@ class CursoServiceCamposObligatoriosTest {
     @DisplayName("CA3 - Escenario 3.1: Rechaza creación si el objeto DTO es completamente nulo")
     void crearCurso_cuandoDtoEsNulo_lanzaExcepcionNegocio() {
         ExcepcionNegocio excepcion = assertThrows(ExcepcionNegocio.class, () -> {
-            cursoService.crearCurso(null, 1L);
+            cursoService.crearCurso(null, "correo@correo.com");
         });
 
         assertEquals("Todos los campos (nombre, código y descripción) son obligatorios para crear el curso",

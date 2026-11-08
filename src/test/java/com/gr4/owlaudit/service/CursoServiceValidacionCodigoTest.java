@@ -42,7 +42,7 @@ class CursoServiceValidacionCodigoTest {
         NuevoCursoDTO dto = new NuevoCursoDTO("Construcción de Software", codigoInvalido, "Descripción del curso");
 
         ExcepcionNegocio excepcion = assertThrows(ExcepcionNegocio.class, () -> {
-            cursoService.crearCurso(dto, 1L);
+            cursoService.crearCurso(dto, "correo@correo.com");
         });
 
         assertEquals("El código solo admite caracteres alfanuméricos y guiones", excepcion.getMessage());

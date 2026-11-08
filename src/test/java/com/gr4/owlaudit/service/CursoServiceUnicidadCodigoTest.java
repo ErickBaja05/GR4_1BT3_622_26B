@@ -46,7 +46,7 @@ class CursoServiceUnicidadCodigoTest {
         when(cursoDAO.buscarPorCodigo(codigoExistente)).thenReturn(cursoEncontrado);
 
         ExcepcionNegocio excepcion = assertThrows(ExcepcionNegocio.class, () -> {
-            cursoService.crearCurso(dto, 1L);
+            cursoService.crearCurso(dto, "correo@correo.com");
         });
 
         assertEquals("El código de curso ingresado ya se encuentra en uso; ingrese un código único",
@@ -65,7 +65,7 @@ class CursoServiceUnicidadCodigoTest {
         when(cursoDAO.buscarPorCodigo(codigoNormalizado)).thenReturn(new Curso());
 
         ExcepcionNegocio excepcion = assertThrows(ExcepcionNegocio.class, () -> {
-            cursoService.crearCurso(dto, 1L);
+            cursoService.crearCurso(dto, "correo@correo.com");
         });
 
         assertEquals("El código de curso ingresado ya se encuentra en uso; ingrese un código único",
