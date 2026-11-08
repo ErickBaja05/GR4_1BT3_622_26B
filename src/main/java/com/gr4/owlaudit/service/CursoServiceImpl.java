@@ -137,21 +137,21 @@ public class CursoServiceImpl implements CursoService {
     @Override
     public Curso matricularEstudiantePorCodigo(Long idEstudiante, String codigoCurso) throws ExcepcionNegocio {
         Curso curso = obtenerCursoPorCodigoValido(codigoCurso);
-
-        if (cursoDAO.estaEstudianteMatriculado(curso.getId(), idEstudiante)) {
-            throw new ExcepcionNegocio("Ya te encuentras matriculado en el curso " + curso.getNombre());
-        }
+        validarEstudianteNoMatriculado(curso, idEstudiante);
 
         Estudiante estudiante = new Estudiante();
         estudiante.setId(idEstudiante);
 
-        ListadoEstudiantes nuevaMatricula = new ListadoEstudiantes(
-                curso,
-                estudiante,
-                LocalDateTime.now(),
-                "ACTIVO");
+        ListadoEstudiantes nuevaMatricula = ListadoEstudiantes.crearNuevaMatricula(curso, estudiante);
         cursoDAO.registrarMatricula(nuevaMatricula);
         return curso;
+    }
+
+    private void validarEstudianteNoMatriculado(Curso curso, Long idEstudiante) throws ExcepcionNegocio {
+        if (cursoDAO.estaEstudianteMatriculado(curso.getId(), idEstudiante)
+                || curso.estaMatriculado(idEstudiante)) {
+            throw new ExcepcionNegocio("Ya te encuentras matriculado en el curso " + curso.getNombre());
+        }
     }
 
     private Curso obtenerCursoPorCodigoValido(String codigoCurso) throws ExcepcionNegocio {
