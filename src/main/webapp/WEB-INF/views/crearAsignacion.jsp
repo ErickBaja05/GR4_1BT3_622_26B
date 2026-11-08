@@ -363,7 +363,6 @@
                                    String nomAsig = "";
                                    Object umbralAsig = "";
                                    int cantidadReglas = 0;
-                                   java.util.List<Long> reglaIdsList = new java.util.ArrayList<>();
                                    try {
                                        java.lang.reflect.Method mId = objAsig.getClass().getMethod("getId");
                                        idAsig = (Long) mId.invoke(objAsig);
@@ -393,21 +392,9 @@
                                        java.lang.reflect.Method mReg = objAsig.getClass().getMethod("getReglas");
                                        Object listaR = mReg.invoke(objAsig);
                                        if (listaR instanceof java.util.Collection) {
-                                           java.util.Collection<?> col = (java.util.Collection<?>) listaR;
-                                           cantidadReglas = col.size();
-                                           for (Object rObj : col) {
-                                               java.lang.reflect.Method mRegId = rObj.getClass().getMethod("getId");
-                                               reglaIdsList.add((Long) mRegId.invoke(rObj));
-                                           }
+                                           cantidadReglas = ((java.util.Collection<?>) listaR).size();
                                        }
                                    } catch (Exception ignored) {}
-
-                                   StringBuilder sbReglasJson = new StringBuilder("[");
-                                   for (int i = 0; i < reglaIdsList.size(); i++) {
-                                       if (i > 0) sbReglasJson.append(",");
-                                       sbReglasJson.append(reglaIdsList.get(i));
-                                   }
-                                   sbReglasJson.append("]");
                             %>
                                 <tr>
                                     <td><strong>#<%= idVisible != null ? idVisible : "-" %></strong></td>
@@ -428,10 +415,6 @@
                                     </td>
                                     <td style="text-align: center;">
                                         <div style="display: inline-flex; align-items: center; gap: 0.4rem; justify-content: center; flex-wrap: wrap;">
-                                            <button type="button" class="btn-edit"
-                                                    onclick="abrirModalEditarAsignacion('<%= idAsig %>', '<%= HtmlUtil.escape(nomAsig) %>', '<%= HtmlUtil.escape(umbralAsig) %>', <%= sbReglasJson.toString() %>)">
-                                                ✏️ Editar
-                                            </button>
                                             <button type="button" class="btn-delete"
                                                     onclick="confirmarEliminarAsignacion('<%= idAsig %>', '<%= HtmlUtil.escape(nomAsig) %>')">
                                                 🗑️ Eliminar
@@ -454,64 +437,11 @@
                 <input type="hidden" name="idCurso" value="<%= HtmlUtil.escape(idCursoParam) %>">
             <% } %>
         </form>
-
-        <!-- Modal para Editar Asignación Académica -->
-        <div id="modalEditarAsignacion" class="modal-overlay">
-            <div class="modal-content">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.75rem;">
-                    <h3 style="margin: 0; font-size: 1.2rem; color: var(--bg-primary);">Editar Asignación Académica</h3>
-                    <button type="button" onclick="cerrarModalEditarAsignacion()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer;">&times;</button>
-                </div>
-                <form action="<%= ctx %>/asignaciones" method="POST">
-                    <input type="hidden" name="accion" value="actualizar">
-                    <input type="hidden" id="editIdAsignacion" name="idAsignacion" value="">
-                    <% if (idCursoParam != null && !idCursoParam.isBlank()) { %>
-                        <input type="hidden" name="idCurso" value="<%= HtmlUtil.escape(idCursoParam) %>">
-                    <% } %>
-
-                    <div class="form-group" style="margin-bottom: 1rem;">
-                        <label for="editNombreAsignacion" class="form-label">Nombre de la Asignación *</label>
-                        <input type="text" id="editNombreAsignacion" name="nombre" class="form-control" required>
-                    </div>
-
-                    <div class="form-group" style="margin-bottom: 1rem;">
-                        <label for="editUmbralAprobacion" class="form-label">Umbral de Aprobación (%) *</label>
-                        <input type="text" id="editUmbralAprobacion" name="umbralAprobacion" class="form-control" required>
-                        <span class="input-hint">El valor debe ser entre 50% y 100%. Las auditorías previas se revalorizarán automáticamente con las nuevas reglas y umbral.</span>
-                    </div>
-
-                    <div class="form-group" style="margin-bottom: 1rem;">
-                        <label class="form-label">Reglas Técnicas Vigentes *</label>
-                        <div class="rules-selection-box" style="max-height: 220px; overflow-y: auto; margin-top: 0.35rem;">
-                            <% if (reglasVigentes != null) {
-                                   for (Regla regla : reglasVigentes) { %>
-                                <div class="rule-item-row" style="padding: 0.5rem 0.75rem;">
-                                    <div class="rule-checkbox-wrapper">
-                                        <input type="checkbox" name="reglasIds" value="<%= regla.getId() %>" class="edit-modal-regla-cb" id="edit_regla_<%= regla.getId() %>">
-                                    </div>
-                                    <div class="rule-details">
-                                        <label for="edit_regla_<%= regla.getId() %>" style="font-size: 0.9rem; font-weight: 600; cursor: pointer;">
-                                            <%= HtmlUtil.escape(regla.getNombreRepresentativo()) %>
-                                        </label>
-                                    </div>
-                                </div>
-                            <%     }
-                               } %>
-                        </div>
-                    </div>
-
-                    <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1.25rem;">
-                        <button type="button" class="btn btn-secondary" onclick="cerrarModalEditarAsignacion()">Cancelar</button>
-                        <button type="submit" class="btn btn-primary">Guardar Cambios y Revalorizar</button>
-                    </div>
-                </form>
-            </div>
-        </div>
     </main>
 
     <script>
         function actualizarContadorReglas() {
-            const checkboxes = document.querySelectorAll('input[name="reglasIds"]:checked:not(.edit-modal-regla-cb)');
+            const checkboxes = document.querySelectorAll('input[name="reglasIds"]:checked');
             const contadorEl = document.getElementById('seleccionadas-reglas-count');
             if (contadorEl) {
                 contadorEl.textContent = checkboxes.length;
@@ -519,29 +449,11 @@
         }
 
         function marcarTodasLasReglas(marcar) {
-            const checkboxes = document.querySelectorAll('input[name="reglasIds"]:not(.edit-modal-regla-cb)');
+            const checkboxes = document.querySelectorAll('input[name="reglasIds"]');
             checkboxes.forEach(cb => {
                 cb.checked = marcar;
             });
             actualizarContadorReglas();
-        }
-
-        function abrirModalEditarAsignacion(id, nombre, umbral, idsReglas) {
-            document.getElementById('editIdAsignacion').value = id;
-            document.getElementById('editNombreAsignacion').value = nombre;
-            document.getElementById('editUmbralAprobacion').value = umbral;
-            
-            const cbs = document.querySelectorAll('.edit-modal-regla-cb');
-            const idsSet = new Set((idsReglas || []).map(String));
-            cbs.forEach(cb => {
-                cb.checked = idsSet.has(String(cb.value));
-            });
-            
-            document.getElementById('modalEditarAsignacion').style.display = 'flex';
-        }
-
-        function cerrarModalEditarAsignacion() {
-            document.getElementById('modalEditarAsignacion').style.display = 'none';
         }
 
         function confirmarEliminarAsignacion(id, nombre) {
@@ -558,7 +470,7 @@
             const formCrear = document.getElementById('formCrearAsignacion');
             if (formCrear) {
                 formCrear.addEventListener('submit', function(e) {
-                    const cbs = document.querySelectorAll('input[name="reglasIds"]:checked:not(.edit-modal-regla-cb)');
+                    const cbs = document.querySelectorAll('input[name="reglasIds"]:checked');
                     if (cbs.length === 0) {
                         e.preventDefault();
                         alert('Se debe asociar al menos una regla de evaluación a la asignación.');
@@ -567,17 +479,6 @@
                             contenedorReglas.scrollIntoView({ behavior: 'smooth' });
                             contenedorReglas.style.border = '2px solid var(--danger-color, #dc2626)';
                         }
-                    }
-                });
-            }
-
-            const modalEditForm = document.querySelector('#modalEditarAsignacion form');
-            if (modalEditForm) {
-                modalEditForm.addEventListener('submit', function(e) {
-                    const cbs = document.querySelectorAll('.edit-modal-regla-cb:checked');
-                    if (cbs.length === 0) {
-                        e.preventDefault();
-                        alert('Se debe asociar al menos una regla de evaluación a la asignación.');
                     }
                 });
             }
