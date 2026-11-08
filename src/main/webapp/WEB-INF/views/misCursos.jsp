@@ -34,8 +34,7 @@
 
                                     boolean esDocente = (usuario != null && usuario.getRol() == RolEnum.DOCENTE);
                                     boolean mostrarFormularioAbierto = (mensajeError != null);
-                                    String estiloFormulario = mostrarFormularioAbierto ? "margin-top: 1.5rem; display:
-                                    block;" : "margin-top: 1.5rem; display: none;";
+                                    String estiloFormulario = mostrarFormularioAbierto ? "margin-top: 1.5rem; display: block;" : "margin-top: 1.5rem; display: none;";
                                     %>
                                     <!DOCTYPE html>
                                     <html lang="es">
@@ -200,143 +199,82 @@
                                                                                 </div>
                                                                             </div>
                                                                             <% } %>
-                                                                                <!-- Listado de Tarjetas de Cursos (CA1.2) -->
-                                                                                <div class="menu-grid"
-                                                                                    style="margin-top: 1.5rem;">
-                                                                                    <% if (cursos !=null &&
-                                                                                        !cursos.isEmpty()) { for (Curso
-                                                                                        c : cursos) { int
-                                                                                        totalMatriculados=(c.getListadoEstudiantes()
-                                                                                        !=null) ?
-                                                                                        c.getListadoEstudiantes().size()
-                                                                                        : 0; %>
-                                                                                        <div class="card menu-card">
-                                                                                            <div class="menu-meta">
-                                                                                                <span
-                                                                                                    class="menu-icon">📚</span>
-                                                                                                <span
-                                                                                                    class="badge badge-primary">
-                                                                                                    <%= HtmlUtil.escape(c.getCodigo())
-                                                                                                        %>
-                                                                                                </span>
-                                                                                            </div>
-                                                                                            <h3>
-                                                                                                <%= HtmlUtil.escape(c.getNombre())
-                                                                                                    %>
-                                                                                            </h3>
-                                                                                            <p>
-                                                                                                <% if (esDocente &&
-                                                                                                    c.getPeriodoAcademico()
-                                                                                                    !=null &&
-                                                                                                    !c.getPeriodoAcademico().isBlank())
-                                                                                                    { %>
-                                                                                                    <strong>Periodo:</strong>
-                                                                                                    <%= HtmlUtil.escape(c.getPeriodoAcademico())
-                                                                                                        %><br>
-                                                                                                        <% } %>
-                                                                                                            <% if
-                                                                                                                (c.getDocente()
-                                                                                                                !=null
-                                                                                                                &&
-                                                                                                                c.getDocente().getNombre()
-                                                                                                                !=null)
-                                                                                                                { %>
-                                                                                                                <strong>Docente:</strong>
-                                                                                                                <%= HtmlUtil.escape(c.getDocente().getNombre())
-                                                                                                                    %>
-                                                                                                                    <br>
-                                                                                                                    <% }
-                                                                                                                        %>
-                                                                                                                        <% if
-                                                                                                                            (esDocente)
-                                                                                                                            {
-                                                                                                                            %>
-                                                                                                                            <strong>Estudiantes
-                                                                                                                                matriculados:</strong>
-                                                                                                                            <%= totalMatriculados
-                                                                                                                                %>
-                                                                                                                                <br>
-                                                                                                                                <% }
-                                                                                                                                    %>
-                                                                                                                                    <% if
-                                                                                                                                        (c.getDescripcion()
-                                                                                                                                        !=null
-                                                                                                                                        &&
-                                                                                                                                        !c.getDescripcion().isBlank())
-                                                                                                                                        {
-                                                                                                                                        %>
-                                                                                                                                        <span
-                                                                                                                                            style="display: block; margin-top: 0.5rem;">
-                                                                                                                                            <%= HtmlUtil.escape(c.getDescripcion())
-                                                                                                                                                %>
-                                                                                                                                        </span>
-                                                                                                                                        <% }
-                                                                                                                                            %>
-                                                                                            </p>
-                                                                                            <div
-                                                                                                style="margin-top: 1rem;">
-                                                                                                <% if (!esDocente) { %>
-                                                                                                    <a class="btn btn-primary btn-block"
-                                                                                                        href="<%= ctx %>/asignaciones?idCurso=<%= c.getId() %>">
-                                                                                                        Ver asignaciones
-                                                                                                        del curso
-                                                                                                    </a>
-                                                                                                    <% } else { %>
-                                                                                                        <a class="btn btn-primary btn-block"
-                                                                                                            href="<%= ctx %>/asignaciones?idCurso=<%= c.getId() %>">
-                                                                                                            Ver detalles
-                                                                                                            del curso
-                                                                                                        </a>
-                                                                                                        <a class="btn btn-secondary btn-block"
-                                                                                                            style="margin-top: 0.5rem;"
-                                                                                                            href="<%= ctx %>/regla?idCurso=<%= c.getId() %>">
-                                                                                                            Gestionar
-                                                                                                            Reglas del
-                                                                                                            Curso
-                                                                                                        </a>
-                                                                                                        <% } %>
-                                                                                            </div>
-                                                                                        </div>
-                                                                                        <% } } else { %>
-                                                                                            <div class="card"
-                                                                                                style="grid-column: 1 / -1; text-align: center; padding: 2rem;">
-                                                                                                <p
-                                                                                                    class="card-subtitle">
-                                                                                                    <% if (esDocente) {
-                                                                                                        %>
-                                                                                                        Aún no ha creado
-                                                                                                        ningún curso.
-                                                                                                        Utilice el botón
-                                                                                                        <strong>"+ Crear
-                                                                                                            un nuevo
-                                                                                                            curso"</strong>
-                                                                                                        para registrar
-                                                                                                        el primero.
-                                                                                                        <% } else { %>
-                                                                                                            Aún no se ha
-                                                                                                            unido a
-                                                                                                            ningún
-                                                                                                            curso.
-                                                                                                            Utilice el
-                                                                                                            botón
-                                                                                                            <strong>"+
-                                                                                                                Unirme a
-                                                                                                                un
-                                                                                                                curso"</strong>
-                                                                                                            para
-                                                                                                            ingresar el
-                                                                                                            código
-                                                                                                            proporcionado
-                                                                                                            por su
-                                                                                                            docente e
-                                                                                                            inscribirse
-                                                                                                            al primero.
+                                                    <!-- Listado de Tarjetas de Cursos (CA1.2) -->
+                                                    <div class="menu-grid" style="margin-top: 1.5rem;">
+                                                        <% 
+                                                        if (cursos != null && !cursos.isEmpty()) { 
+                                                            for (Curso c : cursos) { 
+                                                                int totalMatriculados = 0;
+                                                                if (esDocente) {
+                                                                    try {
+                                                                        totalMatriculados = (c.getListadoEstudiantes() != null) ? c.getListadoEstudiantes().size() : 0;
+                                                                    } catch (Exception ex) {
+                                                                        totalMatriculados = 0;
+                                                                    }
+                                                                }
+                                                        %>
+                                                            <div class="card menu-card">
+                                                                <div class="menu-meta">
+                                                                    <span class="menu-icon">📚</span>
+                                                                    <span class="badge badge-primary">
+                                                                        <%= HtmlUtil.escape(c.getCodigo()) %>
+                                                                    </span>
+                                                                </div>
+                                                                <h3>
+                                                                    <%= HtmlUtil.escape(c.getNombre()) %>
+                                                                </h3>
+                                                                <p>
+                                                                    <% if (esDocente) { %>
+                                                                        <% if (c.getPeriodoAcademico() != null && !c.getPeriodoAcademico().isBlank()) { %>
+                                                                            <strong>Periodo:</strong> <%= HtmlUtil.escape(c.getPeriodoAcademico()) %><br>
+                                                                        <% } %>
+                                                                        <% if (c.getDocente() != null && c.getDocente().getNombre() != null) { %>
+                                                                            <strong>Docente:</strong> <%= HtmlUtil.escape(c.getDocente().getNombre()) %><br>
+                                                                        <% } %>
+                                                                        <strong>Estudiantes matriculados:</strong> <%= totalMatriculados %><br>
+                                                                    <% } else { %>
+                                                                        <strong>Docente a cargo:</strong> <%= (c.getDocente() != null && c.getDocente().getNombre() != null) ? HtmlUtil.escape(c.getDocente().getNombre()) : "No asignado" %><br>
+                                                                    <% } %>
 
-                                                                                                            <% } %>
-                                                                                                </p>
-                                                                                            </div>
-                                                                                            <% } %>
-                                                                                </div>
+                                                                    <% if (c.getDescripcion() != null && !c.getDescripcion().isBlank()) { %>
+                                                                        <span style="display: block; margin-top: 0.5rem;">
+                                                                            <%= HtmlUtil.escape(c.getDescripcion()) %>
+                                                                        </span>
+                                                                    <% } %>
+                                                                </p>
+                                                                <div style="margin-top: 1rem;">
+                                                                    <% if (!esDocente) { %>
+                                                                        <button type="button" class="btn btn-primary btn-block" style="cursor: default;" onclick="return false;">
+                                                                            Ver asignaciones del curso
+                                                                        </button>
+                                                                    <% } else { %>
+                                                                        <a class="btn btn-primary btn-block"
+                                                                            href="<%= ctx %>/asignaciones?idCurso=<%= c.getId() %>">
+                                                                            Ver detalles del curso
+                                                                        </a>
+                                                                        <a class="btn btn-secondary btn-block"
+                                                                            style="margin-top: 0.5rem;"
+                                                                            href="<%= ctx %>/regla?idCurso=<%= c.getId() %>">
+                                                                            Gestionar Reglas del Curso
+                                                                        </a>
+                                                                    <% } %>
+                                                                </div>
+                                                            </div>
+                                                        <% 
+                                                            } 
+                                                        } else { 
+                                                        %>
+                                                            <div class="card" style="grid-column: 1 / -1; text-align: center; padding: 2rem;">
+                                                                <p class="card-subtitle">
+                                                                    <% if (esDocente) { %>
+                                                                        Aún no ha creado ningún curso. Utilice el botón <strong>"+ Crear un nuevo curso"</strong> para registrar el primero.
+                                                                    <% } else { %>
+                                                                        Aún no te has matriculado en ningún curso. Utilice el botón <strong>"+ Matricularme en un nuevo curso"</strong> para ingresar el código proporcionado por su docente e inscribirse al primero.
+                                                                    <% } %>
+                                                                </p>
+                                                            </div>
+                                                        <% } %>
+                                                    </div>
                                             </main>
                                             <script>
                                                 function toggleFormularioCurso() {

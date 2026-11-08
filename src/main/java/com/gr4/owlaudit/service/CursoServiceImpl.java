@@ -101,7 +101,22 @@ public class CursoServiceImpl implements CursoService {
 
     @Override
     public List<Curso> listarCursosPorEstudiante(Long idEstudiante) {
+        if (idEstudiante == null) {
+            return Collections.emptyList();
+        }
         return cursoDAO.listarCursosPorEstudiante(idEstudiante);
+    }
+
+    @Override
+    public List<Curso> listarCursosPorCorreoEstudiante(String correoEstudiante) {
+        if (correoEstudiante == null || correoEstudiante.isBlank()) {
+            return Collections.emptyList();
+        }
+        Usuario usuario = usuarioDAO.buscarPorCorreo(correoEstudiante);
+        if (usuario == null || usuario.getId() == null) {
+            return Collections.emptyList();
+        }
+        return cursoDAO.listarCursosPorEstudiante(usuario.getId());
     }
 
     private void validarCamposObligatorios(NuevoCursoDTO dto) throws ExcepcionNegocio {

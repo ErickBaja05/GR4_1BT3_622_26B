@@ -65,9 +65,19 @@ public class CursoServlet extends HttpServlet {
 
         List<Curso> cursos;
         if (usuario.getRol() == RolEnum.ESTUDIANTE) {
-            cursos = cursoService.listarCursosPorEstudiante(usuario.getId());
+            cursos = (usuario.getId() != null)
+                    ? cursoService.listarCursosPorEstudiante(usuario.getId())
+                    : Collections.emptyList();
+            if ((cursos == null || cursos.isEmpty()) && usuario.getCorreo() != null) {
+                List<Curso> cursosPorCorreo = cursoService.listarCursosPorCorreoEstudiante(usuario.getCorreo());
+                if (cursosPorCorreo != null && !cursosPorCorreo.isEmpty()) {
+                    cursos = cursosPorCorreo;
+                }
+            }
         } else if (usuario.getRol() == RolEnum.DOCENTE) {
-            cursos = cursoService.listarCursosPorDocente(usuario.getId());
+            cursos = (usuario.getId() != null)
+                    ? cursoService.listarCursosPorDocente(usuario.getId())
+                    : cursoService.listarCursosPorCorreoDocente(usuario.getCorreo());
         } else {
             cursos = Collections.emptyList();
         }
@@ -120,7 +130,16 @@ public class CursoServlet extends HttpServlet {
         } catch (ExcepcionNegocio e) {
             request.setAttribute("error", e.getMessage());
         }
-        request.setAttribute("cursos", cursoService.listarCursosPorEstudiante(estudiante.getId()));
+        List<Curso> cursos = (estudiante.getId() != null)
+                ? cursoService.listarCursosPorEstudiante(estudiante.getId())
+                : Collections.emptyList();
+        if ((cursos == null || cursos.isEmpty()) && estudiante.getCorreo() != null) {
+            List<Curso> cursosPorCorreo = cursoService.listarCursosPorCorreoEstudiante(estudiante.getCorreo());
+            if (cursosPorCorreo != null && !cursosPorCorreo.isEmpty()) {
+                cursos = cursosPorCorreo;
+            }
+        }
+        request.setAttribute("cursos", cursos);
         request.getRequestDispatcher(VISTA_MIS_CURSOS).forward(request, response);
     }
 
@@ -154,6 +173,6 @@ public class CursoServlet extends HttpServlet {
             String correoDocente)
             throws ServletException, IOException {
         request.setAttribute("cursos", cursoService.listarCursosPorCorreoDocente(correoDocente));
-        request.getRequestDispatcher("/WEB-INF/views/misCursos.jsp").forward(request, response);
+        request.getRequestDispatcher(VISTA_MIS_CURSOS).forward(request, response);
     }
 }
