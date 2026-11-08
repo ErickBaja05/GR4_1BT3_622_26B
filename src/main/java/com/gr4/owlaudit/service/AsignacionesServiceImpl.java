@@ -11,6 +11,7 @@ import com.gr4.owlaudit.dao.ReglaDAO;
 import com.gr4.owlaudit.dao.ReglaDAOImpl;
 import com.gr4.owlaudit.dto.NuevaAsignacionDTO;
 import com.gr4.owlaudit.dto.ResumenAsignacionDTO;
+import com.gr4.owlaudit.dto.ReglaAsignacionDTO;
 import com.gr4.owlaudit.model.Asignacion;
 import com.gr4.owlaudit.model.Curso;
 import com.gr4.owlaudit.model.ListadoEstudiantes;
@@ -191,6 +192,38 @@ public class AsignacionesServiceImpl implements AsignacionesService {
         } catch (Exception e) {
             System.err.println("[AsignacionesServiceImpl] Advertencia en revalorización: " + e.getMessage());
         }
+    }
+
+    @Override
+    public void asociarReglasAsignacion(Long idAsignacion, List<ReglaAsignacionDTO> reglasParam) {
+        if (idAsignacion == null) {
+            throw new IllegalArgumentException("El identificador de asignación no puede ser nulo.");
+        }
+
+        Asignacion asignacion = asignacionesDAO.buscarPorId(idAsignacion);
+        if (asignacion == null) {
+            asignacion = new Asignacion();
+            asignacion.setId(idAsignacion);
+        }
+
+        if (reglasParam == null || reglasParam.isEmpty()) {
+            throw new IllegalArgumentException("Debe proporcionar al menos una regla para asociar.");
+        }
+
+        reglasParam.forEach(dto -> {
+            if (dto == null) {
+                throw new IllegalArgumentException("DTO de regla no puede ser nulo.");
+            }
+            if (dto.getPonderacion() == null || dto.getPonderacion() <= 0) {
+                throw new IllegalArgumentException("La ponderación debe ser mayor a 0.");
+            }
+        });
+
+        List<Long> idsReglas = reglasParam.stream()
+                .map(ReglaAsignacionDTO::getReglaId)
+                .collect(Collectors.toList());
+
+        asignacionesDAO.actualizar(asignacion, idsReglas);
     }
 
     @Override

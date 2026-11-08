@@ -34,8 +34,7 @@
 
                                     boolean esDocente = (usuario != null && usuario.getRol() == RolEnum.DOCENTE);
                                     boolean mostrarFormularioAbierto = (mensajeError != null);
-                                    String estiloFormulario = mostrarFormularioAbierto ? "margin-top: 1.5rem; display:
-                                    block;" : "margin-top: 1.5rem; display: none;";
+                                    String estiloFormulario = mostrarFormularioAbierto ? "margin-top: 1.5rem; display: block;" : "margin-top: 1.5rem; display: none;";
                                     %>
                                     <!DOCTYPE html>
                                     <html lang="es">

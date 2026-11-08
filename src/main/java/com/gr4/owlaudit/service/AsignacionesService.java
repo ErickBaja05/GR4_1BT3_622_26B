@@ -31,4 +31,5 @@ public interface AsignacionesService {
     void actualizarAsignacion(Long idAsignacion, NuevaAsignacionDTO dto);
 
     void eliminarAsignacion(Long idAsignacion);
+    void asociarReglasAsignacion(Long idAsignacion, java.util.List<com.gr4.owlaudit.dto.ReglaAsignacionDTO> reglasParam);
 }
