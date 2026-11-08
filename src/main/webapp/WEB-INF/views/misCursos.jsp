@@ -84,12 +84,13 @@
                                                         <%= HtmlUtil.escape(mensajeError) %>
                                                     </div>
                                                     <% } %>
-
-                                                        <% if (mensajeExito !=null && !mensajeExito.isBlank()) { %>
-                                                            <div class="alert alert-success" style="margin-top: 1rem;">
-                                                                <%= HtmlUtil.escape(mensajeExito) %>
+                                                        <% if (mensajeExito != null && !mensajeExito.isBlank()) { %>
+                                                            <div class="alert alert-success alert-dismissible" style="margin-top: 1rem;">
+                                                                <span>
+                                                                    <strong>¡Operación exitosa!</strong> <%= HtmlUtil.escape(mensajeExito) %>
+                                                                </span>
                                                             </div>
-                                                            <% } %>
+                                                        <% } %>
 
                                                                 <!-- Formulario Desplegable para Crear Curso (Solo Docente - HU-01) -->
                                                                 <% if (esDocente) { %>
@@ -235,18 +236,11 @@
                                                                                         style="grid-column: 1 / -1; text-align: center; padding: 2rem;">
                                                                                         <p class="card-subtitle">
                                                                                             <% if (esDocente) { %>
-                                                                                                Aún no ha creado ningún
-                                                                                                curso. Utilice el botón
-                                                                                                <strong>"+ Crear un
-                                                                                                    nuevo
-                                                                                                    curso"</strong> para
-                                                                                                registrar el primero.
-                                                                                                <% } else { %>
-                                                                                                    Actualmente no se
-                                                                                                    encuentra registrado
-                                                                                                    en ningún curso
-                                                                                                    activo.
-                                                                                                    <% } %>
+                                                                                                Aún no ha creado ningún curso. Utilice el botón <strong>"+ Crear un nuevo curso"</strong> para registrar el primero.
+                                                                                            <% } else { %>
+                                                                                                Aún no se ha unido a ningún curso. Utilice el botón <strong>"+ Unirme a un curso"</strong> para ingresar el código proporcionado por su docente e inscribirse al primero.
+
+                                                                                            <% } %>
                                                                                         </p>
                                                                                     </div>
                                                                                     <% } %>
