@@ -94,12 +94,12 @@ public class ReglaServiceImpl implements ReglaService {
 
     @Override
     public List<Regla> listarReglasPorCurso(Long idCurso) {
-        return null;
+        return reglaDAO.listarPorCurso(idCurso);
     }
 
     @Override
     public List<Regla> listarReglasVigentesPorCurso(Long idCurso) {
-        return null;
+        return reglaDAO.listarVigentesPorCurso(idCurso);
     }
 
 }
