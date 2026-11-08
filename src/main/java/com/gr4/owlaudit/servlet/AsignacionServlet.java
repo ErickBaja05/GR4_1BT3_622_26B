@@ -1,6 +1,7 @@
 package com.gr4.owlaudit.servlet;
 
 import java.io.IOException;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -182,8 +183,15 @@ public class AsignacionServlet extends HttpServlet {
         try {
             NuevaAsignacionDTO dto = obtenerNuevaAsignacionDTO(request);
 
-            if (asignacionesService != null && asignacionesService.crearAsignacion(dto) != null) {
-                request.setAttribute("mensajeExito", "Asignación creada correctamente.");
+            Asignacion asignacionCreada;
+            if (dto.getIdCurso() != null || dto.getFechaLimite() != null || dto.getIntentosPermitidos() != null) {
+                asignacionCreada = (asignacionesService != null) ? asignacionesService.programarAsignacion(dto) : null;
+            } else {
+                asignacionCreada = (asignacionesService != null) ? asignacionesService.crearAsignacion(dto) : null;
+            }
+
+            if (asignacionCreada != null) {
+                request.setAttribute("mensajeExito", "Asignación '" + asignacionCreada.getNombre() + "' creada correctamente.");
             } else {
                 request.setAttribute("mensajeError", "No se pudo crear la asignación.");
             }
@@ -240,8 +248,54 @@ public class AsignacionServlet extends HttpServlet {
         String nombre = request.getParameter("nombre");
         Double umbralAprobacion = obtenerUmbralAprobacion(request);
         List<Long> reglasIds = parsearReglasIds(request.getParameterValues("reglasIds"));
+        Long idCurso = parsearLong(request.getParameter("idCurso"));
+        LocalDateTime fechaLimite = parsearFechaLimite(request.getParameter("fechaLimite"));
+        Integer intentosPermitidos = parsearInteger(request.getParameter("intentosPermitidos") != null
+                ? request.getParameter("intentosPermitidos")
+                : request.getParameter("numeroIntentos"));
 
-        return new NuevaAsignacionDTO(nombre, umbralAprobacion, reglasIds);
+        NuevaAsignacionDTO dto = new NuevaAsignacionDTO(nombre, umbralAprobacion, reglasIds);
+        dto.setIdCurso(idCurso);
+        dto.setFechaLimite(fechaLimite);
+        dto.setIntentosPermitidos(intentosPermitidos);
+        return dto;
+    }
+
+    private Long parsearLong(String val) {
+        if (val == null || val.isBlank()) {
+            return null;
+        }
+        try {
+            return Long.parseLong(val.trim());
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
+    private Integer parsearInteger(String val) {
+        if (val == null || val.isBlank()) {
+            return null;
+        }
+        try {
+            return Integer.parseInt(val.trim());
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException("El número de intentos permitidos debe ser un número entero mayor a cero.");
+        }
+    }
+
+    private LocalDateTime parsearFechaLimite(String val) {
+        if (val == null || val.isBlank()) {
+            return null;
+        }
+        try {
+            String limpio = val.trim();
+            if (limpio.length() == 10) {
+                return java.time.LocalDate.parse(limpio).atTime(23, 59, 59);
+            }
+            return LocalDateTime.parse(limpio);
+        } catch (Exception e) {
+            throw new IllegalArgumentException("La fecha límite debe tener un formato válido.");
+        }
     }
 
     private Double obtenerUmbralAprobacion(HttpServletRequest request) {
@@ -416,7 +470,17 @@ public class AsignacionServlet extends HttpServlet {
         }
 
         try {
-            if (asignacionesService != null) {
+            String idCursoStr = request.getParameter("idCurso");
+            if (idCursoStr != null && !idCursoStr.isBlank()) {
+                Long idCurso = Long.parseLong(idCursoStr.trim());
+                if (cursoDAO != null) {
+                    request.setAttribute("cursoActual", cursoDAO.buscarPorId(idCurso));
+                }
+                if (asignacionesService != null) {
+                    Long usuarioId = obtenerUsuarioIdEnSesion(request);
+                    request.setAttribute("asignaciones", asignacionesService.consultarAsignacionesDeCurso(idCurso, usuarioId));
+                }
+            } else if (asignacionesService != null) {
                 request.setAttribute("asignaciones", asignacionesService.listarAsignaciones());
             }
         } catch (Exception e) {

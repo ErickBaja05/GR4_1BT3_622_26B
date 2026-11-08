@@ -109,8 +109,48 @@ public class AsignacionesServiceImpl implements AsignacionesService {
 
     @Override
     public Asignacion programarAsignacion(NuevaAsignacionDTO dto) {
-        // Cascarón para Fase Roja (TDD) - Implementación de negocio pendiente para Fase Verde
-        return null;
+        if (dto == null) {
+            throw new IllegalArgumentException("Los datos de la asignación son obligatorios.");
+        }
+        validarNombreAsignacion(dto);
+        validarFechaLimite(dto.getFechaLimite());
+        validarIntentosPermitidos(dto.getIntentosPermitidos());
+        validarUmbralAprobacion(dto.getUmbralAprobacion());
+
+        Curso curso = null;
+        if (dto.getIdCurso() != null && cursoDAO != null) {
+            curso = cursoDAO.buscarPorId(dto.getIdCurso());
+        }
+
+        List<Regla> reglasParaAsociar = Collections.emptyList();
+        if (dto.getReglasIds() != null && !dto.getReglasIds().isEmpty()) {
+            reglasParaAsociar = obtenerReglasVigentes(dto.getReglasIds());
+        }
+
+        Asignacion nueva = new Asignacion(
+                curso,
+                dto.getNombre().trim(),
+                dto.getFechaLimite(),
+                dto.getIntentosPermitidos(),
+                dto.getUmbralAprobacion()
+        );
+        if (!reglasParaAsociar.isEmpty()) {
+            nueva.setReglas(reglasParaAsociar);
+        }
+
+        return asignacionesDAO.crearAsignacion(nueva);
+    }
+
+    private void validarFechaLimite(java.time.LocalDateTime fechaLimite) {
+        if (fechaLimite == null || !fechaLimite.isAfter(java.time.LocalDateTime.now())) {
+            throw new IllegalArgumentException("La fecha límite debe ser posterior a la fecha actual");
+        }
+    }
+
+    private void validarIntentosPermitidos(Integer intentosPermitidos) {
+        if (intentosPermitidos == null || intentosPermitidos <= 0) {
+            throw new IllegalArgumentException("El número de intentos permitidos debe ser al menos 1");
+        }
     }
 
     @Override
@@ -175,7 +215,7 @@ public class AsignacionesServiceImpl implements AsignacionesService {
         }
 
         if (umbralAprobacion < 50.0 || umbralAprobacion > 100.0) {
-            throw new IllegalArgumentException("El umbral de aprobación debe encontrarse en el rango válido entre 50% y 100%.");
+            throw new IllegalArgumentException("El umbral de aprobación debe estar comprendido entre 50% y 100%");
         }
 
         return umbralAprobacion;
