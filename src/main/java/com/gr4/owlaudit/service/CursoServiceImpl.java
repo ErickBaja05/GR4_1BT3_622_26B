@@ -2,7 +2,9 @@ package com.gr4.owlaudit.service;
 
 import com.gr4.owlaudit.common.exception.ExcepcionNegocio;
 import com.gr4.owlaudit.dao.CursoDAO;
+import com.gr4.owlaudit.dao.CursoDAOImpl;
 import com.gr4.owlaudit.dao.UsuarioDAO;
+import com.gr4.owlaudit.dao.UsuarioDAOImpl;
 import com.gr4.owlaudit.dto.NuevoCursoDTO;
 import com.gr4.owlaudit.model.Curso;
 import com.gr4.owlaudit.model.Docente;
@@ -25,6 +27,12 @@ public class CursoServiceImpl implements CursoService {
         this.usuarioDAO = usuarioDAO;
     }
 
+    public CursoServiceImpl() {
+        this.cursoDAO = new CursoDAOImpl();
+        this.usuarioDAO = new UsuarioDAOImpl();
+
+    }
+
     @Override
     public Curso crearCurso(NuevoCursoDTO dto, String correoDocente) throws ExcepcionNegocio {
         validarCamposObligatorios(dto);
@@ -33,25 +41,27 @@ public class CursoServiceImpl implements CursoService {
         validarFormatoCodigo(codigoNormalizado);
         validarUnicidadCodigo(codigoNormalizado);
 
-        Docente docente = obtenerDocentePorCorreo(correoDocente);
-        Curso curso = Curso.construirNuevoCurso(dto.getNombre(), codigoNormalizado, dto.getDescripcion(), docente);
-
-        cursoDAO.guardar(curso);
-        return curso;
-    }
-
-    private Docente obtenerDocentePorCorreo(String correoDocente) throws ExcepcionNegocio {
-        if (esTextoVacio(correoDocente)) {
-            throw new ExcepcionNegocio("El docente especificado no existe en el sistema");
-        }
-        Usuario usuario = usuarioDAO.buscarPorCorreo(correoDocente.trim());
+        Usuario usuario = usuarioDAO.buscarPorCorreo(correoDocente);
         if (usuario == null) {
             throw new ExcepcionNegocio("El docente especificado no existe en el sistema");
         }
         if (usuario.getRol() != RolEnum.DOCENTE) {
             throw new ExcepcionNegocio("Solo un usuario con rol de docente puede crear cursos");
         }
-        return (usuario instanceof Docente) ? (Docente) usuario : Docente.desdeUsuario(usuario);
+
+        Docente docente = (usuario instanceof Docente)
+                ? (Docente) usuario
+                : Docente.desdeUsuario(usuario);
+
+        Curso curso = new Curso();
+        curso.setNombre(dto.getNombre().trim());
+        curso.setCodigo(codigoNormalizado);
+        curso.setDescripcion(dto.getDescripcion().trim());
+        curso.setDocente(docente);
+
+        cursoDAO.guardar(curso);
+
+        return curso;
     }
 
     @Override
@@ -61,6 +71,22 @@ public class CursoServiceImpl implements CursoService {
             return Collections.emptyList();
         }
         return cursoDAO.listarCursosPorDocente(usuario.getId());
+    }
+
+    @Override
+    public Curso buscarPorId(Long idCurso) {
+        if (idCurso == null) {
+            return null;
+        }
+        return cursoDAO.buscarPorId(idCurso);
+    }
+
+    @Override
+    public boolean estaEstudianteMatriculado(Long idCurso, Long idEstudiante) {
+        if (idCurso == null || idEstudiante == null) {
+            return false;
+        }
+        return cursoDAO.estaEstudianteMatriculado(idCurso, idEstudiante);
     }
 
     // Mantener los métodos que ya existían de HU-03 para no romper compatibilidad:

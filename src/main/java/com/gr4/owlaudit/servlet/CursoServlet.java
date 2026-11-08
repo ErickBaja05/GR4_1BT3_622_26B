@@ -1,5 +1,7 @@
 package com.gr4.owlaudit.servlet;
 
+import com.gr4.owlaudit.common.exception.ExcepcionNegocio;
+import com.gr4.owlaudit.dto.NuevoCursoDTO;
 import com.gr4.owlaudit.dto.UsuarioDTO;
 import com.gr4.owlaudit.model.Curso;
 import com.gr4.owlaudit.model.RolEnum;
@@ -47,11 +49,14 @@ public class CursoServlet extends HttpServlet {
 
         String errorParam = request.getParameter("error");
         if ("sinAsignacion".equalsIgnoreCase(errorParam)) {
-            request.setAttribute("mensajeError", "Debe seleccionar una asignación dentro de sus cursos matriculados para ejecutar una auditoría.");
+            request.setAttribute("mensajeError",
+                    "Debe seleccionar una asignación dentro de sus cursos matriculados para ejecutar una auditoría.");
         } else if ("permisos".equalsIgnoreCase(errorParam)) {
-            request.setAttribute("mensajeError", "No tienes permisos para acceder a las asignaciones de un curso en el que no estás matriculado.");
+            request.setAttribute("mensajeError",
+                    "No tienes permisos para acceder a las asignaciones de un curso en el que no estás matriculado.");
         } else if ("sinCurso".equalsIgnoreCase(errorParam)) {
-            request.setAttribute("mensajeError", "Debe ingresar a las asignaciones a través de uno de sus cursos matriculados.");
+            request.setAttribute("mensajeError",
+                    "Debe ingresar a las asignaciones a través de uno de sus cursos matriculados.");
         }
 
         List<Curso> cursos;
@@ -70,7 +75,63 @@ public class CursoServlet extends HttpServlet {
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        doGet(request, response);
+        UsuarioDTO usuario = obtenerUsuarioAutenticado(request);
+        if (usuario == null) {
+            response.sendRedirect(request.getContextPath() + "/login");
+            return;
+        }
+        if (!esDocente(usuario)) {
+            response.sendRedirect(request.getContextPath() + "/curso?error=permisos");
+            return;
+        }
+
+        try {
+            Curso cursoCreado = cursoService.crearCurso(extraerNuevoCursoDTO(request), usuario.getCorreo());
+            request.setAttribute(
+                    "mensajeExito",
+                    "Curso creado exitosamente, comparta el código: " + cursoCreado.getCodigo()
+                            + " con sus estudiantes para que se matriculen");
+        } catch (ExcepcionNegocio e) {
+            preservarDatosFormularioConError(request, e.getMessage());
+        }
+
+        cargarVistaCursosDocente(request, response, usuario.getCorreo());
+    }
+
+    private UsuarioDTO obtenerUsuarioAutenticado(HttpServletRequest request) {
+        HttpSession session = request.getSession(false);
+        if (session == null) {
+            return null;
+        }
+        UsuarioDTO usuario = (UsuarioDTO) session.getAttribute(LoginServlet.ATRIBUTO_USUARIO);
+        if (usuario == null) {
+            usuario = (UsuarioDTO) session.getAttribute("usuario");
+        }
+        return usuario;
+    }
+
+    private boolean esDocente(UsuarioDTO usuario) {
+        return usuario != null && usuario.getRol() == RolEnum.DOCENTE;
+    }
+
+    private NuevoCursoDTO extraerNuevoCursoDTO(HttpServletRequest request) {
+        return new NuevoCursoDTO(
+                request.getParameter("nombre"),
+                request.getParameter("codigo"),
+                request.getParameter("descripcion"));
+    }
+
+    private void preservarDatosFormularioConError(HttpServletRequest request, String mensajeError) {
+        request.setAttribute("error", mensajeError);
+        request.setAttribute("nombreIngresado", request.getParameter("nombre"));
+        request.setAttribute("codigoIngresado", request.getParameter("codigo"));
+        request.setAttribute("descripcionIngresada", request.getParameter("descripcion"));
+    }
+
+    private void cargarVistaCursosDocente(HttpServletRequest request, HttpServletResponse response,
+            String correoDocente)
+            throws ServletException, IOException {
+        request.setAttribute("cursos", cursoService.listarCursosPorCorreoDocente(correoDocente));
+        request.getRequestDispatcher("/WEB-INF/views/misCursos.jsp").forward(request, response);
     }
 }
-
