@@ -57,6 +57,14 @@ public class CursoServiceImpl implements CursoService {
 
     @Override
     public Curso crearCurso(NuevoCursoDTO dto, Long idDocente) throws ExcepcionNegocio {
+        if (dto == null
+                || dto.getNombre() == null || dto.getNombre().trim().isEmpty()
+                || dto.getCodigo() == null || dto.getCodigo().trim().isEmpty()
+                || dto.getDescripcion() == null || dto.getDescripcion().trim().isEmpty()) {
+            throw new ExcepcionNegocio(
+                    "Todos los campos (nombre, código y descripción) son obligatorios para crear el curso");
+        }
+
         validarFormatoCodigo(dto.getCodigo());
         return null;
     }
