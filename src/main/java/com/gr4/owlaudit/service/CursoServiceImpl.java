@@ -8,10 +8,12 @@ import com.gr4.owlaudit.model.Curso;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.regex.Pattern;
 
 public class CursoServiceImpl implements CursoService {
 
     private final CursoDAO cursoDAO;
+    private static final Pattern PATRON_CODIGO_CURSO = Pattern.compile("^[A-Za-z0-9-]+$");
 
     public CursoServiceImpl() {
         this(new CursoDAOImpl());
@@ -55,12 +57,16 @@ public class CursoServiceImpl implements CursoService {
 
     @Override
     public Curso crearCurso(NuevoCursoDTO dto, Long idDocente) throws ExcepcionNegocio {
-        if (dto.getCodigo() != null) {
-            String codigoLimpio = dto.getCodigo().trim();
-            if (!codigoLimpio.matches("^[A-Za-z0-9-]+$")) {
+        validarFormatoCodigo(dto.getCodigo());
+        return null;
+    }
+
+    private void validarFormatoCodigo(String codigo) throws ExcepcionNegocio {
+        if (codigo != null) {
+            String codigoNormalizado = codigo.trim();
+            if (!PATRON_CODIGO_CURSO.matcher(codigoNormalizado).matches()) {
                 throw new ExcepcionNegocio("El código solo admite caracteres alfanuméricos y guiones");
             }
         }
-        return null;
     }
 }
