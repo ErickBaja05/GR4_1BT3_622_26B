@@ -11,6 +11,7 @@ import java.util.regex.PatternSyntaxException;
 
 public class ValidadorRegla {
 
+    public static final String MENSAJE_CAMPOS_OBLIGATORIOS = "Todos los campos de la regla son obligatorios.";
     private static final int PONDERACION_MINIMA = 1;
     private static final int PONDERACION_MAXIMA = 100;
     private static final char[] CARACTERES_PROHIBIDOS_RUTA = { ':', '\\', '"', '<', '>', '|', '?' };
@@ -37,20 +38,12 @@ public class ValidadorRegla {
     }
 
     private void validarCamposObligatorios(NuevaReglaDTO dto) {
-        if (dto.getTipoMotor() == null || dto.getTipoMotor().trim().isEmpty()) {
-            throw new ExcepcionNegocio("El tipo de motor es obligatorio.");
-        }
-        if (dto.getNombreRepresentativo() == null || dto.getNombreRepresentativo().trim().isEmpty()) {
-            throw new ExcepcionNegocio("El nombre representativo es obligatorio.");
-        }
-        if (dto.getDescripcionDetallada() == null || dto.getDescripcionDetallada().trim().isEmpty()) {
-            throw new ExcepcionNegocio("La descripción detallada es obligatoria.");
-        }
-        if (dto.getParametroExacto() == null || dto.getParametroExacto().isEmpty()) {
-            throw new ExcepcionNegocio("El parámetro exacto es obligatorio.");
-        }
-        if (dto.getNivelSeveridad() == null || dto.getNivelSeveridad().trim().isEmpty()) {
-            throw new ExcepcionNegocio("El nivel de severidad es obligatorio.");
+        if (dto.getIdCurso() == null
+                || dto.getTipoMotor() == null || dto.getTipoMotor().trim().isEmpty()
+                || dto.getNombreRepresentativo() == null || dto.getNombreRepresentativo().trim().isEmpty()
+                || dto.getDescripcionDetallada() == null || dto.getDescripcionDetallada().trim().isEmpty()
+                || dto.getParametroExacto() == null || dto.getParametroExacto().trim().isEmpty()) {
+            throw new ExcepcionNegocio("Todos los campos de la regla son obligatorios.");
         }
     }
 
