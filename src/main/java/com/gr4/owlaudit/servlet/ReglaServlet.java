@@ -1,12 +1,18 @@
 package com.gr4.owlaudit.servlet;
 
 import java.io.IOException;
+import java.util.Set;
 
 import com.gr4.owlaudit.common.exception.ExcepcionNegocio;
+import com.gr4.owlaudit.dao.CursoDAO;
+import com.gr4.owlaudit.dao.CursoDAOImpl;
 import com.gr4.owlaudit.dao.ReglaDAO;
 import com.gr4.owlaudit.dao.ReglaDAOImpl;
 import com.gr4.owlaudit.dto.NuevaReglaDTO;
+import com.gr4.owlaudit.dto.UsuarioDTO;
+import com.gr4.owlaudit.model.Curso;
 import com.gr4.owlaudit.model.EstadoVigencia;
+import com.gr4.owlaudit.model.RolEnum;
 import com.gr4.owlaudit.service.ReglaService;
 import com.gr4.owlaudit.service.ReglaServiceImpl;
 
@@ -15,14 +21,14 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import java.util.Set;
+import jakarta.servlet.http.HttpSession;
 
 /**
  * CU01 - Registrar regla de evaluación técnica (rol DOCENTE, validado por AutenticacionFilter).
- * HU-01 - Activar / Desactivar vigencia de reglas.
+ * HU-01 - Crear reglas para el curso y aislamiento por curso.
  */
 @WebServlet("/regla")
-    public class ReglaServlet extends HttpServlet {
+public class ReglaServlet extends HttpServlet {
     private static final Set<String> VISTAS_REGISTRO = Set.of("registro", "registrar", "nueva");
     private static final String VISTA = "/WEB-INF/views/registrarRegla.jsp";
     private static final String VISTA_CATALOGO = "/WEB-INF/views/catalogoReglas.jsp";
@@ -32,22 +38,37 @@ import java.util.Set;
 
     private final ReglaService reglaService;
     private final ReglaDAO reglaDAO;
+    private final CursoDAO cursoDAO;
 
     /** Constructor que usa Tomcat. */
     public ReglaServlet() {
-        this(new ReglaServiceImpl(), new ReglaDAOImpl());
+        this(new ReglaServiceImpl(), new ReglaDAOImpl(), new CursoDAOImpl());
     }
 
     /** Constructor para inyectar mocks en las pruebas. */
     ReglaServlet(ReglaService reglaService, ReglaDAO reglaDAO) {
+        this(reglaService, reglaDAO, null);
+    }
+
+    ReglaServlet(ReglaService reglaService, ReglaDAO reglaDAO, CursoDAO cursoDAO) {
         this.reglaService = reglaService;
         this.reglaDAO = reglaDAO;
+        this.cursoDAO = cursoDAO;
     }
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) 
             throws ServletException, IOException {
         Long idCurso = parsearIdCurso(request.getParameter("idCurso"));
+        if (idCurso == null) {
+            response.sendRedirect(request.getContextPath() + "/curso?error=sinCurso");
+            return;
+        }
+
+        if (!validarTitularidadDocente(request, response, idCurso)) {
+            return;
+        }
+
         cargarReglasEnRequest(request, idCurso);
 
         String vista = request.getParameter("vista");
@@ -70,6 +91,14 @@ import java.util.Set;
         
         request.setCharacterEncoding("UTF-8");
         Long idCurso = parsearIdCurso(request.getParameter("idCurso"));
+        if (idCurso == null) {
+            response.sendRedirect(request.getContextPath() + "/curso?error=sinCurso");
+            return;
+        }
+
+        if (!validarTitularidadDocente(request, response, idCurso)) {
+            return;
+        }
 
         if (ACCION_CAMBIAR_VIGENCIA.equals(request.getParameter("accion"))) {
             procesarCambioVigencia(request, response, idCurso);
@@ -121,13 +150,26 @@ import java.util.Set;
     }
 
     /**
-     * HU-01: Procesa la solicitud de cambio de vigencia de una regla técnica.
+     * Valida que el docente autenticado en sesión sea el titular del curso.
+     * Retorna true si es válido o si no hay sesión/cursoDAO en pruebas unitarias aisladas.
      */
-    private void procesarCambioVigencia(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException {
-        procesarCambioVigencia(request, response, parsearIdCurso(request.getParameter("idCurso")));
+    private boolean validarTitularidadDocente(HttpServletRequest request, HttpServletResponse response, Long idCurso) 
+            throws IOException {
+        HttpSession session = request.getSession(false);
+        UsuarioDTO usuario = (session != null) ? (UsuarioDTO) session.getAttribute(LoginServlet.ATRIBUTO_USUARIO) : null;
+        if (usuario != null && usuario.getRol() == RolEnum.DOCENTE && cursoDAO != null) {
+            Curso curso = cursoDAO.buscarPorId(idCurso);
+            if (curso == null || curso.getDocente() == null || !usuario.getId().equals(curso.getDocente().getId())) {
+                response.sendRedirect(request.getContextPath() + "/curso?error=permisos");
+                return false;
+            }
+        }
+        return true;
     }
 
+    /**
+     * HU-01: Procesa la solicitud de cambio de vigencia de una regla técnica dentro de un curso.
+     */
     private void procesarCambioVigencia(HttpServletRequest request, HttpServletResponse response, Long idCurso)
             throws ServletException, IOException {
         String nombreRegla = request.getParameter("nombreRegla");
@@ -157,24 +199,20 @@ import java.util.Set;
     }
 
     private void cargarReglasEnRequest(HttpServletRequest request, Long idCurso) {
+        if (idCurso == null) {
+            return;
+        }
         try {
-            if (idCurso != null) {
-                request.setAttribute("idCurso", idCurso);
-                request.setAttribute("reglas", reglaService.listarReglasPorCurso(idCurso));
-                request.setAttribute("reglasVigentes", reglaService.listarReglasVigentesPorCurso(idCurso));
-            } else {
-                request.setAttribute("reglas", reglaDAO.consultarTodasLasReglas());
-                request.setAttribute("reglasVigentes", reglaDAO.consultarReglasDeEvaluacionVigentes());
-            }
+            request.setAttribute("idCurso", idCurso);
+            request.setAttribute("reglas", reglaService.listarReglasPorCurso(idCurso));
+            request.setAttribute("reglasVigentes", reglaService.listarReglasVigentesPorCurso(idCurso));
         } catch (Exception e) {
-            System.err.println("[ReglaServlet] Error al consultar reglas: " + e.getMessage());
+            System.err.println("[ReglaServlet] Error al consultar reglas por curso: " + e.getMessage());
         }
     }
 
     /**
      * Refactorización Martin Fowler: Replace Temp with Query.
-     * Reemplaza la variable temporal estadoTexto de procesarCambioVigencia
-     * por un método de consulta reutilizable.
      */
     private String obtenerDescripcionEstado(EstadoVigencia estado) {
         return (estado == EstadoVigencia.NO_VIGENTE) ? "no vigente" : "vigente";

@@ -193,6 +193,11 @@
                                     <td style="padding: 0.65rem 0.5rem; text-align: center;">
                                         <form action="${pageContext.request.contextPath}/regla" method="POST" style="margin: 0; display: inline-block;">
                                             <input type="hidden" name="accion" value="cambiarVigencia">
+                                            <% if (request.getAttribute("idCurso") != null) { %>
+                                                <input type="hidden" name="idCurso" value="<%= request.getAttribute("idCurso") %>">
+                                            <% } else if (dto != null && dto.getIdCurso() != null) { %>
+                                                <input type="hidden" name="idCurso" value="<%= dto.getIdCurso() %>">
+                                            <% } %>
                                             <input type="hidden" name="nombreRegla" value="<%= HtmlUtil.escape(r.getNombreRepresentativo()) %>">
                                             <input type="hidden" name="idRegla" value="<%= r.getId() %>">
                                             <input type="hidden" name="nuevoEstado" value="<%= nuevoEstado %>">
