@@ -43,7 +43,7 @@ public class ValidadorRegla {
                 || dto.getNombreRepresentativo() == null || dto.getNombreRepresentativo().trim().isEmpty()
                 || dto.getDescripcionDetallada() == null || dto.getDescripcionDetallada().trim().isEmpty()
                 || dto.getParametroExacto() == null || dto.getParametroExacto().trim().isEmpty()) {
-            throw new ExcepcionNegocio("Todos los campos de la regla son obligatorios.");
+            throw new ExcepcionNegocio(MENSAJE_CAMPOS_OBLIGATORIOS);
         }
     }
 

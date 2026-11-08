@@ -15,9 +15,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
  */
 public class CreacionReglaCursoTest {
 
-    private static final String MENSAJE_CAMPOS_OBLIGATORIOS =
-            "Todos los campos de la regla son obligatorios.";
-
     private ValidadorRegla validadorRegla;
 
     @BeforeEach
@@ -34,7 +31,7 @@ public class CreacionReglaCursoTest {
         ExcepcionNegocio ex0 = assertThrows(ExcepcionNegocio.class, () ->
                 validadorRegla.validarSintaxisYFormato(dtoSinCurso)
         );
-        assertEquals(MENSAJE_CAMPOS_OBLIGATORIOS, ex0.getMessage(), "Debe exigir curso obligatorio");
+        assertEquals(ValidadorRegla.MENSAJE_CAMPOS_OBLIGATORIOS, ex0.getMessage(), "Debe exigir curso obligatorio");
 
         // Caso B: Tipo de motor vacío
         NuevaReglaDTO dtoSinMotor = new NuevaReglaDTO("", "Exigir README", "Descripción", "README.md", "ALTA", 25);
@@ -42,7 +39,7 @@ public class CreacionReglaCursoTest {
         ExcepcionNegocio ex1 = assertThrows(ExcepcionNegocio.class, () ->
                 validadorRegla.validarSintaxisYFormato(dtoSinMotor)
         );
-        assertEquals(MENSAJE_CAMPOS_OBLIGATORIOS, ex1.getMessage(), "Debe exigir tipo de motor obligatorio");
+        assertEquals(ValidadorRegla.MENSAJE_CAMPOS_OBLIGATORIOS, ex1.getMessage(), "Debe exigir tipo de motor obligatorio");
 
         // Caso C: Nombre representativo vacío o solo espacios
         NuevaReglaDTO dtoSinNombre = new NuevaReglaDTO("PRESENCIA_ARCHIVO", "   ", "Descripción", "README.md", "ALTA", 25);
@@ -50,7 +47,7 @@ public class CreacionReglaCursoTest {
         ExcepcionNegocio ex2 = assertThrows(ExcepcionNegocio.class, () ->
                 validadorRegla.validarSintaxisYFormato(dtoSinNombre)
         );
-        assertEquals(MENSAJE_CAMPOS_OBLIGATORIOS, ex2.getMessage(), "Debe exigir nombre representativo obligatorio");
+        assertEquals(ValidadorRegla.MENSAJE_CAMPOS_OBLIGATORIOS, ex2.getMessage(), "Debe exigir nombre representativo obligatorio");
 
         // Caso D: Descripción detallada vacía
         NuevaReglaDTO dtoSinDesc = new NuevaReglaDTO("PRESENCIA_ARCHIVO", "Exigir README", "", "README.md", "ALTA", 25);
@@ -58,7 +55,7 @@ public class CreacionReglaCursoTest {
         ExcepcionNegocio ex3 = assertThrows(ExcepcionNegocio.class, () ->
                 validadorRegla.validarSintaxisYFormato(dtoSinDesc)
         );
-        assertEquals(MENSAJE_CAMPOS_OBLIGATORIOS, ex3.getMessage(), "Debe exigir descripción obligatoria");
+        assertEquals(ValidadorRegla.MENSAJE_CAMPOS_OBLIGATORIOS, ex3.getMessage(), "Debe exigir descripción obligatoria");
 
         // Caso E: Parámetro exacto vacío
         NuevaReglaDTO dtoSinParam = new NuevaReglaDTO("PRESENCIA_ARCHIVO", "Exigir README", "Descripción", "", "ALTA", 25);
@@ -66,6 +63,6 @@ public class CreacionReglaCursoTest {
         ExcepcionNegocio ex4 = assertThrows(ExcepcionNegocio.class, () ->
                 validadorRegla.validarSintaxisYFormato(dtoSinParam)
         );
-        assertEquals(MENSAJE_CAMPOS_OBLIGATORIOS, ex4.getMessage(), "Debe exigir parámetro exacto obligatorio");
+        assertEquals(ValidadorRegla.MENSAJE_CAMPOS_OBLIGATORIOS, ex4.getMessage(), "Debe exigir parámetro exacto obligatorio");
     }
 }
