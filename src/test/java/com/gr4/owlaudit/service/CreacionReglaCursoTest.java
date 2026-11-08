@@ -5,6 +5,8 @@ import com.gr4.owlaudit.dto.NuevaReglaDTO;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -64,5 +66,31 @@ public class CreacionReglaCursoTest {
                 validadorRegla.validarSintaxisYFormato(dtoSinParam)
         );
         assertEquals(ValidadorRegla.MENSAJE_CAMPOS_OBLIGATORIOS, ex4.getMessage(), "Debe exigir parámetro exacto obligatorio");
+    }
+
+    @ParameterizedTest(name = "Motor: {0} | Parámetro inválido: {1}")
+    @CsvSource({
+            "CONVENCION_COMMITS, 'mensaje_sin_dos_puntos', 'Para CONVENCION_COMMITS, el patrón debe incluir el formato esperado con separador ':'.' ",
+            "RESTRICCION_ARCHIVOS, 'src/test/archivo.class', 'Para RESTRICCION_ARCHIVOS, el parámetro no puede contener barras separadoras '/'.' ",
+            "ESTRUCTURA_CARPETAS, '/src/main/java/', 'Para ESTRUCTURA_CARPETAS, la ruta no puede empezar ni terminar con '/'.' ",
+            "PRESENCIA_ARCHIVO, 'doc?.pdf', 'El parámetro exacto contiene el carácter prohibido: '?'.' "
+    })
+    @DisplayName("CA3 - Escenario 3.2: Given motor seleccionado, When ingresa parametro sintacticamente invalido, Then rechaza registro con mensaje indicando formato esperado")
+    void givenDocenteSeleccionaTipoMotor_whenIngresaParametroInvalidoParaEseMotor_thenRechazaRegistroConMensajeFormatoEsperado(
+            String motor, String parametroInvalido, String mensajeEsperado) {
+        NuevaReglaDTO dto = new NuevaReglaDTO(
+                motor,
+                "Regla Formato Invalido",
+                "Descripción detallada de la regla de prueba",
+                parametroInvalido,
+                "ALTA",
+                25
+        );
+        dto.setIdCurso(10L);
+
+        ExcepcionNegocio ex = assertThrows(ExcepcionNegocio.class, () ->
+                validadorRegla.validarSintaxisYFormato(dto)
+        );
+        assertEquals(mensajeEsperado.trim(), ex.getMessage().trim());
     }
 }
