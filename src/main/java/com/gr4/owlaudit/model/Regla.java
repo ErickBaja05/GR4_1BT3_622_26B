@@ -11,8 +11,11 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(
@@ -55,6 +58,9 @@ public class Regla {
 
     @Column(name = "activa")
     private Boolean activa = true;
+
+    @OneToMany(mappedBy = "regla", fetch = FetchType.LAZY)
+    private List<AsignacionRegla> asignacionesReglas = new ArrayList<>();
 
     public Regla() {
         this.vigencia = EstadoVigencia.VIGENTE;
@@ -163,5 +169,13 @@ public class Regla {
 
     public void setActiva(Boolean activa) {
         this.activa = activa;
+    }
+
+    public List<AsignacionRegla> getAsignacionesReglas() {
+        return asignacionesReglas;
+    }
+
+    public void setAsignacionesReglas(List<AsignacionRegla> asignacionesReglas) {
+        this.asignacionesReglas = (asignacionesReglas != null) ? asignacionesReglas : new ArrayList<>();
     }
 }

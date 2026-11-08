@@ -35,7 +35,7 @@ public class AsignacionesServiceImpl implements AsignacionesService {
     private final ProyectoDAO proyectoDAO;
     private final CursoDAO cursoDAO;
     private final ValidadorAccesoCurso validadorAccesoCurso;
-    private AsignacionReglaDAO asignacionReglaDAO = new AsignacionReglaDAOImpl();
+    private AsignacionReglaDAO asignacionReglaDAO;
     private ValidadorReglaAsignacion validadorReglaAsignacion = new ValidadorReglaAsignacion();
     private AuditoriaService auditoriaService;
     private static final double UMBRAL_MINIMO_APROBACION = 50.0;
@@ -43,6 +43,7 @@ public class AsignacionesServiceImpl implements AsignacionesService {
 
     public AsignacionesServiceImpl() {
         this(new AsignacionesDAOImpl(), new ReglaDAOImpl(), new ProyectoDAOImpl(), new CursoDAOImpl());
+        this.asignacionReglaDAO = new AsignacionReglaDAOImpl();
     }
 
     public AsignacionesServiceImpl(
@@ -98,6 +99,9 @@ public class AsignacionesServiceImpl implements AsignacionesService {
     }
 
     public AsignacionReglaDAO getAsignacionReglaDAO() {
+        if (this.asignacionReglaDAO == null) {
+            this.asignacionReglaDAO = new AsignacionReglaDAOImpl();
+        }
         return this.asignacionReglaDAO;
     }
 
@@ -161,19 +165,23 @@ public class AsignacionesServiceImpl implements AsignacionesService {
     }
 
     private void guardarConfiguracionReglasAsignacion(Asignacion asignacion, NuevaAsignacionDTO dto, List<Regla> reglasAsociadas) {
-        if (asignacion == null || asignacion.getId() == null || asignacionReglaDAO == null) {
+        if (asignacion == null || asignacion.getId() == null) {
+            return;
+        }
+        AsignacionReglaDAO dao = getAsignacionReglaDAO();
+        if (dao == null) {
             return;
         }
         List<AsignacionRegla> listaAR = new ArrayList<>();
-        if (dto.getReglasConfiguradas() != null && !dto.getReglasConfiguradas().isEmpty()) {
+        if (dto != null && dto.getReglasConfiguradas() != null && !dto.getReglasConfiguradas().isEmpty()) {
             for (ReglaAsignacionDTO rc : dto.getReglasConfiguradas()) {
                 if (rc != null && rc.getReglaId() != null) {
                     validadorReglaAsignacion.validarRegla(rc);
                     listaAR.add(new AsignacionRegla(
                         asignacion.getId(),
                         rc.getReglaId(),
-                        rc.getSeveridad(),
-                        rc.getPonderacion()
+                        rc.getSeveridad() != null ? rc.getSeveridad() : NivelSeveridadEnum.MEDIA,
+                        rc.getPonderacion() != null && rc.getPonderacion() > 0 ? rc.getPonderacion() : 20
                     ));
                 }
             }
@@ -190,11 +198,7 @@ public class AsignacionesServiceImpl implements AsignacionesService {
             }
         }
         if (!listaAR.isEmpty()) {
-            try {
-                asignacionReglaDAO.guardar(listaAR);
-            } catch (Exception e) {
-                System.err.println("[AsignacionesServiceImpl] Advertencia al persistir asignacion_regla: " + e.getMessage());
-            }
+            dao.guardar(listaAR);
         }
     }
 
@@ -241,6 +245,12 @@ public class AsignacionesServiceImpl implements AsignacionesService {
 
         asignacionesDAO.actualizar(asig, dto.getReglasIds());
 
+        // Actualizar asociaciones en asignacion_regla eliminando las anteriores y guardando la nueva selección
+        if (getAsignacionReglaDAO() != null) {
+            getAsignacionReglaDAO().eliminarPorAsignacion(idAsignacion);
+        }
+        guardarConfiguracionReglasAsignacion(asig, dto, reglasParaAsociar);
+
         // Revalorización automática de todas las auditorías realizadas en esta asignación
         try {
             getAuditoriaService().revalorizarAuditoriasDeAsignacion(idAsignacion);
@@ -280,14 +290,14 @@ public class AsignacionesServiceImpl implements AsignacionesService {
 
         asignacionesDAO.actualizar(asignacion, idsReglas);
 
-        if (asignacionReglaDAO != null) {
+        if (getAsignacionReglaDAO() != null) {
             List<AsignacionRegla> listaAR = new ArrayList<>();
             for (ReglaAsignacionDTO rDto : reglasParam) {
                 NivelSeveridadEnum sev = (rDto.getSeveridad() != null) ? rDto.getSeveridad() : NivelSeveridadEnum.MEDIA;
                 listaAR.add(new AsignacionRegla(idAsignacion, rDto.getReglaId(), sev, rDto.getPonderacion()));
             }
             try {
-                asignacionReglaDAO.guardar(listaAR);
+                getAsignacionReglaDAO().guardar(listaAR);
             } catch (Exception e) {
                 System.err.println("[AsignacionesServiceImpl] Advertencia al persistir asociarReglasAsignacion: " + e.getMessage());
             }

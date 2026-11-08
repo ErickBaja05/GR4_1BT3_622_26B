@@ -21,8 +21,18 @@ public class AsignacionReglaDAOImpl implements AsignacionReglaDAO {
             session = HibernateUtil.getSessionFactory().openSession();
             tx = session.beginTransaction();
             for (AsignacionRegla ar : asignacionesReglas) {
-                if (ar != null) {
-                    session.merge(ar);
+                if (ar != null && ar.getAsignacionId() != null && ar.getReglaId() != null) {
+                    String sev = (ar.getNivelSeveridad() != null) ? ar.getNivelSeveridad().name() : "MEDIA";
+                    session.createNativeMutationQuery(
+                        "INSERT INTO asignacion_regla (asignacion_id, regla_id, nivel_severidad, ponderacion) " +
+                        "VALUES (:asigId, :reglaId, :severidad, :ponderacion) " +
+                        "ON DUPLICATE KEY UPDATE nivel_severidad = :severidad, ponderacion = :ponderacion"
+                    )
+                    .setParameter("asigId", ar.getAsignacionId())
+                    .setParameter("reglaId", ar.getReglaId())
+                    .setParameter("severidad", sev)
+                    .setParameter("ponderacion", ar.getPonderacion())
+                    .executeUpdate();
                 }
             }
             tx.commit();

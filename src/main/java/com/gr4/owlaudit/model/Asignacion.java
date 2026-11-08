@@ -7,11 +7,10 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
-import jakarta.persistence.JoinTable;
-import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 import jakarta.persistence.UniqueConstraint;
 
 import java.time.LocalDateTime;
@@ -57,18 +56,17 @@ public class Asignacion {
     @Column(name = "fecha_limite")
     private LocalDateTime fechaLimite;
 
-    @ManyToMany(fetch = FetchType.LAZY)
-    @JoinTable(
-        name = "asignacion_regla",
-        joinColumns = @JoinColumn(name = "asignacion_id"),
-        inverseJoinColumns = @JoinColumn(name = "regla_id")
-    )
+    @OneToMany(mappedBy = "asignacion", fetch = FetchType.LAZY)
+    private List<AsignacionRegla> asignacionesReglas = new ArrayList<>();
+
+    @Transient
     private List<Regla> reglas = new ArrayList<>();
 
     @OneToMany(mappedBy = "asignacion", fetch = FetchType.LAZY)
     private List<Auditoria> auditorias = new ArrayList<>();
 
     public Asignacion() {
+        this.asignacionesReglas = new ArrayList<>();
         this.reglas = new ArrayList<>();
         this.auditorias = new ArrayList<>();
     }
@@ -77,6 +75,7 @@ public class Asignacion {
         this.nombre = nombre;
         this.umbralAprobacion = umbralAprobacion;
         this.reglas = (reglas != null) ? new ArrayList<>(reglas) : new ArrayList<>();
+        this.asignacionesReglas = new ArrayList<>();
         this.auditorias = new ArrayList<>();
     }
 
@@ -92,6 +91,7 @@ public class Asignacion {
         this.intentosPermitidos = intentosPermitidos;
         this.numeroIntentos = intentosPermitidos;
         this.umbralAprobacion = umbralAprobacion;
+        this.asignacionesReglas = new ArrayList<>();
         this.reglas = new ArrayList<>();
         this.auditorias = new ArrayList<>();
     }
@@ -132,9 +132,28 @@ public class Asignacion {
         return idSecuencial != null ? idSecuencial : id;
     }
 
+    public List<AsignacionRegla> getAsignacionesReglas() {
+        return asignacionesReglas;
+    }
+
+    public void setAsignacionesReglas(List<AsignacionRegla> asignacionesReglas) {
+        this.asignacionesReglas = (asignacionesReglas != null) ? asignacionesReglas : new ArrayList<>();
+    }
 
     public List<Regla> getReglas() {
-        return reglas;
+        if (this.asignacionesReglas != null && !this.asignacionesReglas.isEmpty()) {
+            List<Regla> list = new ArrayList<>();
+            for (AsignacionRegla ar : this.asignacionesReglas) {
+                if (ar != null && ar.getRegla() != null) {
+                    Regla r = ar.getRegla();
+                    r.setPonderacion(ar.getPonderacion());
+                    r.setNivelSeveridad(ar.getNivelSeveridad());
+                    list.add(r);
+                }
+            }
+            return list;
+        }
+        return (this.reglas != null) ? this.reglas : new ArrayList<>();
     }
 
     public void setReglas(List<Regla> reglas) {

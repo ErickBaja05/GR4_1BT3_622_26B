@@ -2,6 +2,7 @@ package com.gr4.owlaudit.dao;
 
 import com.gr4.owlaudit.common.config.HibernateUtil;
 import com.gr4.owlaudit.model.Asignacion;
+import com.gr4.owlaudit.model.AsignacionRegla;
 import com.gr4.owlaudit.model.Regla;
 
 import org.hibernate.Session;
@@ -65,7 +66,7 @@ public class AsignacionesDAOImpl implements AsignacionesDAO {
             session = HibernateUtil.getSessionFactory().openSession();
             tx = session.beginTransaction();
             List<Asignacion> lista = session.createQuery(
-                "SELECT DISTINCT a FROM Asignacion a LEFT JOIN FETCH a.reglas ORDER BY a.id ASC", Asignacion.class
+                "SELECT DISTINCT a FROM Asignacion a LEFT JOIN FETCH a.asignacionesReglas ar LEFT JOIN FETCH ar.regla ORDER BY a.id ASC", Asignacion.class
             ).list();
 
             long sec = 1L;
@@ -102,10 +103,20 @@ public class AsignacionesDAOImpl implements AsignacionesDAO {
             return java.util.Collections.emptyList();
         }
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
-            return session.createQuery(
-                "SELECT r FROM Asignacion a JOIN a.reglas r WHERE a.id = :idAsignacion", Regla.class)
+            List<AsignacionRegla> listaAR = session.createQuery(
+                "SELECT ar FROM AsignacionRegla ar JOIN FETCH ar.regla WHERE ar.asignacionId = :idAsignacion", AsignacionRegla.class)
                 .setParameter("idAsignacion", idAsignacion)
                 .list();
+            List<Regla> resultado = new ArrayList<>();
+            for (AsignacionRegla ar : listaAR) {
+                if (ar.getRegla() != null) {
+                    Regla r = ar.getRegla();
+                    r.setPonderacion(ar.getPonderacion());
+                    r.setNivelSeveridad(ar.getNivelSeveridad());
+                    resultado.add(r);
+                }
+            }
+            return resultado;
         } catch (Exception e) {
             throw new RuntimeException("Error al consultar reglas de la asignación: " + e.getMessage(), e);
         }
@@ -134,7 +145,7 @@ public class AsignacionesDAOImpl implements AsignacionesDAO {
         }
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
             return session.createQuery(
-                "SELECT DISTINCT a FROM Asignacion a LEFT JOIN FETCH a.reglas LEFT JOIN FETCH a.curso WHERE a.curso.id = :idCurso ORDER BY a.id ASC", Asignacion.class)
+                "SELECT DISTINCT a FROM Asignacion a LEFT JOIN FETCH a.asignacionesReglas ar LEFT JOIN FETCH ar.regla LEFT JOIN FETCH a.curso WHERE a.curso.id = :idCurso ORDER BY a.id ASC", Asignacion.class)
                 .setParameter("idCurso", idCurso)
                 .list();
         } catch (Exception e) {
@@ -148,10 +159,21 @@ public class AsignacionesDAOImpl implements AsignacionesDAO {
             return null;
         }
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
-            return session.createQuery(
-                "SELECT DISTINCT a FROM Asignacion a LEFT JOIN FETCH a.reglas LEFT JOIN FETCH a.curso c LEFT JOIN FETCH c.listadoEstudiantes le LEFT JOIN FETCH le.estudiante WHERE a.id = :id", Asignacion.class)
+            Asignacion a = session.createQuery(
+                "SELECT DISTINCT a FROM Asignacion a LEFT JOIN FETCH a.asignacionesReglas ar LEFT JOIN FETCH ar.regla LEFT JOIN FETCH a.curso c WHERE a.id = :id", Asignacion.class)
                 .setParameter("id", id)
                 .uniqueResult();
+            if (a != null && a.getCurso() != null) {
+                org.hibernate.Hibernate.initialize(a.getCurso().getListadoEstudiantes());
+                if (a.getCurso().getListadoEstudiantes() != null) {
+                    for (var le : a.getCurso().getListadoEstudiantes()) {
+                        if (le != null) {
+                            org.hibernate.Hibernate.initialize(le.getEstudiante());
+                        }
+                    }
+                }
+            }
+            return a;
         } catch (Exception e) {
             throw new RuntimeException("Error al buscar asignación por ID: " + e.getMessage(), e);
         }

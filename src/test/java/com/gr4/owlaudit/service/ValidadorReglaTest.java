@@ -222,26 +222,37 @@ public class ValidadorReglaTest {
     }
 
     @Test
-    @DisplayName("Rechazar nivel de severidad inválido")
-    public void testValidarSeveridadInvalida() {
-        NuevaReglaDTO dto = crearDTOValido("PRESENCIA_ARCHIVO", "Nombre", "Desc", "README.md", "CRITICA", 1);
-        assertEquals("El nivel de severidad 'CRITICA' no es válido. Debe ser ALTA, MEDIA o BAJA.",
-                assertThrows(ExcepcionNegocio.class, () -> validador.validarSintaxisYFormato(dto)).getMessage());
+    @DisplayName("Validar regla sin severidad ni ponderación exitosa")
+    public void testValidarReglaSinSeveridadNiPonderacionExitosa() {
+        NuevaReglaDTO dto = new NuevaReglaDTO("PRESENCIA_ARCHIVO", "Verificar README", "Debe existir archivo README", "README.md");
+        dto.setIdCurso(1L);
+        assertDoesNotThrow(() -> validador.validarSintaxisYFormato(dto));
     }
 
     @Test
-    @DisplayName("Rechazar ponderación fuera de rango 1 a 100")
+    @DisplayName("Rechazar nivel de severidad en asignación de regla")
+    public void testValidarSeveridadInvalida() {
+        ValidadorReglaAsignacion validadorAsignacion = new ValidadorReglaAsignacion();
+        com.gr4.owlaudit.dto.ReglaAsignacionDTO dto = new com.gr4.owlaudit.dto.ReglaAsignacionDTO(1L, null, 10);
+        assertEquals("El nivel de severidad de la regla es obligatorio (ALTA, MEDIA, BAJA).",
+                assertThrows(ExcepcionNegocio.class, () -> validadorAsignacion.validarRegla(dto)).getMessage());
+    }
+
+    @Test
+    @DisplayName("Rechazar ponderación fuera de rango 1 a 100 en asignación de regla")
     public void testValidarPonderacionInvalida() {
-        NuevaReglaDTO dtoCero = crearDTOValido("PRESENCIA_ARCHIVO", "Nombre", "Desc", "README.md", "ALTA", 0);
-        assertEquals("La ponderación debe ser un número entero entre 1 y 100.",
-                assertThrows(ExcepcionNegocio.class, () -> validador.validarSintaxisYFormato(dtoCero)).getMessage());
+        ValidadorReglaAsignacion validadorAsignacion = new ValidadorReglaAsignacion();
 
-        NuevaReglaDTO dtoNegativo = crearDTOValido("PRESENCIA_ARCHIVO", "Nombre", "Desc", "README.md", "ALTA", -5);
-        assertEquals("La ponderación debe ser un número entero entre 1 y 100.",
-                assertThrows(ExcepcionNegocio.class, () -> validador.validarSintaxisYFormato(dtoNegativo)).getMessage());
+        com.gr4.owlaudit.dto.ReglaAsignacionDTO dtoCero = new com.gr4.owlaudit.dto.ReglaAsignacionDTO(1L, com.gr4.owlaudit.model.NivelSeveridadEnum.ALTA, 0);
+        assertEquals("La ponderación de la regla debe ser un número entero entre 1 y 100.",
+                assertThrows(ExcepcionNegocio.class, () -> validadorAsignacion.validarRegla(dtoCero)).getMessage());
 
-        NuevaReglaDTO dtoExceso = crearDTOValido("PRESENCIA_ARCHIVO", "Nombre", "Desc", "README.md", "ALTA", 101);
-        assertEquals("La ponderación debe ser un número entero entre 1 y 100.",
-                assertThrows(ExcepcionNegocio.class, () -> validador.validarSintaxisYFormato(dtoExceso)).getMessage());
+        com.gr4.owlaudit.dto.ReglaAsignacionDTO dtoNegativo = new com.gr4.owlaudit.dto.ReglaAsignacionDTO(1L, com.gr4.owlaudit.model.NivelSeveridadEnum.ALTA, -5);
+        assertEquals("La ponderación de la regla debe ser un número entero entre 1 y 100.",
+                assertThrows(ExcepcionNegocio.class, () -> validadorAsignacion.validarRegla(dtoNegativo)).getMessage());
+
+        com.gr4.owlaudit.dto.ReglaAsignacionDTO dtoExceso = new com.gr4.owlaudit.dto.ReglaAsignacionDTO(1L, com.gr4.owlaudit.model.NivelSeveridadEnum.ALTA, 101);
+        assertEquals("La ponderación de la regla debe ser un número entero entre 1 y 100.",
+                assertThrows(ExcepcionNegocio.class, () -> validadorAsignacion.validarRegla(dtoExceso)).getMessage());
     }
 }
