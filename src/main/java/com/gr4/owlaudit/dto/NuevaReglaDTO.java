@@ -1,6 +1,7 @@
 package com.gr4.owlaudit.dto;
 
 public class NuevaReglaDTO {
+    private Long idCurso;
     private String tipoMotor;
     private String nombreRepresentativo;
     private String descripcionDetallada;
@@ -19,6 +20,14 @@ public class NuevaReglaDTO {
         this.parametroExacto = parametroExacto;
         this.nivelSeveridad = nivelSeveridad;
         this.ponderacion = ponderacion;
+    }
+
+    public Long getIdCurso() {
+        return idCurso;
+    }
+
+    public void setIdCurso(Long idCurso) {
+        this.idCurso = idCurso;
     }
 
     public String getTipoMotor() {

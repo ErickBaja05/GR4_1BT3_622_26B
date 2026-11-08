@@ -44,18 +44,6 @@
                                             id="btnNavegarCrearAsignacion">Crear Asignación</a>
                                     </div>
 
-                                    <!-- CU01: Catálogo de Reglas Técnicas -->
-                                    <div class="card menu-card">
-                                        <div class="menu-meta">
-                                            <span class="menu-icon">📐</span>
-                                            <span class="badge badge-muted">CU01</span>
-                                        </div>
-                                        <h3>Catálogo de Reglas Técnicas</h3>
-                                        <p>Consulte las políticas técnicas configuradas, configure su vigencia y
-                                            registre nuevas reglas.</p>
-                                        <a class="btn btn-secondary btn-block" href="<%= ctx %>/regla">Gestionar
-                                            Reglas</a>
-                                    </div>
 
                                     <!-- CU06: Atender Retroalimentación -->
                                     <div class="card menu-card">

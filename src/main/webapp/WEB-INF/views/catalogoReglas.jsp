@@ -1,9 +1,8 @@
-﻿<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ page import="java.util.List" %>
 <%@ page import="com.gr4.owlaudit.model.Regla" %>
 <%@ page import="com.gr4.owlaudit.dto.NuevaReglaDTO" %>
 <%@ page import="com.gr4.owlaudit.common.util.HtmlUtil" %>
-<%@ page import="com.gr4.owlaudit.dao.ReglaDAOImpl" %>
 <%
     String mensajeExito = (String) request.getAttribute("mensajeExito");
     String mensajeError = (String) request.getAttribute("mensajeError");
@@ -14,11 +13,7 @@
     if (reglas == null) {
         reglas = (List<Regla>) request.getAttribute("reglasVigentes");
     }
-    if (reglas == null) {
-        try {
-            reglas = new ReglaDAOImpl().consultarTodasLasReglas();
-        } catch (Exception ignored) {}
-    }
+    // CA1.2: el catálogo solo muestra reglas del curso cargadas por ReglaServlet (sin consulta global de respaldo)
 
     NuevaReglaDTO valores = (mensajeError != null && dto != null) ? dto : new NuevaReglaDTO();
     String motorSel = valores.getTipoMotor();
@@ -41,14 +36,14 @@
         <!-- Encabezado con navegación principal -->
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
             <div>
-                <a href="${pageContext.request.contextPath}/vistas" class="back-link">&larr; Volver al Menú Principal</a>
+                <a href="${pageContext.request.contextPath}/curso" class="back-link">&larr; Volver a Mis Cursos</a>
                 <h1 class="page-title" style="margin-top: 0.5rem;">Catálogo de Reglas Técnicas</h1>
                 <p class="card-subtitle" style="margin-bottom: 0;">Políticas de evaluación técnica y gestión de su vigencia para las auditorías.</p>
             </div>
             <div>
                 <button type="button" id="btnToggleFormulario" class="btn btn-primary" onclick="toggleFormularioRegistro()"
                         style="display: inline-flex; align-items: center; gap: 0.4rem;">
-                    <span id="iconoToggle">➕</span> <span id="textoToggle">Registrar Nueva Regla</span>
+                    <span id="iconoToggle">➕</span> <span id="textoToggle">Crear nueva Regla</span>
                 </button>
             </div>
         </div>
@@ -88,6 +83,9 @@
 
             <form action="${pageContext.request.contextPath}/regla" method="POST">
                 <input type="hidden" name="accion" value="registrar">
+                <% if (request.getAttribute("idCurso") != null) { %>
+                    <input type="hidden" name="idCurso" value="<%= request.getAttribute("idCurso") %>">
+                <% } %>
 
                 <div class="form-group">
                     <label for="tipoMotor" class="form-label">Tipo de Motor de Evaluación</label>
@@ -198,6 +196,9 @@
                                     <td style="padding: 0.65rem 0.5rem; text-align: center;">
                                         <form action="${pageContext.request.contextPath}/regla" method="POST" style="margin: 0; display: inline-block;">
                                             <input type="hidden" name="accion" value="cambiarVigencia">
+                                            <% if (request.getAttribute("idCurso") != null) { %>
+                                                <input type="hidden" name="idCurso" value="<%= request.getAttribute("idCurso") %>">
+                                            <% } %>
                                             <input type="hidden" name="nombreRegla" value="<%= HtmlUtil.escape(r.getNombreRepresentativo()) %>">
                                             <input type="hidden" name="idRegla" value="<%= r.getId() %>">
                                             <input type="hidden" name="nuevoEstado" value="<%= nuevoEstado %>">
@@ -253,7 +254,7 @@
                 card.scrollIntoView({ behavior: 'smooth', block: 'start' });
             } else {
                 card.style.display = 'none';
-                if (btnTexto) btnTexto.textContent = 'Registrar Nueva Regla';
+                if (btnTexto) btnTexto.textContent = 'Crear nueva Regla';
                 if (btnIcono) btnIcono.textContent = '➕';
             }
         }

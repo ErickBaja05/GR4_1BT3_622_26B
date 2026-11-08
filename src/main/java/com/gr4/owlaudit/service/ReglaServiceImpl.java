@@ -1,31 +1,44 @@
 package com.gr4.owlaudit.service;
 
 import com.gr4.owlaudit.common.exception.ExcepcionNegocio;
+import com.gr4.owlaudit.dao.CursoDAO;
+import com.gr4.owlaudit.dao.CursoDAOImpl;
 import com.gr4.owlaudit.dao.ReglaDAO;
 import com.gr4.owlaudit.dao.ReglaDAOImpl;
 import com.gr4.owlaudit.dto.NuevaReglaDTO;
+import com.gr4.owlaudit.model.Curso;
 import com.gr4.owlaudit.model.EstadoVigencia;
 import com.gr4.owlaudit.model.Regla;
+import java.util.Collections;
+import java.util.List;
 
 public class ReglaServiceImpl implements ReglaService {
 
+    public static final String MENSAJE_DUPLICADO_CURSO = "Ya existe una regla con ese nombre representativo en este curso";
+
     private final ReglaDAO reglaDAO;
+    private final CursoDAO cursoDAO;
     private final ValidadorRegla validadorRegla;
 
     public ReglaServiceImpl() {
-        this(new ReglaDAOImpl(), new ValidadorRegla());
+        this(new ReglaDAOImpl(), new CursoDAOImpl(), new ValidadorRegla());
     }
 
     public ReglaServiceImpl(ReglaDAO reglaDAO) {
-        this(reglaDAO, new ValidadorRegla());
+        this(reglaDAO, new CursoDAOImpl(), new ValidadorRegla());
     }
 
     public ReglaServiceImpl(ValidadorRegla validadorRegla) {
-        this(new ReglaDAOImpl(), validadorRegla);
+        this(new ReglaDAOImpl(), new CursoDAOImpl(), validadorRegla);
     }
 
     public ReglaServiceImpl(ReglaDAO reglaDAO, ValidadorRegla validadorRegla) {
+        this(reglaDAO, new CursoDAOImpl(), validadorRegla);
+    }
+
+    public ReglaServiceImpl(ReglaDAO reglaDAO, CursoDAO cursoDAO, ValidadorRegla validadorRegla) {
         this.reglaDAO = reglaDAO;
+        this.cursoDAO = cursoDAO;
         this.validadorRegla = validadorRegla;
     }
 
@@ -38,16 +51,26 @@ public class ReglaServiceImpl implements ReglaService {
         // 1. Validar sintaxis y formato
         validadorRegla.validarSintaxisYFormato(dto);
 
-        // 2. Verificar unicidad por nombre
-        if (reglaDAO.existePorNombre(dto.getNombreRepresentativo())) {
-            throw new ExcepcionNegocio(
-                    "Ya existe una regla de evaluación registrada con el nombre: " + dto.getNombreRepresentativo());
+        // 2. Verificar existencia del curso
+        Curso curso = cursoDAO.buscarPorId(dto.getIdCurso());
+        if (curso == null) {
+            throw new ExcepcionNegocio("El curso especificado no existe.");
         }
 
-        // 3. Instanciar entidad y persistir
+        // 3. Verificar unicidad por nombre dentro del curso
+        validarUnicidadEnCurso(dto.getNombreRepresentativo(), dto.getIdCurso());
+
+        // 4. Instanciar entidad, asociar al curso y persistir
         Regla regla = new Regla(dto);
+        regla.setCurso(curso);
         regla.setVigencia(EstadoVigencia.VIGENTE);
         reglaDAO.guardar(regla);
+    }
+
+    private void validarUnicidadEnCurso(String nombre, Long idCurso) {
+        if (reglaDAO.existeNombreEnCurso(nombre, idCurso)) {
+            throw new ExcepcionNegocio(MENSAJE_DUPLICADO_CURSO);
+        }
     }
 
     @Override
@@ -68,6 +91,22 @@ public class ReglaServiceImpl implements ReglaService {
         // 3. Actualizar el estado en el objeto de dominio y persistir invocando al DAO
         reglaActual.setVigencia(nuevoEstado);
         return reglaDAO.actualizarEstadoVigencia(nombreRegla, nuevoEstado);
+    }
+
+    @Override
+    public List<Regla> listarReglasPorCurso(Long idCurso) {
+        if (idCurso == null) {
+            return Collections.emptyList();
+        }
+        return reglaDAO.listarPorCurso(idCurso);
+    }
+
+    @Override
+    public List<Regla> listarReglasVigentesPorCurso(Long idCurso) {
+        if (idCurso == null) {
+            return Collections.emptyList();
+        }
+        return reglaDAO.listarVigentesPorCurso(idCurso);
     }
 
 }

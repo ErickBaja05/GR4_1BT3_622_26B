@@ -26,4 +26,16 @@ public interface ReglaDAO {
     default List<Regla> consultarTodasLasReglas() {
         return consultarReglasDeEvaluacionVigentes();
     };
+
+    default boolean existeNombreEnCurso(String nombre, Long idCurso) {
+        return false;
+    }
+
+    default List<Regla> listarPorCurso(Long idCurso) {
+        return List.of();
+    }
+
+    default List<Regla> listarVigentesPorCurso(Long idCurso) {
+        return List.of();
+    }
 }

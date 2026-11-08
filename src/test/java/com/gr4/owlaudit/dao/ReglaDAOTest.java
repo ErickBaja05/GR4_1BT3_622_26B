@@ -1,10 +1,12 @@
-
 package com.gr4.owlaudit.dao;
 
 import com.gr4.owlaudit.common.config.HibernateUtil;
+import com.gr4.owlaudit.model.Curso;
+import com.gr4.owlaudit.model.Docente;
 import com.gr4.owlaudit.model.EstadoVigencia;
 import com.gr4.owlaudit.model.NivelSeveridadEnum;
 import com.gr4.owlaudit.model.Regla;
+import com.gr4.owlaudit.model.RolEnum;
 import com.gr4.owlaudit.model.TipoMotorEnum;
 import org.hibernate.Session;
 import org.hibernate.Transaction;
@@ -14,89 +16,144 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Suite de pruebas unitarias para ReglaDAO.
- * Historia de Usuario: HU-01 (Activar / Desactivar vigencia de reglas).
- * Pruebas unitarias convencionales sin mocks y sin pruebas parametrizadas.
+ * Suite de pruebas unitarias/integración para ReglaDAO adaptada al modelo por curso.
+ * Cubre:
+ * - Persistencia y actualización de vigencia con asociación obligatoria a Curso.
+ * - Consultas de aislamiento de catálogo por curso (Task 2.2).
  */
 @Tag("integracion")
 class ReglaDAOTest {
 
     private ReglaDAO reglaDAO;
-    private Regla reglaPrueba;
+    private Docente docentePrueba;
+    private Curso cursoPrueba;
+    private Curso cursoOtro;
+    private final List<Regla> reglasCreadas = new ArrayList<>();
 
     @BeforeEach
     void setUp() {
         reglaDAO = new ReglaDAOImpl();
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            Transaction tx = session.beginTransaction();
+            docentePrueba = new Docente();
+            docentePrueba.setNombre("Docente Regla DAO " + System.nanoTime());
+            docentePrueba.setCorreo("docente.dao." + System.nanoTime() + "@epn.edu.ec");
+            docentePrueba.setContrasena("12345");
+            docentePrueba.setRol(RolEnum.DOCENTE);
+            session.persist(docentePrueba);
+
+            cursoPrueba = new Curso(docentePrueba, "CSW-" + System.nanoTime(), "Construcción Software", "2026B", "Desc");
+            session.persist(cursoPrueba);
+
+            cursoOtro = new Curso(docentePrueba, "CAL-" + System.nanoTime(), "Calidad Software", "2026B", "Desc");
+            session.persist(cursoOtro);
+
+            tx.commit();
+        }
     }
 
     @AfterEach
     void tearDown() {
-        if (reglaPrueba != null && reglaPrueba.getId() != null) {
-            try (Session session = HibernateUtil.getSessionFactory().openSession()) {
-                Transaction tx = session.beginTransaction();
-                Regla r = session.get(Regla.class, reglaPrueba.getId());
-                if (r != null) {
-                    session.remove(r);
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            Transaction tx = session.beginTransaction();
+            for (Regla r : reglasCreadas) {
+                if (r != null && r.getId() != null) {
+                    Regla persisted = session.get(Regla.class, r.getId());
+                    if (persisted != null) {
+                        session.remove(persisted);
+                    }
                 }
-                tx.commit();
-            } catch (Exception e) {
-                System.err.println("Error al limpiar regla de prueba: " + e.getMessage());
             }
+            if (cursoPrueba != null && cursoPrueba.getId() != null) {
+                Curso c = session.get(Curso.class, cursoPrueba.getId());
+                if (c != null) session.remove(c);
+            }
+            if (cursoOtro != null && cursoOtro.getId() != null) {
+                Curso c = session.get(Curso.class, cursoOtro.getId());
+                if (c != null) session.remove(c);
+            }
+            if (docentePrueba != null && docentePrueba.getId() != null) {
+                Docente d = session.get(Docente.class, docentePrueba.getId());
+                if (d != null) session.remove(d);
+            }
+            tx.commit();
+        } catch (Exception e) {
+            System.err.println("Error al limpiar regla de prueba: " + e.getMessage());
         }
+    }
+
+    private Regla crearYGuardarRegla(String nombre, Curso curso, EstadoVigencia vigencia) {
+        Regla regla = new Regla();
+        regla.setNombreRepresentativo(nombre);
+        regla.setTipoMotor(TipoMotorEnum.PRESENCIA_ARCHIVO);
+        regla.setParametroExacto("README.md");
+        regla.setNivelSeveridad(NivelSeveridadEnum.MEDIA);
+        regla.setPonderacion(10);
+        regla.setVigencia(vigencia);
+        regla.setCurso(curso);
+        reglaDAO.guardar(regla);
+        reglasCreadas.add(regla);
+        return regla;
     }
 
     @Test
     @DisplayName("Debe actualizar el estado de vigencia de una regla existente a NO_VIGENTE y recuperarla por nombre")
     void actualizarEstadoVigencia_debeCambiarEstadoANoVigente_cuandoReglaExiste() {
-        // GIVEN: Una regla en estado VIGENTE registrada previamente en el sistema
         String nombreRegla = "Regla TDD Vigencia " + System.nanoTime();
-        reglaPrueba = new Regla();
-        reglaPrueba.setNombreRepresentativo(nombreRegla);
-        reglaPrueba.setTipoMotor(TipoMotorEnum.PRESENCIA_ARCHIVO);
-        reglaPrueba.setParametroExacto("README.md");
-        reglaPrueba.setNivelSeveridad(NivelSeveridadEnum.MEDIA);
-        reglaPrueba.setPonderacion(10);
-        reglaPrueba.setVigencia(EstadoVigencia.VIGENTE);
-        reglaDAO.guardar(reglaPrueba);
+        Regla regla = crearYGuardarRegla(nombreRegla, cursoPrueba, EstadoVigencia.VIGENTE);
 
-        // WHEN: Se solicita actualizar el estado de vigencia a NO_VIGENTE
         boolean actualizado = reglaDAO.actualizarEstadoVigencia(nombreRegla, EstadoVigencia.NO_VIGENTE);
 
-        // THEN: La actualización debe ser confirmada y el estado reflejarse en la base de datos
         assertTrue(actualizado, "El DAO debe retornar true cuando la regla existe y fue actualizada");
-
         Regla reglaConsultada = reglaDAO.obtenerPorNombre(nombreRegla);
-        assertNotNull(reglaConsultada, "La regla debe ser encontrada por su nombre representativo");
-        assertEquals(EstadoVigencia.NO_VIGENTE, reglaConsultada.getVigencia(), "La regla debe reflejar el nuevo estado NO_VIGENTE");
-        assertFalse(reglaConsultada.esVigente(), "La regla no debe estar vigente");
+        assertNotNull(reglaConsultada);
+        assertEquals(EstadoVigencia.NO_VIGENTE, reglaConsultada.getVigencia());
+        assertFalse(reglaConsultada.esVigente());
     }
 
     @Test
     @DisplayName("Debe consultar únicamente las reglas con estado VIGENTE")
     void consultarReglasDeEvaluacionVigentes_debeRetornarSoloReglasVigentes() {
-        // GIVEN: Una regla en estado NO_VIGENTE registrada en el sistema
         String nombreRegla = "Regla No Vigente " + System.nanoTime();
-        reglaPrueba = new Regla();
-        reglaPrueba.setNombreRepresentativo(nombreRegla);
-        reglaPrueba.setTipoMotor(TipoMotorEnum.PRESENCIA_ARCHIVO);
-        reglaPrueba.setParametroExacto("pom.xml");
-        reglaPrueba.setNivelSeveridad(NivelSeveridadEnum.BAJA);
-        reglaPrueba.setPonderacion(5);
-        reglaPrueba.setVigencia(EstadoVigencia.NO_VIGENTE);
-        reglaDAO.guardar(reglaPrueba);
+        crearYGuardarRegla(nombreRegla, cursoPrueba, EstadoVigencia.NO_VIGENTE);
 
-        // WHEN: Se consultan las reglas vigentes para el motor de auditorías
-        java.util.List<Regla> vigentes = reglaDAO.consultarReglasDeEvaluacionVigentes();
+        List<Regla> vigentes = reglaDAO.consultarReglasDeEvaluacionVigentes();
 
-        // THEN: La lista no debe incluir la regla en estado NO_VIGENTE
         boolean contieneNoVigente = vigentes.stream()
                 .anyMatch(r -> r.getNombreRepresentativo().equals(nombreRegla));
         assertFalse(contieneNoVigente, "La consulta no debe incluir reglas en estado NO_VIGENTE");
+    }
+
+    @Test
+    @DisplayName("Task 2.2: listarPorCurso debe retornar únicamente las reglas pertenecientes al curso especificado")
+    void listarPorCurso_debeAislarReglasPorCurso() {
+        Regla r1 = crearYGuardarRegla("Regla Curso 1 - " + System.nanoTime(), cursoPrueba, EstadoVigencia.VIGENTE);
+        Regla r2 = crearYGuardarRegla("Regla Curso 2 - " + System.nanoTime(), cursoOtro, EstadoVigencia.VIGENTE);
+
+        List<Regla> reglasCursoPrueba = reglaDAO.listarPorCurso(cursoPrueba.getId());
+
+        assertNotNull(reglasCursoPrueba);
+        assertTrue(reglasCursoPrueba.stream().anyMatch(r -> r.getId().equals(r1.getId())));
+        assertFalse(reglasCursoPrueba.stream().anyMatch(r -> r.getId().equals(r2.getId())));
+    }
+
+    @Test
+    @DisplayName("Task 2.2: existeNombreEnCurso debe validar unicidad dentro del curso")
+    void existeNombreEnCurso_debeDetectarDuplicadosDentroDelMismoCurso() {
+        String nombre = "Regla Unica - " + System.nanoTime();
+        crearYGuardarRegla(nombre, cursoPrueba, EstadoVigencia.VIGENTE);
+
+        assertTrue(reglaDAO.existeNombreEnCurso(nombre, cursoPrueba.getId()));
+        assertFalse(reglaDAO.existeNombreEnCurso(nombre, cursoOtro.getId()));
+        assertFalse(reglaDAO.existeNombreEnCurso("Otro Nombre", cursoPrueba.getId()));
     }
 }

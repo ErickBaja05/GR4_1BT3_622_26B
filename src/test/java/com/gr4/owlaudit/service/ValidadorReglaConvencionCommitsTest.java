@@ -42,6 +42,7 @@ class ValidadorReglaConvencionCommitsTest {
 
         // Given
         NuevaReglaDTO dto = new NuevaReglaDTO();
+        dto.setIdCurso(1L);
         dto.setTipoMotor("CONVENCION_COMMITS");
         dto.setNombreRepresentativo("Convención de Commits");
         dto.setDescripcionDetallada("Verifica que los mensajes sigan Conventional Commits");
@@ -67,6 +68,7 @@ class ValidadorReglaConvencionCommitsTest {
 
         // Given
         NuevaReglaDTO dto = new NuevaReglaDTO();
+        dto.setIdCurso(1L);
         dto.setTipoMotor("CONVENCION_COMMITS");
         dto.setNombreRepresentativo("Convención de Commits EPN");
         dto.setDescripcionDetallada("Al menos 80% de commits con prefijo válido");
