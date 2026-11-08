@@ -31,6 +31,8 @@ public class AsignacionesServiceImpl implements AsignacionesService {
     private final CursoDAO cursoDAO;
     private final ValidadorAccesoCurso validadorAccesoCurso;
     private AuditoriaService auditoriaService;
+    private static final double UMBRAL_MINIMO_APROBACION = 50.0;
+    private static final double UMBRAL_MAXIMO_APROBACION = 100.0;
 
     public AsignacionesServiceImpl() {
         this(new AsignacionesDAOImpl(), new ReglaDAOImpl(), new ProyectoDAOImpl(), new CursoDAOImpl());
@@ -102,8 +104,7 @@ public class AsignacionesServiceImpl implements AsignacionesService {
 
         List<Regla> reglasParaAsociar = obtenerReglasVigentes(dto.getReglasIds());
 
-        return asignacionesDAO.crearAsignacion(
-                new Asignacion(dto.getNombre().trim(), valorUmbral, reglasParaAsociar)
+        return asignacionesDAO.crearAsignacion(        new Asignacion(dto.getNombre().trim(), valorUmbral, reglasParaAsociar)
         );
     }
 
@@ -159,6 +160,7 @@ public class AsignacionesServiceImpl implements AsignacionesService {
     }
 
     @Override
+            
     public Asignacion buscarPorId(Long id) {
         if (id == null) return null;
         return asignacionesDAO.buscarPorId(id);
@@ -214,7 +216,7 @@ public class AsignacionesServiceImpl implements AsignacionesService {
             throw new IllegalArgumentException("El umbral de aprobación es obligatorio y debe ser un valor numérico válido.");
         }
 
-        if (umbralAprobacion < 50.0 || umbralAprobacion > 100.0) {
+        if (umbralAprobacion < UMBRAL_MINIMO_APROBACION || umbralAprobacion > UMBRAL_MAXIMO_APROBACION) {
             throw new IllegalArgumentException("El umbral de aprobación debe estar comprendido entre 50% y 100%");
         }
 
