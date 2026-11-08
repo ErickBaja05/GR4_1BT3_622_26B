@@ -1,7 +1,9 @@
 package com.gr4.owlaudit.service;
 
+import com.gr4.owlaudit.common.exception.ExcepcionNegocio;
 import com.gr4.owlaudit.dao.CursoDAO;
 import com.gr4.owlaudit.dao.CursoDAOImpl;
+import com.gr4.owlaudit.dto.NuevoCursoDTO;
 import com.gr4.owlaudit.model.Curso;
 
 import java.util.Collections;
@@ -50,5 +52,9 @@ public class CursoServiceImpl implements CursoService {
         }
         return cursoDAO.estaEstudianteMatriculado(idCurso, idEstudiante);
     }
-}
 
+    @Override
+    public Curso crearCurso(NuevoCursoDTO dto, Long idDocente) {
+        return null;
+    }
+}
