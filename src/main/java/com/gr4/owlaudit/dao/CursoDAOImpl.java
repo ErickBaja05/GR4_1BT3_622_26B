@@ -1,6 +1,7 @@
 package com.gr4.owlaudit.dao;
 
 import com.gr4.owlaudit.common.config.HibernateUtil;
+import com.gr4.owlaudit.dto.NuevoCursoDTO;
 import com.gr4.owlaudit.model.Curso;
 import org.hibernate.Session;
 import org.hibernate.Transaction;
@@ -18,10 +19,11 @@ public class CursoDAOImpl implements CursoDAO {
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
             return session.createQuery(
                     "SELECT DISTINCT c FROM Curso c " +
-                    "LEFT JOIN FETCH c.docente " +
-                    "LEFT JOIN FETCH c.listadoEstudiantes le " +
-                    "LEFT JOIN FETCH le.estudiante " +
-                    "WHERE c.id = :id", Curso.class)
+                            "LEFT JOIN FETCH c.docente " +
+                            "LEFT JOIN FETCH c.listadoEstudiantes le " +
+                            "LEFT JOIN FETCH le.estudiante " +
+                            "WHERE c.id = :id",
+                    Curso.class)
                     .setParameter("id", id)
                     .uniqueResult();
         } catch (Exception e) {
@@ -37,10 +39,11 @@ public class CursoDAOImpl implements CursoDAO {
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
             return session.createQuery(
                     "SELECT DISTINCT c FROM Curso c " +
-                    "LEFT JOIN FETCH c.docente " +
-                    "LEFT JOIN FETCH c.listadoEstudiantes le " +
-                    "LEFT JOIN FETCH le.estudiante " +
-                    "WHERE c.codigo = :codigo", Curso.class)
+                            "LEFT JOIN FETCH c.docente " +
+                            "LEFT JOIN FETCH c.listadoEstudiantes le " +
+                            "LEFT JOIN FETCH le.estudiante " +
+                            "WHERE c.codigo = :codigo",
+                    Curso.class)
                     .setParameter("codigo", codigo.trim())
                     .uniqueResult();
         } catch (Exception e) {
@@ -56,10 +59,11 @@ public class CursoDAOImpl implements CursoDAO {
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
             return session.createQuery(
                     "SELECT DISTINCT c FROM Curso c " +
-                    "JOIN c.listadoEstudiantes le " +
-                    "LEFT JOIN FETCH c.docente " +
-                    "WHERE le.estudiante.id = :idEstudiante AND le.estado = 'ACTIVO' " +
-                    "ORDER BY c.nombre ASC", Curso.class)
+                            "JOIN c.listadoEstudiantes le " +
+                            "LEFT JOIN FETCH c.docente " +
+                            "WHERE le.estudiante.id = :idEstudiante AND le.estado = 'ACTIVO' " +
+                            "ORDER BY c.nombre ASC",
+                    Curso.class)
                     .setParameter("idEstudiante", idEstudiante)
                     .list();
         } catch (Exception e) {
@@ -75,9 +79,10 @@ public class CursoDAOImpl implements CursoDAO {
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
             return session.createQuery(
                     "SELECT DISTINCT c FROM Curso c " +
-                    "LEFT JOIN FETCH c.docente " +
-                    "WHERE c.docente.id = :idDocente " +
-                    "ORDER BY c.nombre ASC", Curso.class)
+                            "LEFT JOIN FETCH c.docente " +
+                            "WHERE c.docente.id = :idDocente " +
+                            "ORDER BY c.nombre ASC",
+                    Curso.class)
                     .setParameter("idDocente", idDocente)
                     .list();
         } catch (Exception e) {
@@ -93,7 +98,8 @@ public class CursoDAOImpl implements CursoDAO {
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
             Long count = session.createQuery(
                     "SELECT COUNT(le) FROM ListadoEstudiantes le " +
-                    "WHERE le.curso.id = :idCurso AND le.estudiante.id = :idEstudiante AND le.estado = 'ACTIVO'", Long.class)
+                            "WHERE le.curso.id = :idCurso AND le.estudiante.id = :idEstudiante AND le.estado = 'ACTIVO'",
+                    Long.class)
                     .setParameter("idCurso", idCurso)
                     .setParameter("idEstudiante", idEstudiante)
                     .uniqueResult();
@@ -102,5 +108,9 @@ public class CursoDAOImpl implements CursoDAO {
             return false;
         }
     }
-}
 
+    @Override
+    public void guardar(NuevoCursoDTO nuevoCursoDTO) {
+        return null;
+    }
+}
