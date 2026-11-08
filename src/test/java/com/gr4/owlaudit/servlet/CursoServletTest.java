@@ -30,6 +30,8 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class CursoServletTest {
 
+    private static final String ATRIBUTO_USUARIO_SESION = "usuarioSesion";
+
     @Mock
     private CursoService cursoService;
 
@@ -47,8 +49,6 @@ class CursoServletTest {
 
     private CursoServlet cursoServlet;
 
-    private RolEnum rolEnum;
-
     @BeforeEach
     void setUp() {
         cursoServlet = new CursoServlet(cursoService);
@@ -57,10 +57,10 @@ class CursoServletTest {
     @Test
     @DisplayName("CA1 - Escenario 1.1: POST exitoso registra el curso y muestra mensaje con el código único")
     void doPost_cuandoDocenteEnviaDatosValidos_creaCursoYMuestraMensajeExito() throws Exception {
-        UsuarioDTO docenteDto = new UsuarioDTO(1L, "Dr. Xavier", "docente@epn.edu.ec", rolEnum.DOCENTE);
+        UsuarioDTO docenteDto = new UsuarioDTO(1L, "Dr. Xavier", "docente@epn.edu.ec", RolEnum.DOCENTE);
 
         when(request.getSession(false)).thenReturn(session);
-        when(session.getAttribute("usuario")).thenReturn(docenteDto);
+        when(session.getAttribute(ATRIBUTO_USUARIO_SESION)).thenReturn(docenteDto);
         when(request.getParameter("nombre")).thenReturn("Construcción de Software");
         when(request.getParameter("codigo")).thenReturn("CSW-2026B");
         when(request.getParameter("descripcion")).thenReturn("Curso de ingeniería de software grupo 4");
@@ -90,10 +90,10 @@ class CursoServletTest {
     @Test
     @DisplayName("CA2 y CA3: POST con ExcepcionNegocio captura el error y reenvía a la vista manteniendo listado")
     void doPost_cuandoServicioLanzaExcepcionNegocio_seteaAtributoErrorYHaceForward() throws Exception {
-        UsuarioDTO docenteDto = new UsuarioDTO(1L, "Dr. Xavier", "docente@epn.edu.ec", rolEnum.DOCENTE);
+        UsuarioDTO docenteDto = new UsuarioDTO(1L, "Dr. Xavier", "docente@epn.edu.ec", RolEnum.DOCENTE);
 
         when(request.getSession(false)).thenReturn(session);
-        when(session.getAttribute("usuario")).thenReturn(docenteDto);
+        when(session.getAttribute(ATRIBUTO_USUARIO_SESION)).thenReturn(docenteDto);
         when(request.getParameter("nombre")).thenReturn("Construcción de Software");
         when(request.getParameter("codigo")).thenReturn("CSW-2026B");
         when(request.getParameter("descripcion")).thenReturn("Descripción");
@@ -113,10 +113,10 @@ class CursoServletTest {
     @Test
     @DisplayName("Seguridad: Estudiante que intenta hacer POST a /curso es rechazado")
     void doPost_cuandoUsuarioEnSesionEsEstudiante_redirigeConErrorPermisos() throws Exception {
-        UsuarioDTO estudianteDto = new UsuarioDTO(1L, "Juan Estudiante", "estudiante@epn.edu.ec", rolEnum.DOCENTE);
+        UsuarioDTO estudianteDto = new UsuarioDTO(1L, "Juan Estudiante", "estudiante@epn.edu.ec", RolEnum.ESTUDIANTE);
 
         when(request.getSession(false)).thenReturn(session);
-        when(session.getAttribute("usuario")).thenReturn(estudianteDto);
+        when(session.getAttribute(ATRIBUTO_USUARIO_SESION)).thenReturn(estudianteDto);
         when(request.getContextPath()).thenReturn("/owlaudit");
 
         cursoServlet.doPost(request, response);
