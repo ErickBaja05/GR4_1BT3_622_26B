@@ -6,6 +6,7 @@ import com.gr4.owlaudit.dao.CursoDAOImpl;
 import com.gr4.owlaudit.dao.ReglaDAO;
 import com.gr4.owlaudit.dao.ReglaDAOImpl;
 import com.gr4.owlaudit.dto.NuevaReglaDTO;
+import com.gr4.owlaudit.model.Curso;
 import com.gr4.owlaudit.model.EstadoVigencia;
 import com.gr4.owlaudit.model.Regla;
 
@@ -46,14 +47,21 @@ public class ReglaServiceImpl implements ReglaService {
         // 1. Validar sintaxis y formato
         validadorRegla.validarSintaxisYFormato(dto);
 
-        // 2. Verificar unicidad por nombre
-        if (reglaDAO.existePorNombre(dto.getNombreRepresentativo())) {
-            throw new ExcepcionNegocio(
-                    "Ya existe una regla de evaluación registrada con el nombre: " + dto.getNombreRepresentativo());
+        // 2. Verificar existencia del curso
+        Curso curso = cursoDAO.buscarPorId(dto.getIdCurso());
+        if (curso == null) {
+            throw new ExcepcionNegocio("El curso especificado no existe.");
         }
 
-        // 3. Instanciar entidad y persistir
+        // 3. Verificar unicidad por nombre dentro del curso
+        if (reglaDAO.existeNombreEnCurso(dto.getNombreRepresentativo(), dto.getIdCurso())) {
+            throw new ExcepcionNegocio(
+                    "Ya existe una regla con ese nombre representativo en este curso");
+        }
+
+        // 4. Instanciar entidad, asociar al curso y persistir
         Regla regla = new Regla(dto);
+        regla.setCurso(curso);
         regla.setVigencia(EstadoVigencia.VIGENTE);
         reglaDAO.guardar(regla);
     }
