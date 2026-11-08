@@ -1,4 +1,4 @@
-﻿<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ page import="java.util.List" %>
 <%@ page import="com.gr4.owlaudit.model.Regla" %>
 <%@ page import="com.gr4.owlaudit.dto.NuevaReglaDTO" %>
@@ -41,7 +41,7 @@
         <!-- Encabezado con navegación principal -->
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
             <div>
-                <a href="${pageContext.request.contextPath}/vistas" class="back-link">&larr; Volver al Menú Principal</a>
+                <a href="${pageContext.request.contextPath}/curso" class="back-link">&larr; Volver a Mis Cursos</a>
                 <h1 class="page-title" style="margin-top: 0.5rem;">Catálogo de Reglas Técnicas</h1>
                 <p class="card-subtitle" style="margin-bottom: 0;">Políticas de evaluación técnica y gestión de su vigencia para las auditorías.</p>
             </div>
@@ -88,6 +88,9 @@
 
             <form action="${pageContext.request.contextPath}/regla" method="POST">
                 <input type="hidden" name="accion" value="registrar">
+                <% if (request.getAttribute("idCurso") != null) { %>
+                    <input type="hidden" name="idCurso" value="<%= request.getAttribute("idCurso") %>">
+                <% } %>
 
                 <div class="form-group">
                     <label for="tipoMotor" class="form-label">Tipo de Motor de Evaluación</label>
@@ -198,6 +201,9 @@
                                     <td style="padding: 0.65rem 0.5rem; text-align: center;">
                                         <form action="${pageContext.request.contextPath}/regla" method="POST" style="margin: 0; display: inline-block;">
                                             <input type="hidden" name="accion" value="cambiarVigencia">
+                                            <% if (request.getAttribute("idCurso") != null) { %>
+                                                <input type="hidden" name="idCurso" value="<%= request.getAttribute("idCurso") %>">
+                                            <% } %>
                                             <input type="hidden" name="nombreRegla" value="<%= HtmlUtil.escape(r.getNombreRepresentativo()) %>">
                                             <input type="hidden" name="idRegla" value="<%= r.getId() %>">
                                             <input type="hidden" name="nuevoEstado" value="<%= nuevoEstado %>">

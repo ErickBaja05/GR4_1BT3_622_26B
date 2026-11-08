@@ -44,17 +44,15 @@
                                             id="btnNavegarCrearAsignacion">Crear Asignación</a>
                                     </div>
 
-                                    <!-- CU01: Catálogo de Reglas Técnicas -->
+                                    <!-- EP-01 FT-01 / FT-02: Mis Cursos y Gestión de Reglas por Curso -->
                                     <div class="card menu-card">
                                         <div class="menu-meta">
-                                            <span class="menu-icon">📐</span>
-                                            <span class="badge badge-muted">CU01</span>
+                                            <span class="menu-icon">📚</span>
+                                            <span class="badge badge-docente">FT-02</span>
                                         </div>
-                                        <h3>Catálogo de Reglas Técnicas</h3>
-                                        <p>Consulte las políticas técnicas configuradas, configure su vigencia y
-                                            registre nuevas reglas.</p>
-                                        <a class="btn btn-secondary btn-block" href="<%= ctx %>/regla">Gestionar
-                                            Reglas</a>
+                                        <h3>Mis Cursos y Catálogo de Reglas</h3>
+                                        <p>Acceda a sus cursos académicos para gestionar sus asignaciones y configurar su catálogo propio de reglas técnicas.</p>
+                                        <a class="btn btn-secondary btn-block" href="<%= ctx %>/curso">Ver Mis Cursos</a>
                                     </div>
 
                                     <!-- CU06: Atender Retroalimentación -->

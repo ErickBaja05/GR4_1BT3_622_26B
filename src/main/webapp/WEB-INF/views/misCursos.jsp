@@ -72,6 +72,10 @@
                            href="<%= ctx %>/asignaciones?idCurso=<%= c.getId() %>">
                             Administrar asignaciones
                         </a>
+                        <a class="btn btn-secondary btn-block" style="margin-top: 0.5rem;"
+                           href="<%= ctx %>/regla?idCurso=<%= c.getId() %>">
+                            Gestionar Reglas del Curso
+                        </a>
                     <% } %>
                 </div>
             </div>

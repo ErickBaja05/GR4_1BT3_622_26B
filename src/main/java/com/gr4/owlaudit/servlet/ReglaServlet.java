@@ -47,12 +47,8 @@ import java.util.Set;
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) 
             throws ServletException, IOException {
-        try {
-            request.setAttribute("reglasVigentes", reglaDAO.consultarReglasDeEvaluacionVigentes());
-            request.setAttribute("reglas", reglaDAO.consultarTodasLasReglas());
-        } catch (Exception e) {
-            System.err.println("[ReglaServlet] Error al consultar reglas: " + e.getMessage());
-        }
+        Long idCurso = parsearIdCurso(request.getParameter("idCurso"));
+        cargarReglasEnRequest(request, idCurso);
 
         String vista = request.getParameter("vista");
         String accion = request.getParameter("accion");
@@ -73,9 +69,10 @@ import java.util.Set;
             throws ServletException, IOException {
         
         request.setCharacterEncoding("UTF-8");
+        Long idCurso = parsearIdCurso(request.getParameter("idCurso"));
 
         if (ACCION_CAMBIAR_VIGENCIA.equals(request.getParameter("accion"))) {
-            procesarCambioVigencia(request, response);
+            procesarCambioVigencia(request, response, idCurso);
             return;
         }
 
@@ -102,16 +99,14 @@ import java.util.Set;
             nivelSeveridad, 
             ponderacion
         );
+        dto.setIdCurso(idCurso);
         request.setAttribute("reglaDTO", dto);
 
         // 3. Delegación a la capa de servicio (validación de sintaxis, unicidad y persistencia)
         try {
             reglaService.registrarReglaEvaluacionTecnica(dto);
-            request.setAttribute(ATTR_MENSAJE_EXITO, "Regla '" + dto.getNombreRepresentativo() + "' registrada con éxito y activa para las auditorías.");
-            try {
-                request.setAttribute("reglas", reglaDAO.consultarTodasLasReglas());
-                request.setAttribute("reglasVigentes", reglaDAO.consultarReglasDeEvaluacionVigentes());
-            } catch (Exception ignored) {}
+            request.setAttribute(ATTR_MENSAJE_EXITO, "Regla creada exitosamente");
+            cargarReglasEnRequest(request, idCurso);
             request.getRequestDispatcher(VISTA_CATALOGO).forward(request, response);
             return;
         } catch (ExcepcionNegocio e) {
@@ -121,11 +116,7 @@ import java.util.Set;
             request.setAttribute(ATTR_MENSAJE_ERROR, "Ocurrió un error inesperado al registrar la regla. Intente nuevamente.");
         }
 
-        try {
-            request.setAttribute("reglasVigentes", reglaDAO.consultarReglasDeEvaluacionVigentes());
-            request.setAttribute("reglas", reglaDAO.consultarTodasLasReglas());
-        } catch (Exception ignored) {}
-
+        cargarReglasEnRequest(request, idCurso);
         request.getRequestDispatcher(VISTA).forward(request, response);
     }
 
@@ -133,6 +124,11 @@ import java.util.Set;
      * HU-01: Procesa la solicitud de cambio de vigencia de una regla técnica.
      */
     private void procesarCambioVigencia(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        procesarCambioVigencia(request, response, parsearIdCurso(request.getParameter("idCurso")));
+    }
+
+    private void procesarCambioVigencia(HttpServletRequest request, HttpServletResponse response, Long idCurso)
             throws ServletException, IOException {
         String nombreRegla = request.getParameter("nombreRegla");
         EstadoVigencia nuevoEstado = EstadoVigencia.valueOf(request.getParameter("nuevoEstado"));
@@ -145,12 +141,34 @@ import java.util.Set;
             request.setAttribute(ATTR_MENSAJE_EXITO, nuevoEstado.construirMensajeExito());
         }
 
-        try {
-            request.setAttribute("reglas", reglaDAO.consultarTodasLasReglas());
-            request.setAttribute("reglasVigentes", reglaDAO.consultarReglasDeEvaluacionVigentes());
-        } catch (Exception ignored) {}
-
+        cargarReglasEnRequest(request, idCurso);
         request.getRequestDispatcher(VISTA_CATALOGO).forward(request, response);
+    }
+
+    private Long parsearIdCurso(String idCursoStr) {
+        if (idCursoStr == null || idCursoStr.trim().isEmpty()) {
+            return null;
+        }
+        try {
+            return Long.parseLong(idCursoStr.trim());
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
+    private void cargarReglasEnRequest(HttpServletRequest request, Long idCurso) {
+        try {
+            if (idCurso != null) {
+                request.setAttribute("idCurso", idCurso);
+                request.setAttribute("reglas", reglaService.listarReglasPorCurso(idCurso));
+                request.setAttribute("reglasVigentes", reglaService.listarReglasVigentesPorCurso(idCurso));
+            } else {
+                request.setAttribute("reglas", reglaDAO.consultarTodasLasReglas());
+                request.setAttribute("reglasVigentes", reglaDAO.consultarReglasDeEvaluacionVigentes());
+            }
+        } catch (Exception e) {
+            System.err.println("[ReglaServlet] Error al consultar reglas: " + e.getMessage());
+        }
     }
 
     /**
