@@ -43,11 +43,11 @@ public class Regla {
     private String parametroExacto;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "nivel_severidad", nullable = false, length = 20)
+    @Column(name = "nivel_severidad", nullable = true, length = 20)
     private NivelSeveridadEnum nivelSeveridad;
 
-    @Column(name = "ponderacion", nullable = false)
-    private int ponderacion;
+    @Column(name = "ponderacion", nullable = true)
+    private Integer ponderacion;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "vigencia", nullable = false, length = 20)
@@ -62,16 +62,12 @@ public class Regla {
 
     public Regla(NuevaReglaDTO dto) {
         if (dto != null) {
-            if (dto.getTipoMotor() != null) {
+            if (dto.getTipoMotor() != null && !dto.getTipoMotor().trim().isEmpty()) {
                 this.tipoMotor = TipoMotorEnum.valueOf(dto.getTipoMotor().trim().toUpperCase());
             }
             this.nombreRepresentativo = dto.getNombreRepresentativo();
             this.descripcionDetallada = dto.getDescripcionDetallada();
             this.parametroExacto = dto.getParametroExacto();
-            if (dto.getNivelSeveridad() != null) {
-                this.nivelSeveridad = NivelSeveridadEnum.valueOf(dto.getNivelSeveridad().trim().toUpperCase());
-            }
-            this.ponderacion = dto.getPonderacion();
             this.vigencia = EstadoVigencia.VIGENTE;
         }
     }
@@ -125,10 +121,10 @@ public class Regla {
     }
 
     public int getPonderacion() {
-        return ponderacion;
+        return ponderacion != null ? ponderacion : 0;
     }
 
-    public void setPonderacion(int ponderacion) {
+    public void setPonderacion(Integer ponderacion) {
         this.ponderacion = ponderacion;
     }
 

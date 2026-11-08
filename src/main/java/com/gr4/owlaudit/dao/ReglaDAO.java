@@ -38,4 +38,20 @@ public interface ReglaDAO {
     default List<Regla> listarVigentesPorCurso(Long idCurso) {
         return List.of();
     }
+
+    default Regla buscarPorId(Long id) {
+        return null;
+    }
+
+    default Regla obtenerPorIdYCurso(Long idRegla, Long idCurso) {
+        return null;
+    }
+
+    default Regla obtenerPorNombreYCurso(String nombre, Long idCurso) {
+        return null;
+    }
+
+    default boolean actualizarEstadoVigenciaPorIdYCurso(Long idRegla, Long idCurso, EstadoVigencia nuevoEstado) {
+        return false;
+    }
 }

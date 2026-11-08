@@ -44,6 +44,19 @@ public class AsignacionRegla implements Serializable {
         this.ponderacion = ponderacion;
     }
 
+    public AsignacionRegla(Asignacion asignacion, Regla regla, NivelSeveridadEnum nivelSeveridad, int ponderacion) {
+        this.asignacion = asignacion;
+        this.regla = regla;
+        if (asignacion != null) {
+            this.asignacionId = asignacion.getId();
+        }
+        if (regla != null) {
+            this.reglaId = regla.getId();
+        }
+        this.nivelSeveridad = nivelSeveridad;
+        this.ponderacion = ponderacion;
+    }
+
     public Long getAsignacionId() { return asignacionId; }
     public void setAsignacionId(Long asignacionId) { this.asignacionId = asignacionId; }
 

@@ -29,8 +29,12 @@ public class ValidadorRegla {
         validarNombreRepresentativo(dto.getNombreRepresentativo());
         validarDescripcionDetallada(dto.getDescripcionDetallada());
         validarParametroExacto(dto.getParametroExacto(), tipoMotor);
-        validarNivelSeveridad(dto.getNivelSeveridad());
-        validarPonderacion(dto.getPonderacion());
+        if (dto.getNivelSeveridad() != null && !dto.getNivelSeveridad().trim().isEmpty()) {
+            validarNivelSeveridad(dto.getNivelSeveridad());
+        }
+        if (dto.getPonderacion() > 0) {
+            validarPonderacion(dto.getPonderacion());
+        }
     }
 
     public void validar(NuevaReglaDTO dto) {

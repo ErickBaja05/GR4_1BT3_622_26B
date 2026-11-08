@@ -81,12 +81,81 @@ public class ReglaDAOImpl implements ReglaDAO {
 
     @Override
     public Regla obtenerPorNombre(String nombre) {
+        if (nombre == null || nombre.trim().isEmpty()) {
+            return null;
+        }
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
-            // Refactorización: Inline Temp sobre la variable temporal query
-            return session.createQuery(
+            List<Regla> list = session.createQuery(
                 "SELECT r FROM Regla r WHERE r.nombreRepresentativo = :nombre",
                 Regla.class
-            ).setParameter("nombre", nombre).uniqueResult();
+            ).setParameter("nombre", nombre).list();
+            return list.isEmpty() ? null : list.get(0);
+        }
+    }
+
+    @Override
+    public Regla buscarPorId(Long id) {
+        if (id == null) {
+            return null;
+        }
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            return session.get(Regla.class, id);
+        }
+    }
+
+    @Override
+    public Regla obtenerPorIdYCurso(Long idRegla, Long idCurso) {
+        if (idRegla == null || idCurso == null) {
+            return null;
+        }
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            List<Regla> list = session.createQuery(
+                "SELECT r FROM Regla r JOIN FETCH r.curso WHERE r.id = :idRegla AND r.curso.id = :idCurso",
+                Regla.class
+            ).setParameter("idRegla", idRegla).setParameter("idCurso", idCurso).list();
+            return list.isEmpty() ? null : list.get(0);
+        }
+    }
+
+    @Override
+    public Regla obtenerPorNombreYCurso(String nombre, Long idCurso) {
+        if (nombre == null || idCurso == null) {
+            return null;
+        }
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            List<Regla> list = session.createQuery(
+                "SELECT r FROM Regla r JOIN FETCH r.curso WHERE LOWER(TRIM(r.nombreRepresentativo)) = LOWER(TRIM(:nombre)) AND r.curso.id = :idCurso",
+                Regla.class
+            ).setParameter("nombre", nombre).setParameter("idCurso", idCurso).list();
+            return list.isEmpty() ? null : list.get(0);
+        }
+    }
+
+    @Override
+    public boolean actualizarEstadoVigenciaPorIdYCurso(Long idRegla, Long idCurso, EstadoVigencia nuevoEstado) {
+        if (idRegla == null || idCurso == null || nuevoEstado == null) {
+            return false;
+        }
+        Transaction tx = null;
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            tx = session.beginTransaction();
+            MutationQuery query = session.createMutationQuery(
+                "UPDATE Regla r SET r.vigencia = :vigencia WHERE r.id = :idRegla AND r.curso.id = :idCurso"
+            );
+            query.setParameter("vigencia", nuevoEstado);
+            query.setParameter("idRegla", idRegla);
+            query.setParameter("idCurso", idCurso);
+            int filasActualizadas = query.executeUpdate();
+            tx.commit();
+            return filasActualizadas > 0;
+        } catch (Exception e) {
+            if (tx != null && tx.isActive()) {
+                try {
+                    tx.rollback();
+                } catch (Exception ignored) {
+                }
+            }
+            return false;
         }
     }
 

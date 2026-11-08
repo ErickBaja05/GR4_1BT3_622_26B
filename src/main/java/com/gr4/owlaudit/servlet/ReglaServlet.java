@@ -126,28 +126,18 @@ public class ReglaServlet extends HttpServlet {
             return;
         }
 
-        // 1. Lectura de parámetros desde el formulario
+        // 1. Lectura de parámetros desde el formulario (exclusivamente hasta parámetro exacto)
         String tipoMotor = request.getParameter("tipoMotor");
         String nombreRepresentativo = request.getParameter("nombreRepresentativo");
         String descripcionDetallada = request.getParameter("descripcionDetallada");
         String parametroExacto = request.getParameter("parametroExacto");
-        String nivelSeveridad = request.getParameter("nivelSeveridad");
-        
-        int ponderacion = 0;
-        try {
-            ponderacion = Integer.parseInt(request.getParameter("ponderacion"));
-        } catch (NumberFormatException e) {
-            ponderacion = 0;
-        }
 
-        // 2. Instanciación del DTO según clases.puml
+        // 2. Instanciación del DTO según el nuevo flujo (sin severidad ni ponderación)
         NuevaReglaDTO dto = new NuevaReglaDTO(
             tipoMotor, 
             nombreRepresentativo, 
             descripcionDetallada, 
-            parametroExacto, 
-            nivelSeveridad, 
-            ponderacion
+            parametroExacto
         );
         dto.setIdCurso(idCurso);
         request.setAttribute("reglaDTO", dto);
@@ -206,15 +196,32 @@ public class ReglaServlet extends HttpServlet {
      */
     private void procesarCambioVigencia(HttpServletRequest request, HttpServletResponse response, Long idCurso)
             throws ServletException, IOException {
+        String idReglaParam = request.getParameter("idRegla");
         String nombreRegla = request.getParameter("nombreRegla");
-        EstadoVigencia nuevoEstado = EstadoVigencia.valueOf(request.getParameter("nuevoEstado"));
+        String nuevoEstadoParam = request.getParameter("nuevoEstado");
+        EstadoVigencia nuevoEstado = (nuevoEstadoParam != null && !nuevoEstadoParam.isBlank()) 
+                ? EstadoVigencia.valueOf(nuevoEstadoParam.trim()) 
+                : null;
 
-        boolean actualizado = reglaService.cambiarEstadoVigenciaDeUnaRegla(nombreRegla, nuevoEstado);
+        try {
+            boolean actualizado = false;
+            Long idRegla = parsearIdCurso(idReglaParam); // parsearIdCurso reutiliza parseo numérico seguro
+            if (idRegla != null && idCurso != null) {
+                // Validación estricta de pertenencia de la regla al curso
+                actualizado = reglaService.cambiarEstadoVigenciaDeUnaRegla(idRegla, idCurso, nuevoEstado);
+            } else if (nombreRegla != null && !nombreRegla.isBlank()) {
+                actualizado = reglaService.cambiarEstadoVigenciaDeUnaRegla(nombreRegla, nuevoEstado);
+            }
 
-        if (!actualizado) {
-            request.setAttribute(ATTR_MENSAJE_ERROR, "La regla ya se encuentra en estado " + obtenerDescripcionEstado(nuevoEstado) + ".");
-        } else {
-            request.setAttribute(ATTR_MENSAJE_EXITO, nuevoEstado.construirMensajeExito());
+            if (!actualizado) {
+                request.setAttribute(ATTR_MENSAJE_ERROR, "La regla ya se encuentra en estado " + obtenerDescripcionEstado(nuevoEstado) + ".");
+            } else {
+                request.setAttribute(ATTR_MENSAJE_EXITO, (nuevoEstado != null) ? nuevoEstado.construirMensajeExito() : "Estado actualizado");
+            }
+        } catch (ExcepcionNegocio e) {
+            request.setAttribute(ATTR_MENSAJE_ERROR, e.getMessage());
+        } catch (Exception e) {
+            request.setAttribute(ATTR_MENSAJE_ERROR, "Error al actualizar estado de la regla: " + e.getMessage());
         }
 
         cargarReglasEnRequest(request, idCurso);

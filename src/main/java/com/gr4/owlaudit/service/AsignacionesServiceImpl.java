@@ -1,6 +1,8 @@
 package com.gr4.owlaudit.service;
 
 import com.gr4.owlaudit.common.exception.ExcepcionNegocio;
+import com.gr4.owlaudit.dao.AsignacionReglaDAO;
+import com.gr4.owlaudit.dao.AsignacionReglaDAOImpl;
 import com.gr4.owlaudit.dao.AsignacionesDAO;
 import com.gr4.owlaudit.dao.AsignacionesDAOImpl;
 import com.gr4.owlaudit.dao.CursoDAO;
@@ -13,10 +15,13 @@ import com.gr4.owlaudit.dto.NuevaAsignacionDTO;
 import com.gr4.owlaudit.dto.ResumenAsignacionDTO;
 import com.gr4.owlaudit.dto.ReglaAsignacionDTO;
 import com.gr4.owlaudit.model.Asignacion;
+import com.gr4.owlaudit.model.AsignacionRegla;
 import com.gr4.owlaudit.model.Curso;
+import com.gr4.owlaudit.model.NivelSeveridadEnum;
 import com.gr4.owlaudit.model.Proyecto;
 import com.gr4.owlaudit.model.Regla;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -30,6 +35,8 @@ public class AsignacionesServiceImpl implements AsignacionesService {
     private final ProyectoDAO proyectoDAO;
     private final CursoDAO cursoDAO;
     private final ValidadorAccesoCurso validadorAccesoCurso;
+    private AsignacionReglaDAO asignacionReglaDAO = new AsignacionReglaDAOImpl();
+    private ValidadorReglaAsignacion validadorReglaAsignacion = new ValidadorReglaAsignacion();
     private AuditoriaService auditoriaService;
     private static final double UMBRAL_MINIMO_APROBACION = 50.0;
     private static final double UMBRAL_MAXIMO_APROBACION = 100.0;
@@ -86,6 +93,14 @@ public class AsignacionesServiceImpl implements AsignacionesService {
         this.auditoriaService = auditoriaService;
     }
 
+    public void setAsignacionReglaDAO(AsignacionReglaDAO asignacionReglaDAO) {
+        this.asignacionReglaDAO = asignacionReglaDAO;
+    }
+
+    public AsignacionReglaDAO getAsignacionReglaDAO() {
+        return this.asignacionReglaDAO;
+    }
+
     private AuditoriaService getAuditoriaService() {
         if (this.auditoriaService == null) {
             this.auditoriaService = new AuditoriaServiceImpl();
@@ -104,8 +119,9 @@ public class AsignacionesServiceImpl implements AsignacionesService {
 
         List<Regla> reglasParaAsociar = obtenerReglasVigentes(dto.getReglasIds());
 
-        return asignacionesDAO.crearAsignacion(        new Asignacion(dto.getNombre().trim(), valorUmbral, reglasParaAsociar)
-        );
+        Asignacion asigCreada = asignacionesDAO.crearAsignacion(new Asignacion(dto.getNombre().trim(), valorUmbral, reglasParaAsociar));
+        guardarConfiguracionReglasAsignacion(asigCreada, dto, reglasParaAsociar);
+        return asigCreada;
     }
 
     @Override
@@ -139,7 +155,47 @@ public class AsignacionesServiceImpl implements AsignacionesService {
             nueva.setReglas(reglasParaAsociar);
         }
 
-        return asignacionesDAO.crearAsignacion(nueva);
+        Asignacion asigCreada = asignacionesDAO.crearAsignacion(nueva);
+        guardarConfiguracionReglasAsignacion(asigCreada, dto, reglasParaAsociar);
+        return asigCreada;
+    }
+
+    private void guardarConfiguracionReglasAsignacion(Asignacion asignacion, NuevaAsignacionDTO dto, List<Regla> reglasAsociadas) {
+        if (asignacion == null || asignacion.getId() == null || asignacionReglaDAO == null) {
+            return;
+        }
+        List<AsignacionRegla> listaAR = new ArrayList<>();
+        if (dto.getReglasConfiguradas() != null && !dto.getReglasConfiguradas().isEmpty()) {
+            for (ReglaAsignacionDTO rc : dto.getReglasConfiguradas()) {
+                if (rc != null && rc.getReglaId() != null) {
+                    validadorReglaAsignacion.validarRegla(rc);
+                    listaAR.add(new AsignacionRegla(
+                        asignacion.getId(),
+                        rc.getReglaId(),
+                        rc.getSeveridad(),
+                        rc.getPonderacion()
+                    ));
+                }
+            }
+        } else if (reglasAsociadas != null && !reglasAsociadas.isEmpty()) {
+            for (Regla r : reglasAsociadas) {
+                NivelSeveridadEnum sev = (r.getNivelSeveridad() != null) ? r.getNivelSeveridad() : NivelSeveridadEnum.MEDIA;
+                int pond = (r.getPonderacion() > 0) ? r.getPonderacion() : 20;
+                listaAR.add(new AsignacionRegla(
+                    asignacion.getId(),
+                    r.getId(),
+                    sev,
+                    pond
+                ));
+            }
+        }
+        if (!listaAR.isEmpty()) {
+            try {
+                asignacionReglaDAO.guardar(listaAR);
+            } catch (Exception e) {
+                System.err.println("[AsignacionesServiceImpl] Advertencia al persistir asignacion_regla: " + e.getMessage());
+            }
+        }
     }
 
     private void validarFechaLimite(java.time.LocalDateTime fechaLimite) {
@@ -223,6 +279,19 @@ public class AsignacionesServiceImpl implements AsignacionesService {
                 .collect(Collectors.toList());
 
         asignacionesDAO.actualizar(asignacion, idsReglas);
+
+        if (asignacionReglaDAO != null) {
+            List<AsignacionRegla> listaAR = new ArrayList<>();
+            for (ReglaAsignacionDTO rDto : reglasParam) {
+                NivelSeveridadEnum sev = (rDto.getSeveridad() != null) ? rDto.getSeveridad() : NivelSeveridadEnum.MEDIA;
+                listaAR.add(new AsignacionRegla(idAsignacion, rDto.getReglaId(), sev, rDto.getPonderacion()));
+            }
+            try {
+                asignacionReglaDAO.guardar(listaAR);
+            } catch (Exception e) {
+                System.err.println("[AsignacionesServiceImpl] Advertencia al persistir asociarReglasAsignacion: " + e.getMessage());
+            }
+        }
     }
 
     @Override

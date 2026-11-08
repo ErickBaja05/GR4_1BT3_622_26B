@@ -59,7 +59,6 @@ public class CursoServiceImpl implements CursoService {
         curso.setDescripcion(dto.getDescripcion().trim());
         curso.setPeriodoAcademico("2026B");
         curso.setDocente(docente);
-
         cursoDAO.guardar(curso);
 
         return curso;
