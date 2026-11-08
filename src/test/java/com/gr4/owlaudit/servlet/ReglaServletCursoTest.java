@@ -47,6 +47,9 @@ class ReglaServletCursoTest {
     private ReglaDAO reglaDAO;
 
     @Mock
+    private com.gr4.owlaudit.dao.CursoDAO cursoDAO;
+
+    @Mock
     private HttpServletRequest request;
 
     @Mock
@@ -62,8 +65,10 @@ class ReglaServletCursoTest {
 
     @BeforeEach
     void setUp() {
-        servlet = new ReglaServlet(reglaService, reglaDAO);
+        servlet = new ReglaServlet(reglaService, reglaDAO, cursoDAO);
         when(request.getSession()).thenReturn(session);
+        when(request.getSession(false)).thenReturn(session);
+        when(request.getContextPath()).thenReturn("/Owl_Audit_App");
         when(request.getRequestDispatcher(anyString())).thenReturn(dispatcher);
     }
 
@@ -112,6 +117,38 @@ class ReglaServletCursoTest {
         verify(request).setAttribute(eq("idCurso"), eq(10L));
         verify(request).getRequestDispatcher(VISTA_CATALOGO);
         verify(dispatcher).forward(request, response);
+    }
+
+    @Test
+    @DisplayName("Given solicitud sin idCurso, When docente intenta acceder a /regla, Then bloquea el acceso y redirige a /curso?error=sinCurso")
+    void givenSinIdCurso_whenDoGet_thenRedirigeACursoConSinCurso() throws Exception {
+        when(request.getParameter("idCurso")).thenReturn(null);
+
+        servlet.doGet(request, response);
+
+        verify(response).sendRedirect("/Owl_Audit_App/curso?error=sinCurso");
+    }
+
+    @Test
+    @DisplayName("Given docente no titular del curso, When intenta acceder al catalogo de ese curso, Then bloquea y redirige a /curso?error=permisos")
+    void givenDocenteNoTitular_whenDoGet_thenRedirigeACursoConPermisos() throws Exception {
+        when(request.getParameter("idCurso")).thenReturn("10");
+
+        com.gr4.owlaudit.dto.UsuarioDTO docenteEnSesion = new com.gr4.owlaudit.dto.UsuarioDTO();
+        docenteEnSesion.setId(99L);
+        docenteEnSesion.setRol(com.gr4.owlaudit.model.RolEnum.DOCENTE);
+        when(session.getAttribute(LoginServlet.ATRIBUTO_USUARIO)).thenReturn(docenteEnSesion);
+
+        com.gr4.owlaudit.model.Docente docenteTitular = new com.gr4.owlaudit.model.Docente();
+        docenteTitular.setId(1L);
+        com.gr4.owlaudit.model.Curso cursoAjeno = new com.gr4.owlaudit.model.Curso();
+        cursoAjeno.setId(10L);
+        cursoAjeno.setDocente(docenteTitular);
+        when(cursoDAO.buscarPorId(10L)).thenReturn(cursoAjeno);
+
+        servlet.doGet(request, response);
+
+        verify(response).sendRedirect("/Owl_Audit_App/curso?error=permisos");
     }
 }
 
