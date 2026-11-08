@@ -11,6 +11,10 @@ import com.gr4.owlaudit.model.Docente;
 import com.gr4.owlaudit.model.RolEnum;
 import com.gr4.owlaudit.model.Usuario;
 
+import com.gr4.owlaudit.model.Estudiante;
+import com.gr4.owlaudit.model.ListadoEstudiantes;
+import java.time.LocalDateTime;
+
 import java.util.Collections;
 import java.util.List;
 import java.util.regex.Pattern;
@@ -132,7 +136,22 @@ public class CursoServiceImpl implements CursoService {
 
     @Override
     public Curso matricularEstudiantePorCodigo(Long idEstudiante, String codigoCurso) throws ExcepcionNegocio {
-        return obtenerCursoPorCodigoValido(codigoCurso);
+        Curso curso = obtenerCursoPorCodigoValido(codigoCurso);
+
+        if (cursoDAO.estaEstudianteMatriculado(curso.getId(), idEstudiante)) {
+            throw new ExcepcionNegocio("Ya te encuentras matriculado en el curso " + curso.getNombre());
+        }
+
+        Estudiante estudiante = new Estudiante();
+        estudiante.setId(idEstudiante);
+
+        ListadoEstudiantes nuevaMatricula = new ListadoEstudiantes(
+                curso,
+                estudiante,
+                LocalDateTime.now(),
+                "ACTIVO");
+        cursoDAO.registrarMatricula(nuevaMatricula);
+        return curso;
     }
 
     private Curso obtenerCursoPorCodigoValido(String codigoCurso) throws ExcepcionNegocio {
