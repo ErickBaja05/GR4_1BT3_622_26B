@@ -15,6 +15,7 @@ import com.gr4.owlaudit.model.EstadoVigencia;
 import com.gr4.owlaudit.model.RolEnum;
 import com.gr4.owlaudit.service.ReglaService;
 import com.gr4.owlaudit.service.ReglaServiceImpl;
+import com.gr4.owlaudit.service.ValidadorAccesoCurso;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -39,6 +40,7 @@ public class ReglaServlet extends HttpServlet {
     private final ReglaService reglaService;
     private final ReglaDAO reglaDAO;
     private final CursoDAO cursoDAO;
+    private final ValidadorAccesoCurso validadorAccesoCurso;
 
     /** Constructor que usa Tomcat. */
     public ReglaServlet() {
@@ -47,18 +49,30 @@ public class ReglaServlet extends HttpServlet {
 
     /** Constructor para inyectar mocks en las pruebas. */
     ReglaServlet(ReglaService reglaService, ReglaDAO reglaDAO) {
-        this(reglaService, reglaDAO, null);
+        this(reglaService, reglaDAO, null, null);
     }
 
     ReglaServlet(ReglaService reglaService, ReglaDAO reglaDAO, CursoDAO cursoDAO) {
+        this(reglaService, reglaDAO, cursoDAO, (cursoDAO != null) ? new ValidadorAccesoCurso(cursoDAO) : null);
+    }
+
+    ReglaServlet(ReglaService reglaService, ReglaDAO reglaDAO, CursoDAO cursoDAO, ValidadorAccesoCurso validadorAccesoCurso) {
         this.reglaService = reglaService;
         this.reglaDAO = reglaDAO;
         this.cursoDAO = cursoDAO;
+        this.validadorAccesoCurso = validadorAccesoCurso;
     }
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) 
             throws ServletException, IOException {
+        HttpSession session = request.getSession(false);
+        UsuarioDTO usuario = (session != null) ? (UsuarioDTO) session.getAttribute(LoginServlet.ATRIBUTO_USUARIO) : null;
+        if (usuario != null && (validadorAccesoCurso != null ? validadorAccesoCurso.esEstudiante(usuario) : usuario.getRol() == RolEnum.ESTUDIANTE)) {
+            response.sendRedirect(request.getContextPath() + "/curso?error=permisos");
+            return;
+        }
+
         Long idCurso = parsearIdCurso(request.getParameter("idCurso"));
         if (idCurso == null) {
             response.sendRedirect(request.getContextPath() + "/curso?error=sinCurso");
@@ -90,6 +104,13 @@ public class ReglaServlet extends HttpServlet {
             throws ServletException, IOException {
         
         request.setCharacterEncoding("UTF-8");
+        HttpSession session = request.getSession(false);
+        UsuarioDTO usuario = (session != null) ? (UsuarioDTO) session.getAttribute(LoginServlet.ATRIBUTO_USUARIO) : null;
+        if (usuario != null && (validadorAccesoCurso != null ? validadorAccesoCurso.esEstudiante(usuario) : usuario.getRol() == RolEnum.ESTUDIANTE)) {
+            response.sendRedirect(request.getContextPath() + "/curso?error=permisos");
+            return;
+        }
+
         Long idCurso = parsearIdCurso(request.getParameter("idCurso"));
         if (idCurso == null) {
             response.sendRedirect(request.getContextPath() + "/curso?error=sinCurso");
@@ -150,14 +171,27 @@ public class ReglaServlet extends HttpServlet {
     }
 
     /**
-     * Valida que el docente autenticado en sesión sea el titular del curso.
+     * Valida que el docente autenticado en sesión sea el titular del curso mediante ValidadorAccesoCurso.
      * Retorna true si es válido o si no hay sesión/cursoDAO en pruebas unitarias aisladas.
      */
     private boolean validarTitularidadDocente(HttpServletRequest request, HttpServletResponse response, Long idCurso) 
             throws IOException {
         HttpSession session = request.getSession(false);
         UsuarioDTO usuario = (session != null) ? (UsuarioDTO) session.getAttribute(LoginServlet.ATRIBUTO_USUARIO) : null;
-        if (usuario != null && usuario.getRol() == RolEnum.DOCENTE && cursoDAO != null) {
+        if (usuario == null) {
+            return true;
+        }
+
+        if (validadorAccesoCurso != null) {
+            if (!validadorAccesoCurso.esDocente(usuario) || !validadorAccesoCurso.puedeAccederACatalogoReglas(usuario, idCurso)) {
+                response.sendRedirect(request.getContextPath() + "/curso?error=permisos");
+                return false;
+            }
+        } else if (cursoDAO != null) {
+            if (usuario.getRol() != RolEnum.DOCENTE) {
+                response.sendRedirect(request.getContextPath() + "/curso?error=permisos");
+                return false;
+            }
             Curso curso = cursoDAO.buscarPorId(idCurso);
             if (curso == null || curso.getDocente() == null || !usuario.getId().equals(curso.getDocente().getId())) {
                 response.sendRedirect(request.getContextPath() + "/curso?error=permisos");
