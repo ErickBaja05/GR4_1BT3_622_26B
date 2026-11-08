@@ -54,7 +54,13 @@ public class CursoServiceImpl implements CursoService {
     }
 
     @Override
-    public Curso crearCurso(NuevoCursoDTO dto, Long idDocente) {
+    public Curso crearCurso(NuevoCursoDTO dto, Long idDocente) throws ExcepcionNegocio {
+        if (dto.getCodigo() != null) {
+            String codigoLimpio = dto.getCodigo().trim();
+            if (!codigoLimpio.matches("^[A-Za-z0-9-]+$")) {
+                throw new ExcepcionNegocio("El código solo admite caracteres alfanuméricos y guiones");
+            }
+        }
         return null;
     }
 }
