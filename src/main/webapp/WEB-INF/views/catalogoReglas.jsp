@@ -17,7 +17,6 @@
 
     NuevaReglaDTO valores = (mensajeError != null && dto != null) ? dto : new NuevaReglaDTO();
     String motorSel = valores.getTipoMotor();
-    String severidadSel = valores.getNivelSeveridad();
     boolean mostrarFormularioAbierto = (mensajeError != null && dto != null) || "true".equals(request.getParameter("abrirForm"));
 %>
 <!DOCTYPE html>
@@ -134,24 +133,7 @@
                            value="<%= HtmlUtil.escape(valores.getParametroExacto()) %>" required>
                 </div>
 
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
-                    <div class="form-group">
-                        <label for="nivelSeveridad" class="form-label">Nivel de Severidad</label>
-                        <select id="nivelSeveridad" name="nivelSeveridad" class="form-control" required>
-                            <option value="ALTA" <%="ALTA".equals(severidadSel) ? "selected" : ""%>>ALTA</option>
-                            <option value="MEDIA" <%="MEDIA".equals(severidadSel) ? "selected" : ""%>>MEDIA</option>
-                            <option value="BAJA" <%="BAJA".equals(severidadSel) ? "selected" : ""%>>BAJA</option>
-                        </select>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="ponderacion" class="form-label">Ponderación (Puntos)</label>
-                        <input type="number" id="ponderacion" name="ponderacion" class="form-control" min="1" max="100"
-                               placeholder="Ej. 20" value="<%= valores.getPonderacion() > 0 ? String.valueOf(valores.getPonderacion()) : "" %>" required>
-                    </div>
-                </div>
-
-                <div style="display: flex; gap: 0.75rem; margin-top: 0.5rem;">
+                <div style="display: flex; gap: 0.75rem; margin-top: 1rem;">
                     <button type="submit" class="btn btn-primary">Registrar Regla</button>
                     <button type="button" class="btn btn-secondary" onclick="toggleFormularioRegistro()">Cancelar</button>
                 </div>
@@ -172,8 +154,6 @@
                                 <th style="padding: 0.65rem 0.5rem; min-width: 160px;">Nombre Representativo</th>
                                 <th style="padding: 0.65rem 0.5rem;">Motor</th>
                                 <th style="padding: 0.65rem 0.5rem;">Parámetro Exacto</th>
-                                <th style="padding: 0.65rem 0.5rem; text-align: center;">Severidad</th>
-                                <th style="padding: 0.65rem 0.5rem; text-align: center;">Puntos</th>
                                 <th style="padding: 0.65rem 0.5rem; text-align: center; min-width: 110px;">Estado Actual</th>
                                 <th style="padding: 0.65rem 0.5rem; text-align: center; min-width: 120px;">Acción</th>
                             </tr>
@@ -182,7 +162,6 @@
                             <% for (Regla r : reglas) {
                                 boolean esVigente = r.esVigente();
                                 String nuevoEstado = esVigente ? "NO_VIGENTE" : "VIGENTE";
-                                String s = (r.getNivelSeveridad() != null) ? r.getNivelSeveridad().name() : "BAJA";
                             %>
                                 <tr style="border-bottom: 1px solid var(--border-color);">
                                     <td style="padding: 0.65rem 0.5rem; text-align: center;"><strong>#<%= r.getId() %></strong></td>
@@ -194,10 +173,6 @@
                                     </td>
                                     <td style="padding: 0.65rem 0.5rem;"><%= (r.getTipoMotor() != null) ? r.getTipoMotor().name() : "—" %></td>
                                     <td style="padding: 0.65rem 0.5rem;"><code><%= HtmlUtil.escape(r.getParametroExacto()) %></code></td>
-                                    <td style="padding: 0.65rem 0.5rem; text-align: center;">
-                                        <span class="badge badge-<%= s.toLowerCase() %>"><%= s %></span>
-                                    </td>
-                                    <td style="padding: 0.65rem 0.5rem; text-align: center;"><strong><%= r.getPonderacion() %> pts</strong></td>
                                     <td style="padding: 0.65rem 0.5rem; text-align: center;">
                                         <% if (esVigente) { %>
                                             <span class="badge-vigente" title="Regla habilitada para auditorías">

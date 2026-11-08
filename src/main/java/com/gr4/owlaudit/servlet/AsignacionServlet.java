@@ -15,6 +15,7 @@ import com.gr4.owlaudit.dao.ReglaDAO;
 import com.gr4.owlaudit.dao.ReglaDAOImpl;
 import com.gr4.owlaudit.dto.AuditoriaDTO;
 import com.gr4.owlaudit.dto.NuevaAsignacionDTO;
+import com.gr4.owlaudit.dto.ReglaAsignacionDTO;
 import com.gr4.owlaudit.dto.ResultadoDTO;
 import com.gr4.owlaudit.dto.ResumenAsignacionDTO;
 import com.gr4.owlaudit.dto.UsuarioDTO;
@@ -22,6 +23,7 @@ import com.gr4.owlaudit.dao.CursoDAO;
 import com.gr4.owlaudit.dao.CursoDAOImpl;
 import com.gr4.owlaudit.model.Asignacion;
 import com.gr4.owlaudit.model.Auditoria;
+import com.gr4.owlaudit.model.NivelSeveridadEnum;
 import com.gr4.owlaudit.model.Proyecto;
 import com.gr4.owlaudit.model.RolEnum;
 import com.gr4.owlaudit.service.AsignacionesService;
@@ -262,7 +264,8 @@ public class AsignacionServlet extends HttpServlet {
     private NuevaAsignacionDTO obtenerNuevaAsignacionDTO(HttpServletRequest request) {
         String nombre = request.getParameter("nombre");
         Double umbralAprobacion = obtenerUmbralAprobacion(request);
-        List<Long> reglasIds = parsearReglasIds(request.getParameterValues("reglasIds"));
+        String[] reglasIdsParam = request.getParameterValues("reglasIds");
+        List<Long> reglasIds = parsearReglasIds(reglasIdsParam);
         Long idCurso = parsearLong(request.getParameter("idCurso"));
         LocalDateTime fechaLimite = parsearFechaLimite(request.getParameter("fechaLimite"));
         Integer intentosPermitidos = parsearInteger(request.getParameter("intentosPermitidos") != null
@@ -273,6 +276,34 @@ public class AsignacionServlet extends HttpServlet {
         dto.setIdCurso(idCurso);
         dto.setFechaLimite(fechaLimite);
         dto.setIntentosPermitidos(intentosPermitidos);
+
+        // Parametrización individual de severidad y ponderación para cada regla vinculada
+        if (reglasIdsParam != null) {
+            for (String ridStr : reglasIdsParam) {
+                try {
+                    Long rid = Long.parseLong(ridStr.trim());
+                    String pondStr = request.getParameter("ponderacion_" + rid);
+                    String sevStr = request.getParameter("severidad_" + rid);
+
+                    int ponderacion = 20;
+                    if (pondStr != null && !pondStr.isBlank()) {
+                        try {
+                            ponderacion = Integer.parseInt(pondStr.trim());
+                        } catch (NumberFormatException ignored) {}
+                    }
+
+                    NivelSeveridadEnum severidad = NivelSeveridadEnum.MEDIA;
+                    if (sevStr != null && !sevStr.isBlank()) {
+                        try {
+                            severidad = NivelSeveridadEnum.valueOf(sevStr.trim().toUpperCase());
+                        } catch (IllegalArgumentException ignored) {}
+                    }
+
+                    dto.agregarReglaConfigurada(new ReglaAsignacionDTO(rid, severidad, ponderacion));
+                } catch (NumberFormatException ignored) {}
+            }
+        }
+
         return dto;
     }
 

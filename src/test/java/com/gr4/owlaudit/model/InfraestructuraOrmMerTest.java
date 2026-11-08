@@ -55,6 +55,7 @@ class InfraestructuraOrmMerTest {
                     .addAnnotatedClass(ResultadoRegla.class)
                     .addAnnotatedClass(Hallazgo.class)
                     .addAnnotatedClass(SolicitudRetroalimentacion.class)
+                    .addAnnotatedClass(AsignacionRegla.class)
                     .buildMetadata();
 
             assertNotNull(metadata);

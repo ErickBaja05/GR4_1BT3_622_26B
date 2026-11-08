@@ -58,17 +58,17 @@ INSERT INTO asignaciones (id, id_curso, nombre, descripcion, umbral_aprobacion, 
 
 -- Vinculación Asignaciones <-> Reglas
 -- Taller 1: Reglas 1, 2, 3 (Total 75 pts)
-INSERT INTO asignacion_regla (asignacion_id, regla_id) VALUES
-(1, 1),
-(1, 2),
-(1, 3);
+INSERT INTO asignacion_regla (asignacion_id, regla_id, nivel_severidad, ponderacion) VALUES
+(1, 1, 'ALTA', 25),
+(1, 2, 'MEDIA', 25),
+(1, 3, 'MEDIA', 25);
 
 -- Entrega Semestral: Reglas 1, 2, 3, 4 (Total 100 pts)
-INSERT INTO asignacion_regla (asignacion_id, regla_id) VALUES
-(2, 1),
-(2, 2),
-(2, 3),
-(2, 4);
+INSERT INTO asignacion_regla (asignacion_id, regla_id, nivel_severidad, ponderacion) VALUES
+(2, 1, 'ALTA', 25),
+(2, 2, 'MEDIA', 25),
+(2, 3, 'MEDIA', 25),
+(2, 4, 'ALTA', 25);
 
 -- 5. Inserción de Auditorías Simuladas para Proyecto 1 ("TDD GREEN", Estudiante 2) vinculadas a Asignaciones del Curso
 INSERT INTO auditorias (id, fecha_hora, porcentaje, puntaje_maximo, puntaje_obtenido, proyecto_id, usuario_id, dictamen, asignacion_id, numero_en_asignacion, numero_en_proyecto, tipo_auditoria) VALUES

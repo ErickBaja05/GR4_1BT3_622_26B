@@ -31,11 +31,7 @@ class ValidadorReglaConvencionCommitsTest {
             "'^(feat|fix(: .+', 15",
             // 6. Espacios al inicio/final o vacío
             "'   ', 15",
-            "' ^(feat|fix): .+ ', 15",
-            // 7. Ponderación extrema (0, negativa o mayor a 100)
-            "'^(feat|fix|docs): .+', 0",
-            "'^(feat|fix|docs): .+', -5",
-            "'^(feat|fix|docs): .+', 150"
+            "' ^(feat|fix): .+ ', 15"
     })
     void given_invalid_extreme_parameters_or_weight_when_validate_syntax_and_format_then_throws_ExcepcionNegocio(
             String parametroExacto, int ponderacion) {

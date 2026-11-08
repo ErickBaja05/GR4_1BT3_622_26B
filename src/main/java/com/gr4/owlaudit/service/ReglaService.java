@@ -10,6 +10,8 @@ public interface ReglaService {
 
     public boolean cambiarEstadoVigenciaDeUnaRegla(String nombreRegla, EstadoVigencia nuevoEstado);
 
+    boolean cambiarEstadoVigenciaDeUnaRegla(Long idRegla, Long idCurso, EstadoVigencia nuevoEstado);
+
     List<Regla> listarReglasPorCurso(Long idCurso);
 
     List<Regla> listarReglasVigentesPorCurso(Long idCurso);

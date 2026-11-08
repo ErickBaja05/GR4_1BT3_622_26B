@@ -1,5 +1,10 @@
 package com.gr4.owlaudit.dto;
 
+/**
+ * DTO para la creación de una regla de evaluación técnica asociada a un curso.
+ * Siguiendo la nueva arquitectura, las reglas ya no almacenan severidad ni ponderación,
+ * las cuales pertenecen exclusivamente a la asociación con una asignación (AsignacionRegla).
+ */
 public class NuevaReglaDTO {
     private Long idCurso;
     private String tipoMotor;
@@ -13,11 +18,28 @@ public class NuevaReglaDTO {
     }
 
     public NuevaReglaDTO(String tipoMotor, String nombreRepresentativo, String descripcionDetallada,
-                         String parametroExacto, String nivelSeveridad, int ponderacion) {
+                         String parametroExacto) {
         this.tipoMotor = tipoMotor;
         this.nombreRepresentativo = nombreRepresentativo;
         this.descripcionDetallada = descripcionDetallada;
         this.parametroExacto = parametroExacto;
+    }
+
+    public NuevaReglaDTO(Long idCurso, String tipoMotor, String nombreRepresentativo, String descripcionDetallada,
+                         String parametroExacto) {
+        this.idCurso = idCurso;
+        this.tipoMotor = tipoMotor;
+        this.nombreRepresentativo = nombreRepresentativo;
+        this.descripcionDetallada = descripcionDetallada;
+        this.parametroExacto = parametroExacto;
+    }
+
+    /**
+     * Constructor sobrecargado para compatibilidad hacia atrás con suites de pruebas existentes.
+     */
+    public NuevaReglaDTO(String tipoMotor, String nombreRepresentativo, String descripcionDetallada,
+                         String parametroExacto, String nivelSeveridad, int ponderacion) {
+        this(tipoMotor, nombreRepresentativo, descripcionDetallada, parametroExacto);
         this.nivelSeveridad = nivelSeveridad;
         this.ponderacion = ponderacion;
     }
@@ -81,12 +103,11 @@ public class NuevaReglaDTO {
     @Override
     public String toString() {
         return "NuevaReglaDTO{" +
-                "tipoMotor='" + tipoMotor + '\'' +
+                "idCurso=" + idCurso +
+                ", tipoMotor='" + tipoMotor + '\'' +
                 ", nombreRepresentativo='" + nombreRepresentativo + '\'' +
                 ", descripcionDetallada='" + descripcionDetallada + '\'' +
                 ", parametroExacto='" + parametroExacto + '\'' +
-                ", nivelSeveridad='" + nivelSeveridad + '\'' +
-                ", ponderacion=" + ponderacion +
                 '}';
     }
 }

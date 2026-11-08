@@ -11,8 +11,11 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(
@@ -43,11 +46,11 @@ public class Regla {
     private String parametroExacto;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "nivel_severidad", nullable = false, length = 20)
+    @Column(name = "nivel_severidad", nullable = true, length = 20)
     private NivelSeveridadEnum nivelSeveridad;
 
-    @Column(name = "ponderacion", nullable = false)
-    private int ponderacion;
+    @Column(name = "ponderacion", nullable = true)
+    private Integer ponderacion;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "vigencia", nullable = false, length = 20)
@@ -56,22 +59,21 @@ public class Regla {
     @Column(name = "activa")
     private Boolean activa = true;
 
+    @OneToMany(mappedBy = "regla", fetch = FetchType.LAZY)
+    private List<AsignacionRegla> asignacionesReglas = new ArrayList<>();
+
     public Regla() {
         this.vigencia = EstadoVigencia.VIGENTE;
     }
 
     public Regla(NuevaReglaDTO dto) {
         if (dto != null) {
-            if (dto.getTipoMotor() != null) {
+            if (dto.getTipoMotor() != null && !dto.getTipoMotor().trim().isEmpty()) {
                 this.tipoMotor = TipoMotorEnum.valueOf(dto.getTipoMotor().trim().toUpperCase());
             }
             this.nombreRepresentativo = dto.getNombreRepresentativo();
             this.descripcionDetallada = dto.getDescripcionDetallada();
             this.parametroExacto = dto.getParametroExacto();
-            if (dto.getNivelSeveridad() != null) {
-                this.nivelSeveridad = NivelSeveridadEnum.valueOf(dto.getNivelSeveridad().trim().toUpperCase());
-            }
-            this.ponderacion = dto.getPonderacion();
             this.vigencia = EstadoVigencia.VIGENTE;
         }
     }
@@ -125,10 +127,10 @@ public class Regla {
     }
 
     public int getPonderacion() {
-        return ponderacion;
+        return ponderacion != null ? ponderacion : 0;
     }
 
-    public void setPonderacion(int ponderacion) {
+    public void setPonderacion(Integer ponderacion) {
         this.ponderacion = ponderacion;
     }
 
@@ -167,5 +169,13 @@ public class Regla {
 
     public void setActiva(Boolean activa) {
         this.activa = activa;
+    }
+
+    public List<AsignacionRegla> getAsignacionesReglas() {
+        return asignacionesReglas;
+    }
+
+    public void setAsignacionesReglas(List<AsignacionRegla> asignacionesReglas) {
+        this.asignacionesReglas = (asignacionesReglas != null) ? asignacionesReglas : new ArrayList<>();
     }
 }

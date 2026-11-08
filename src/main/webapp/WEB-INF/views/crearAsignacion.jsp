@@ -257,45 +257,55 @@
                                 <% for (Regla regla : reglasVigentes) { 
                                        String strId = String.valueOf(regla.getId());
                                        boolean checked = setReglasPrevias.contains(strId);
-                                       String severidadCss = "badge-media";
-                                       if (regla.getNivelSeveridad() == NivelSeveridadEnum.ALTA) {
-                                           severidadCss = "badge-alta";
-                                       } else if (regla.getNivelSeveridad() == NivelSeveridadEnum.BAJA) {
-                                           severidadCss = "badge-baja";
-                                       }
                                 %>
-                                    <div class="rule-item-row">
-                                        <div class="rule-checkbox-wrapper">
-                                            <!-- Checkbox con atributo exacto name="reglasIds" value="${regla.id}" según acuerdos -->
-                                            <input type="checkbox" 
-                                                   name="reglasIds" 
-                                                   value="<%= regla.getId() %>" 
-                                                   id="regla_<%= regla.getId() %>" 
-                                                   <%= checked ? "checked" : "" %> 
-                                                   onchange="actualizarContadorReglas()">
-                                        </div>
-                                        <div class="rule-details">
-                                            <div class="rule-title-line">
-                                                <label for="regla_<%= regla.getId() %>">
-                                                    <%= HtmlUtil.escape(regla.getNombreRepresentativo()) %>
-                                                </label>
-                                                <div class="rule-meta-badges">
-                                                    <span class="badge <%= severidadCss %>">
-                                                        <%= regla.getNivelSeveridad() %>
-                                                    </span>
-                                                    <span class="badge badge-muted">
-                                                        <%= regla.getPonderacion() %> pts
-                                                    </span>
+                                    <div class="rule-item-row" style="display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 0.75rem 1rem; border-bottom: 1px solid var(--border-color, #e2e8f0);">
+                                        <div style="display: flex; align-items: flex-start; gap: 0.75rem; flex: 1;">
+                                            <div class="rule-checkbox-wrapper" style="margin-top: 0.25rem;">
+                                                <!-- Checkbox con atributo exacto name="reglasIds" value="${regla.id}" según acuerdos -->
+                                                <input type="checkbox" 
+                                                       name="reglasIds" 
+                                                       value="<%= regla.getId() %>" 
+                                                       id="regla_<%= regla.getId() %>" 
+                                                       <%= checked ? "checked" : "" %> 
+                                                       onchange="actualizarContadorReglas()">
+                                            </div>
+                                            <div class="rule-details">
+                                                <div class="rule-title-line">
+                                                    <label for="regla_<%= regla.getId() %>" style="font-weight: 600; cursor: pointer;">
+                                                        <%= HtmlUtil.escape(regla.getNombreRepresentativo()) %>
+                                                    </label>
                                                     <% if (regla.getTipoMotor() != null) { %>
-                                                        <span class="badge badge-muted" style="font-size: 0.7rem;">
+                                                        <span class="badge badge-muted" style="margin-left: 0.5rem; font-size: 0.75rem;">
                                                             <%= regla.getTipoMotor() %>
                                                         </span>
                                                     <% } %>
                                                 </div>
+                                                <% if (regla.getDescripcionDetallada() != null && !regla.getDescripcionDetallada().isBlank()) { %>
+                                                    <p class="rule-desc" style="font-size: 0.825rem; color: var(--text-muted, #64748b); margin: 0.25rem 0 0 0;"><%= HtmlUtil.escape(regla.getDescripcionDetallada()) %></p>
+                                                <% } %>
                                             </div>
-                                            <% if (regla.getDescripcionDetallada() != null && !regla.getDescripcionDetallada().isBlank()) { %>
-                                                <p class="rule-desc"><%= HtmlUtil.escape(regla.getDescripcionDetallada()) %></p>
-                                            <% } %>
+                                        </div>
+                                        <div style="display: flex; gap: 0.75rem; align-items: center; flex-shrink: 0;">
+                                            <div>
+                                                <label for="severidad_<%= regla.getId() %>" style="font-size: 0.75rem; display: block; color: var(--text-muted, #64748b); margin-bottom: 0.2rem;">Severidad</label>
+                                                <select name="severidad_<%= regla.getId() %>" id="severidad_<%= regla.getId() %>" class="form-control" style="width: 110px; padding: 0.35rem 0.5rem; font-size: 0.85rem;">
+                                                    <option value="ALTA">ALTA</option>
+                                                    <option value="MEDIA" selected>MEDIA</option>
+                                                    <option value="BAJA">BAJA</option>
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label for="ponderacion_<%= regla.getId() %>" style="font-size: 0.75rem; display: block; color: var(--text-muted, #64748b); margin-bottom: 0.2rem;">Ponderación</label>
+                                                <input type="number" 
+                                                       name="ponderacion_<%= regla.getId() %>" 
+                                                       id="ponderacion_<%= regla.getId() %>" 
+                                                       class="form-control" 
+                                                       min="1" 
+                                                       max="100" 
+                                                       placeholder="Ej. 25" 
+                                                       value="25" 
+                                                       style="width: 90px; padding: 0.35rem 0.5rem; font-size: 0.85rem;">
+                                            </div>
                                         </div>
                                     </div>
                                 <% } %>
@@ -483,9 +493,6 @@
                                         <label for="edit_regla_<%= regla.getId() %>" style="font-size: 0.9rem; font-weight: 600; cursor: pointer;">
                                             <%= HtmlUtil.escape(regla.getNombreRepresentativo()) %>
                                         </label>
-                                        <span class="badge badge-muted" style="margin-left: 0.5rem; font-size: 0.75rem;">
-                                            <%= regla.getPonderacion() %> pts
-                                        </span>
                                     </div>
                                 </div>
                             <%     }

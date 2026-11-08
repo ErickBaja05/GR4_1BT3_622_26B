@@ -29,19 +29,32 @@ public class AsignacionRegla implements Serializable {
     private Regla regla;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "nivel_severidad", nullable = false, length = 20)
-    private NivelSeveridadEnum nivelSeveridad;
+    @Column(name = "nivel_severidad", nullable = false, length = 20, columnDefinition = "varchar(20) default 'MEDIA'")
+    private NivelSeveridadEnum nivelSeveridad = NivelSeveridadEnum.MEDIA;
 
-    @Column(name = "ponderacion", nullable = false)
-    private int ponderacion;
+    @Column(name = "ponderacion", nullable = false, columnDefinition = "int default 20")
+    private int ponderacion = 20;
 
     public AsignacionRegla() {}
 
     public AsignacionRegla(Long asignacionId, Long reglaId, NivelSeveridadEnum nivelSeveridad, int ponderacion) {
         this.asignacionId = asignacionId;
         this.reglaId = reglaId;
-        this.nivelSeveridad = nivelSeveridad;
-        this.ponderacion = ponderacion;
+        this.nivelSeveridad = (nivelSeveridad != null) ? nivelSeveridad : NivelSeveridadEnum.MEDIA;
+        this.ponderacion = (ponderacion > 0) ? ponderacion : 20;
+    }
+
+    public AsignacionRegla(Asignacion asignacion, Regla regla, NivelSeveridadEnum nivelSeveridad, int ponderacion) {
+        this.asignacion = asignacion;
+        this.regla = regla;
+        if (asignacion != null) {
+            this.asignacionId = asignacion.getId();
+        }
+        if (regla != null) {
+            this.reglaId = regla.getId();
+        }
+        this.nivelSeveridad = (nivelSeveridad != null) ? nivelSeveridad : NivelSeveridadEnum.MEDIA;
+        this.ponderacion = (ponderacion > 0) ? ponderacion : 20;
     }
 
     public Long getAsignacionId() { return asignacionId; }

@@ -24,9 +24,11 @@ public class NuevaAsignacionDTO {
     private Integer intentosPermitidos;
     private Double umbralAprobacion;
     private List<Long> reglasIds;
+    private List<ReglaAsignacionDTO> reglasConfiguradas = new ArrayList<>();
 
     public NuevaAsignacionDTO() {
         this.reglasIds = new ArrayList<>();
+        this.reglasConfiguradas = new ArrayList<>();
     }
 
     public NuevaAsignacionDTO(String nombre, Double umbralAprobacion, List<Long> reglasIds) {
@@ -109,6 +111,34 @@ public class NuevaAsignacionDTO {
 
     public void setUmbralAprobacion(Double umbralAprobacion) {
         this.umbralAprobacion = umbralAprobacion;
+    }
+
+    public List<ReglaAsignacionDTO> getReglasConfiguradas() {
+        return reglasConfiguradas;
+    }
+
+    public void setReglasConfiguradas(List<ReglaAsignacionDTO> reglasConfiguradas) {
+        this.reglasConfiguradas = (reglasConfiguradas != null) ? new ArrayList<>(reglasConfiguradas) : new ArrayList<>();
+        if (this.reglasIds == null) {
+            this.reglasIds = new ArrayList<>();
+        }
+        for (ReglaAsignacionDTO r : this.reglasConfiguradas) {
+            if (r.getReglaId() != null && !this.reglasIds.contains(r.getReglaId())) {
+                this.reglasIds.add(r.getReglaId());
+            }
+        }
+    }
+
+    public void agregarReglaConfigurada(ReglaAsignacionDTO regla) {
+        if (regla != null) {
+            if (this.reglasConfiguradas == null) {
+                this.reglasConfiguradas = new ArrayList<>();
+            }
+            this.reglasConfiguradas.add(regla);
+            if (regla.getReglaId() != null) {
+                agregarReglaId(regla.getReglaId());
+            }
+        }
     }
 
     /**

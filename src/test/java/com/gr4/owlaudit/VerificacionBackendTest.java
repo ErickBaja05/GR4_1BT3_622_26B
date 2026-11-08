@@ -1,12 +1,15 @@
 package com.gr4.owlaudit;
 
 import com.gr4.owlaudit.common.exception.ExcepcionNegocio;
+import com.gr4.owlaudit.dao.CursoDAO;
 import com.gr4.owlaudit.dao.ProyectoDAO;
 import com.gr4.owlaudit.dao.ReglaDAO;
 import com.gr4.owlaudit.dao.UsuarioDAO;
 import com.gr4.owlaudit.dto.NuevaReglaDTO;
 import com.gr4.owlaudit.dto.NuevoProyectoDTO;
 import com.gr4.owlaudit.dto.UsuarioDTO;
+import com.gr4.owlaudit.model.Curso;
+import com.gr4.owlaudit.model.Docente;
 import com.gr4.owlaudit.model.EstadoVigencia;
 import com.gr4.owlaudit.model.NivelSeveridadEnum;
 import com.gr4.owlaudit.model.Proyecto;
@@ -21,6 +24,8 @@ import com.gr4.owlaudit.service.ReglaServiceImpl;
 import com.gr4.owlaudit.service.UsuarioService;
 import com.gr4.owlaudit.service.UsuarioServiceImpl;
 import com.gr4.owlaudit.service.ValidadorRegla;
+import com.gr4.owlaudit.service.ValidadorReglaAsignacion;
+import com.gr4.owlaudit.dto.ReglaAsignacionDTO;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -75,6 +80,12 @@ public class VerificacionBackendTest {
         }
 
         @Override
+        public boolean existeNombreEnCurso(String nombre, Long idCurso) {
+            return reglas.stream()
+                .anyMatch(r -> r.getNombreRepresentativo().equalsIgnoreCase(nombre.trim()));
+        }
+
+        @Override
         public void guardar(Regla regla) {
             regla.setId((long) (reglas.size() + 1));
             reglas.add(regla);
@@ -84,6 +95,44 @@ public class VerificacionBackendTest {
         public List<Regla> consultarReglasDeEvaluacionVigentes() {
             return reglas.stream().filter(Regla::esVigente).toList();
         }
+    }
+
+    static class MockCursoDAO implements CursoDAO {
+        private final Curso curso;
+
+        public MockCursoDAO() {
+            Docente d = new Docente(1L, "Profesor Titular", "docente@epn.edu.ec", "123");
+            curso = new Curso(d, "CS-2026B", "Construcción", "2026B", "Desc");
+            curso.setId(10L);
+        }
+
+        @Override
+        public Curso buscarPorId(Long id) {
+            return (id != null && id.equals(10L)) ? curso : null;
+        }
+
+        @Override
+        public Curso buscarPorCodigo(String codigo) {
+            return "CS-2026B".equals(codigo) ? curso : null;
+        }
+
+        @Override
+        public List<Curso> listarCursosPorEstudiante(Long idEstudiante) {
+            return List.of(curso);
+        }
+
+        @Override
+        public List<Curso> listarCursosPorDocente(Long idDocente) {
+            return List.of(curso);
+        }
+
+        @Override
+        public boolean estaEstudianteMatriculado(Long idCurso, Long idEstudiante) {
+            return true;
+        }
+
+        @Override
+        public void guardar(Curso c) {}
     }
 
     static class MockProyectoDAO implements ProyectoDAO {
@@ -174,16 +223,16 @@ public class VerificacionBackendTest {
 
     public static void testRegistrarReglaExitosa() {
         MockReglaDAO dao = new MockReglaDAO();
-        ReglaService service = new ReglaServiceImpl(dao);
+        MockCursoDAO cursoDAO = new MockCursoDAO();
+        ReglaService service = new ReglaServiceImpl(dao, cursoDAO, new ValidadorRegla());
 
         NuevaReglaDTO dto = new NuevaReglaDTO(
             "PRESENCIA_ARCHIVO",
             "Verificar README obligatorio",
             "Comprueba que el repositorio contenga un archivo README.md",
-            "README.md",
-            "ALTA",
-            5
+            "README.md"
         );
+        dto.setIdCurso(10L);
 
         service.registrarReglaEvaluacionTecnica(dto);
 
@@ -192,8 +241,6 @@ public class VerificacionBackendTest {
         Regla r = vigentes.get(0);
         assertEquals("Verificar README obligatorio", r.getNombreRepresentativo(), "Nombre debe coincidir.");
         assertEquals(TipoMotorEnum.PRESENCIA_ARCHIVO, r.getTipoMotor(), "Tipo motor debe coincidir.");
-        assertEquals(NivelSeveridadEnum.ALTA, r.getNivelSeveridad(), "Severidad debe coincidir.");
-        assertEquals(5, r.getPonderacion(), "Ponderación debe coincidir.");
         assertEquals(EstadoVigencia.VIGENTE, r.getVigencia(), "La regla debe quedar vigente.");
         assertTrue(r.esVigente(), "La regla debe encontrarse vigente.");
         System.out.println("  [PASS] testRegistrarReglaExitosa: Regla registrada y vigente según secuencia.puml.");
@@ -201,12 +248,15 @@ public class VerificacionBackendTest {
 
     public static void testRegistrarReglaNombreDuplicado() {
         MockReglaDAO dao = new MockReglaDAO();
-        ReglaService service = new ReglaServiceImpl(dao);
+        MockCursoDAO cursoDAO = new MockCursoDAO();
+        ReglaService service = new ReglaServiceImpl(dao, cursoDAO, new ValidadorRegla());
 
-        NuevaReglaDTO dto1 = new NuevaReglaDTO("PRESENCIA_ARCHIVO", "Regla Duplicada", "Desc", "README.md", "MEDIA", 3);
+        NuevaReglaDTO dto1 = new NuevaReglaDTO("PRESENCIA_ARCHIVO", "Regla Duplicada", "Desc", "README.md");
+        dto1.setIdCurso(10L);
         service.registrarReglaEvaluacionTecnica(dto1);
 
-        NuevaReglaDTO dto2 = new NuevaReglaDTO("PRESENCIA_ARCHIVO", "Regla Duplicada", "Desc 2", "LICENSE", "BAJA", 2);
+        NuevaReglaDTO dto2 = new NuevaReglaDTO("PRESENCIA_ARCHIVO", "Regla Duplicada", "Desc 2", "LICENSE");
+        dto2.setIdCurso(10L);
         try {
             service.registrarReglaEvaluacionTecnica(dto2);
             throw new AssertionError("Debió lanzar ExcepcionNegocio por nombre duplicado.");
@@ -216,12 +266,10 @@ public class VerificacionBackendTest {
     }
 
     public static void testRegistrarReglaPonderacionInvalida() {
-        MockReglaDAO dao = new MockReglaDAO();
-        ReglaService service = new ReglaServiceImpl(dao);
-
-        NuevaReglaDTO dto = new NuevaReglaDTO("PRESENCIA_ARCHIVO", "Regla Ponderacion Cero", "Desc", "README.md", "MEDIA", 0);
+        ValidadorReglaAsignacion validador = new ValidadorReglaAsignacion();
+        ReglaAsignacionDTO dto = new ReglaAsignacionDTO(1L, NivelSeveridadEnum.MEDIA, 0);
         try {
-            service.registrarReglaEvaluacionTecnica(dto);
+            validador.validarRegla(dto);
             throw new AssertionError("Debió lanzar ExcepcionNegocio por ponderación <= 0.");
         } catch (ExcepcionNegocio e) {
             System.out.println("  [PASS] testRegistrarReglaPonderacionInvalida: Ponderación rechazada (" + e.getMessage() + ")");
@@ -230,10 +278,12 @@ public class VerificacionBackendTest {
 
     public static void testRegistrarReglaParametroInvalido() {
         MockReglaDAO dao = new MockReglaDAO();
-        ReglaService service = new ReglaServiceImpl(dao);
+        MockCursoDAO cursoDAO = new MockCursoDAO();
+        ReglaService service = new ReglaServiceImpl(dao, cursoDAO, new ValidadorRegla());
 
         // Ruta de archivo no puede empezar con '/'
-        NuevaReglaDTO dto = new NuevaReglaDTO("PRESENCIA_ARCHIVO", "Ruta Invalida", "Desc", "/src/Main.java", "MEDIA", 5);
+        NuevaReglaDTO dto = new NuevaReglaDTO("PRESENCIA_ARCHIVO", "Ruta Invalida", "Desc", "/src/Main.java");
+        dto.setIdCurso(10L);
         try {
             service.registrarReglaEvaluacionTecnica(dto);
             throw new AssertionError("Debió lanzar ExcepcionNegocio por ruta con '/' inicial.");
@@ -244,10 +294,12 @@ public class VerificacionBackendTest {
 
     public static void testRegistrarReglaConValidadorInyectado() {
         MockReglaDAO dao = new MockReglaDAO();
+        MockCursoDAO cursoDAO = new MockCursoDAO();
         ValidadorRegla validador = new ValidadorRegla();
-        ReglaService service = new ReglaServiceImpl(dao, validador);
+        ReglaService service = new ReglaServiceImpl(dao, cursoDAO, validador);
 
-        NuevaReglaDTO dto = new NuevaReglaDTO("PRESENCIA_ARCHIVO", "Regla Con Validador Inyectado", "Desc", "README.md", "MEDIA", 2);
+        NuevaReglaDTO dto = new NuevaReglaDTO("PRESENCIA_ARCHIVO", "Regla Con Validador Inyectado", "Desc", "README.md");
+        dto.setIdCurso(10L);
         service.registrarReglaEvaluacionTecnica(dto);
 
         assertEquals(1, dao.consultarReglasDeEvaluacionVigentes().size(), "Debe haber 1 regla registrada en el DAO.");

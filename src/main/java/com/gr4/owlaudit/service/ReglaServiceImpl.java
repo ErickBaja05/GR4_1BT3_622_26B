@@ -94,6 +94,25 @@ public class ReglaServiceImpl implements ReglaService {
     }
 
     @Override
+    public boolean cambiarEstadoVigenciaDeUnaRegla(Long idRegla, Long idCurso, EstadoVigencia nuevoEstado) {
+        if (idRegla == null || idCurso == null || nuevoEstado == null) {
+            return false;
+        }
+
+        Regla reglaActual = reglaDAO.obtenerPorIdYCurso(idRegla, idCurso);
+        if (reglaActual == null) {
+            throw new ExcepcionNegocio("La regla no pertenece al curso especificado o no existe.");
+        }
+
+        if (reglaActual.getVigencia() == nuevoEstado) {
+            return false;
+        }
+
+        reglaActual.setVigencia(nuevoEstado);
+        return reglaDAO.actualizarEstadoVigenciaPorIdYCurso(idRegla, idCurso, nuevoEstado);
+    }
+
+    @Override
     public List<Regla> listarReglasPorCurso(Long idCurso) {
         if (idCurso == null) {
             return Collections.emptyList();

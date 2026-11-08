@@ -35,5 +35,6 @@
         <mapping class="com.gr4.owlaudit.model.Hallazgo"/>
         <mapping class="com.gr4.owlaudit.model.SolicitudRetroalimentacion"/>
         <mapping class="com.gr4.owlaudit.model.Asignacion"/>
+        <mapping class="com.gr4.owlaudit.model.AsignacionRegla"/>
     </session-factory>
 </hibernate-configuration>
