@@ -319,20 +319,6 @@ public class AsignacionServlet extends HttpServlet {
 
     // --- MÉTODOS DE SOPORTE ---
 
-    private boolean esFlujoEstudianteGet(HttpServletRequest request, String idAsignacionParam, String vistaParam) {
-        if (idAsignacionParam != null && !idAsignacionParam.trim().isEmpty()) {
-            return true;
-        }
-        if ("estudiante".equalsIgnoreCase(vistaParam)) {
-            return true;
-        }
-        HttpSession session = request.getSession(false);
-        if (session != null && session.getAttribute(LoginServlet.ATRIBUTO_USUARIO) instanceof UsuarioDTO usuario) {
-            return usuario.getRol() == RolEnum.ESTUDIANTE;
-        }
-        return false;
-    }
-
     private void procesarGetEstudiante(HttpServletRequest request, HttpServletResponse response,
             String idAsignacionParam)
             throws ServletException, IOException {

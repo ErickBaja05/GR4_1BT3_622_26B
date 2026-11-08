@@ -14,7 +14,6 @@ import com.gr4.owlaudit.dto.ResumenAsignacionDTO;
 import com.gr4.owlaudit.dto.ReglaAsignacionDTO;
 import com.gr4.owlaudit.model.Asignacion;
 import com.gr4.owlaudit.model.Curso;
-import com.gr4.owlaudit.model.ListadoEstudiantes;
 import com.gr4.owlaudit.model.Proyecto;
 import com.gr4.owlaudit.model.Regla;
 
