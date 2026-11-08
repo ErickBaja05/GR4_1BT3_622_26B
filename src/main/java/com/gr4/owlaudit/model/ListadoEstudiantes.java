@@ -98,8 +98,7 @@ public class ListadoEstudiantes {
     }
 
     public static ListadoEstudiantes crearNuevaMatricula(Curso curso, Estudiante estudiante) {
-        return null;
-        // return new ListadoEstudiantes(curso, estudiante, LocalDateTime.now(),
-        // "ACTIVO");
+
+        return new ListadoEstudiantes(curso, estudiante, LocalDateTime.now(), "ACTIVO");
     }
 }
