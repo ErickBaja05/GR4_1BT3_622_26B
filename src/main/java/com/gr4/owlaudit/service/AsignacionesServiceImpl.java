@@ -23,6 +23,9 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import java.util.List;
+import com.gr4.owlaudit.dto.ReglaAsignacionDTO;
+
 public class AsignacionesServiceImpl implements AsignacionesService {
 
     private final AsignacionesDAO asignacionesDAO;
@@ -191,6 +194,11 @@ public class AsignacionesServiceImpl implements AsignacionesService {
         } catch (Exception e) {
             System.err.println("[AsignacionesServiceImpl] Advertencia en revalorización: " + e.getMessage());
         }
+    }
+
+    @Override
+    public void asociarReglasAsignacion(Long idAsignacion, java.util.List<com.gr4.owlaudit.dto.ReglaAsignacionDTO> reglasParam) {
+        throw new UnsupportedOperationException("No implementado aún");
     }
 
     @Override
