@@ -39,8 +39,10 @@ public class SolicitudDAOImpl implements SolicitudDAO {
 
     @Override
     public void crearSolicitudDeRetroalimentacion(SolicitudRetroalimentacion solicitud) {
+        Session session = null;
         Transaction tx = null;
-        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+        try {
+            session = HibernateUtil.getSessionFactory().openSession();
             tx = session.beginTransaction();
             if (solicitud.getHallazgo() != null && solicitud.getHallazgo().getId() != null) {
                 com.gr4.owlaudit.model.Hallazgo h = session.get(com.gr4.owlaudit.model.Hallazgo.class, solicitud.getHallazgo().getId());
@@ -62,14 +64,26 @@ public class SolicitudDAOImpl implements SolicitudDAO {
             tx.commit();
         } catch (com.gr4.owlaudit.common.exception.ExcepcionNegocio e) {
             if (tx != null && tx.isActive()) {
-                tx.rollback();
+                try {
+                    tx.rollback();
+                } catch (Exception rollbackEx) {
+                    e.addSuppressed(rollbackEx);
+                }
             }
             throw e;
         } catch (Exception e) {
             if (tx != null && tx.isActive()) {
-                tx.rollback();
+                try {
+                    tx.rollback();
+                } catch (Exception rollbackEx) {
+                    e.addSuppressed(rollbackEx);
+                }
             }
             throw new RuntimeException("Error al crear solicitud de retroalimentación: " + e.getMessage(), e);
+        } finally {
+            if (session != null && session.isOpen()) {
+                session.close();
+            }
         }
     }
 
@@ -91,16 +105,26 @@ public class SolicitudDAOImpl implements SolicitudDAO {
 
     @Override
     public void actualizarSolicitud(SolicitudRetroalimentacion solicitud) {
+        Session session = null;
         Transaction tx = null;
-        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+        try {
+            session = HibernateUtil.getSessionFactory().openSession();
             tx = session.beginTransaction();
             session.merge(solicitud);
             tx.commit();
         } catch (Exception e) {
             if (tx != null && tx.isActive()) {
-                tx.rollback();
+                try {
+                    tx.rollback();
+                } catch (Exception rollbackEx) {
+                    e.addSuppressed(rollbackEx);
+                }
             }
             throw new RuntimeException("Error al actualizar la solicitud de retroalimentación: " + e.getMessage(), e);
+        } finally {
+            if (session != null && session.isOpen()) {
+                session.close();
+            }
         }
     }
 

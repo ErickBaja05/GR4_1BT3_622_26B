@@ -2,6 +2,7 @@ package com.gr4.owlaudit.dao;
 
 import com.gr4.owlaudit.common.config.HibernateUtil;
 import com.gr4.owlaudit.model.Curso;
+import com.gr4.owlaudit.model.Docente;
 import org.hibernate.Session;
 import org.hibernate.Transaction;
 
@@ -95,16 +96,35 @@ public class CursoDAOImpl implements CursoDAO {
         if (curso == null) {
             return;
         }
+        Session session = null;
         Transaction tx = null;
-        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+        try {
+            session = HibernateUtil.getSessionFactory().openSession();
             tx = session.beginTransaction();
+            if (curso.getDocente() != null && curso.getDocente().getId() != null) {
+                Docente docenteGestionado = session.find(Docente.class, curso.getDocente().getId());
+                if (docenteGestionado != null) {
+                    curso.setDocente(docenteGestionado);
+                }
+            }
+            if (curso.getPeriodoAcademico() == null || curso.getPeriodoAcademico().isBlank()) {
+                curso.setPeriodoAcademico("2026B");
+            }
             session.persist(curso);
             tx.commit();
         } catch (Exception e) {
             if (tx != null && tx.isActive()) {
-                tx.rollback();
+                try {
+                    tx.rollback();
+                } catch (Exception rollbackEx) {
+                    e.addSuppressed(rollbackEx);
+                }
             }
             throw new RuntimeException("Error al guardar el curso: " + e.getMessage(), e);
+        } finally {
+            if (session != null && session.isOpen()) {
+                session.close();
+            }
         }
     }
 

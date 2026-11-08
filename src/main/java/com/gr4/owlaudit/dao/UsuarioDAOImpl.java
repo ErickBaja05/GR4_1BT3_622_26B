@@ -44,8 +44,10 @@ public class UsuarioDAOImpl implements UsuarioDAO {
 
     @Override
     public void guardar(Usuario usuario) {
+        Session session = null;
         Transaction tx = null;
-        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+        try {
+            session = HibernateUtil.getSessionFactory().openSession();
             tx = session.beginTransaction();
             Usuario entidad = usuario;
             if (usuario != null && !(usuario instanceof Docente) && !(usuario instanceof Estudiante)) {
@@ -62,9 +64,17 @@ public class UsuarioDAOImpl implements UsuarioDAO {
             tx.commit();
         } catch (Exception e) {
             if (tx != null && tx.isActive()) {
-                tx.rollback();
+                try {
+                    tx.rollback();
+                } catch (Exception rollbackEx) {
+                    e.addSuppressed(rollbackEx);
+                }
             }
             throw new RuntimeException("Error al guardar el usuario: " + e.getMessage(), e);
+        } finally {
+            if (session != null && session.isOpen()) {
+                session.close();
+            }
         }
     }
 }

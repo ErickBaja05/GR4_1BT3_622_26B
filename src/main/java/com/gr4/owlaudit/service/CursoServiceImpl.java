@@ -57,6 +57,7 @@ public class CursoServiceImpl implements CursoService {
         curso.setNombre(dto.getNombre().trim());
         curso.setCodigo(codigoNormalizado);
         curso.setDescripcion(dto.getDescripcion().trim());
+        curso.setPeriodoAcademico("2026B");
         curso.setDocente(docente);
 
         cursoDAO.guardar(curso);

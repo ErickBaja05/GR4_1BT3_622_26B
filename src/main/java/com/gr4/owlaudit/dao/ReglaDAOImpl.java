@@ -29,16 +29,26 @@ public class ReglaDAOImpl implements ReglaDAO {
 
     @Override
     public void guardar(Regla regla) {
+        Session session = null;
         Transaction tx = null;
-        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+        try {
+            session = HibernateUtil.getSessionFactory().openSession();
             tx = session.beginTransaction();
             session.persist(regla);
             tx.commit();
         } catch (Exception e) {
             if (tx != null && tx.isActive()) {
-                tx.rollback();
+                try {
+                    tx.rollback();
+                } catch (Exception rollbackEx) {
+                    e.addSuppressed(rollbackEx);
+                }
             }
             throw new RuntimeException("Error al guardar la regla de evaluación: " + e.getMessage(), e);
+        } finally {
+            if (session != null && session.isOpen()) {
+                session.close();
+            }
         }
     }
 

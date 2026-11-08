@@ -34,7 +34,7 @@ public class Curso {
     private String nombre;
 
     @Column(name = "periodo_academico", nullable = false, length = 20)
-    private String periodoAcademico;
+    private String periodoAcademico = "2026B";
 
     @Column(name = "descripcion", columnDefinition = "TEXT")
     private String descripcion;
@@ -65,6 +65,7 @@ public class Curso {
         curso.setNombre(nombre != null ? nombre.trim() : null);
         curso.setCodigo(codigo != null ? codigo.trim().toUpperCase() : null);
         curso.setDescripcion(descripcion != null ? descripcion.trim() : null);
+        curso.setPeriodoAcademico("2026B");
         curso.setDocente(docente);
         return curso;
     }
