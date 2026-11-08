@@ -60,8 +60,7 @@ class CursoServletMensajePermisosTest {
 
         servlet.doGet(request, response);
 
-        verify(request).setAttribute("mensajeError",
-                "No tiene permisos para gestionar un curso del que no es docente titular.");
+        verify(request).setAttribute("mensajeError", CursoServlet.MENSAJE_PERMISOS_DOCENTE);
     }
 
     @Test
@@ -71,7 +70,6 @@ class CursoServletMensajePermisosTest {
 
         servlet.doGet(request, response);
 
-        verify(request).setAttribute("mensajeError",
-                "No tienes permisos para acceder a las asignaciones de un curso en el que no estás matriculado.");
+        verify(request).setAttribute("mensajeError", CursoServlet.MENSAJE_PERMISOS_ESTUDIANTE);
     }
 }
