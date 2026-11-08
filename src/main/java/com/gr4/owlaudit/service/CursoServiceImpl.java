@@ -59,6 +59,18 @@ public class CursoServiceImpl implements CursoService {
     public Curso crearCurso(NuevoCursoDTO dto, Long idDocente) throws ExcepcionNegocio {
         validarCamposObligatorios(dto);
         validarFormatoCodigo(dto.getCodigo());
+        String codigoNormalizado = dto.getCodigo().trim().toUpperCase();
+
+        if (!PATRON_CODIGO_CURSO.matcher(codigoNormalizado).matches()) {
+            throw new ExcepcionNegocio("El código solo admite caracteres alfanuméricos y guiones");
+        }
+
+        // Validación con CursoDAO adaptada a retorno de Curso o null
+        Curso cursoExistente = cursoDAO.buscarPorCodigo(codigoNormalizado);
+        if (cursoExistente != null) {
+            throw new ExcepcionNegocio("El código de curso ingresado ya se encuentra en uso; ingrese un código único");
+        }
+
         return null;
     }
 
@@ -70,6 +82,7 @@ public class CursoServiceImpl implements CursoService {
             throw new ExcepcionNegocio(
                     "Todos los campos (nombre, código y descripción) son obligatorios para crear el curso");
         }
+
     }
 
     private boolean esTextoVacio(String texto) {
