@@ -108,11 +108,7 @@ public class CursoServlet extends HttpServlet {
         if (session == null) {
             return null;
         }
-        UsuarioDTO usuario = (UsuarioDTO) session.getAttribute(LoginServlet.ATRIBUTO_USUARIO);
-        if (usuario == null) {
-            usuario = (UsuarioDTO) session.getAttribute("usuario");
-        }
-        return usuario;
+        return (UsuarioDTO) session.getAttribute(LoginServlet.ATRIBUTO_USUARIO);
     }
 
     private boolean esDocente(UsuarioDTO usuario) {
