@@ -18,10 +18,11 @@ public class CursoDAOImpl implements CursoDAO {
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
             return session.createQuery(
                     "SELECT DISTINCT c FROM Curso c " +
-                    "LEFT JOIN FETCH c.docente " +
-                    "LEFT JOIN FETCH c.listadoEstudiantes le " +
-                    "LEFT JOIN FETCH le.estudiante " +
-                    "WHERE c.id = :id", Curso.class)
+                            "LEFT JOIN FETCH c.docente " +
+                            "LEFT JOIN FETCH c.listadoEstudiantes le " +
+                            "LEFT JOIN FETCH le.estudiante " +
+                            "WHERE c.id = :id",
+                    Curso.class)
                     .setParameter("id", id)
                     .uniqueResult();
         } catch (Exception e) {
@@ -37,10 +38,11 @@ public class CursoDAOImpl implements CursoDAO {
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
             return session.createQuery(
                     "SELECT DISTINCT c FROM Curso c " +
-                    "LEFT JOIN FETCH c.docente " +
-                    "LEFT JOIN FETCH c.listadoEstudiantes le " +
-                    "LEFT JOIN FETCH le.estudiante " +
-                    "WHERE c.codigo = :codigo", Curso.class)
+                            "LEFT JOIN FETCH c.docente " +
+                            "LEFT JOIN FETCH c.listadoEstudiantes le " +
+                            "LEFT JOIN FETCH le.estudiante " +
+                            "WHERE c.codigo = :codigo",
+                    Curso.class)
                     .setParameter("codigo", codigo.trim())
                     .uniqueResult();
         } catch (Exception e) {
@@ -56,10 +58,11 @@ public class CursoDAOImpl implements CursoDAO {
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
             return session.createQuery(
                     "SELECT DISTINCT c FROM Curso c " +
-                    "JOIN c.listadoEstudiantes le " +
-                    "LEFT JOIN FETCH c.docente " +
-                    "WHERE le.estudiante.id = :idEstudiante AND le.estado = 'ACTIVO' " +
-                    "ORDER BY c.nombre ASC", Curso.class)
+                            "JOIN c.listadoEstudiantes le " +
+                            "LEFT JOIN FETCH c.docente " +
+                            "WHERE le.estudiante.id = :idEstudiante AND le.estado = 'ACTIVO' " +
+                            "ORDER BY c.nombre ASC",
+                    Curso.class)
                     .setParameter("idEstudiante", idEstudiante)
                     .list();
         } catch (Exception e) {
@@ -75,13 +78,33 @@ public class CursoDAOImpl implements CursoDAO {
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
             return session.createQuery(
                     "SELECT DISTINCT c FROM Curso c " +
-                    "LEFT JOIN FETCH c.docente " +
-                    "WHERE c.docente.id = :idDocente " +
-                    "ORDER BY c.nombre ASC", Curso.class)
+                            "LEFT JOIN FETCH c.docente " +
+                            "LEFT JOIN FETCH c.listadoEstudiantes " +
+                            "WHERE c.docente.id = :idDocente " +
+                            "ORDER BY c.nombre ASC",
+                    Curso.class)
                     .setParameter("idDocente", idDocente)
                     .list();
         } catch (Exception e) {
             return Collections.emptyList();
+        }
+    }
+
+    @Override
+    public void guardar(Curso curso) {
+        if (curso == null) {
+            return;
+        }
+        Transaction tx = null;
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            tx = session.beginTransaction();
+            session.persist(curso);
+            tx.commit();
+        } catch (Exception e) {
+            if (tx != null && tx.isActive()) {
+                tx.rollback();
+            }
+            throw new RuntimeException("Error al guardar el curso: " + e.getMessage(), e);
         }
     }
 
@@ -93,7 +116,8 @@ public class CursoDAOImpl implements CursoDAO {
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
             Long count = session.createQuery(
                     "SELECT COUNT(le) FROM ListadoEstudiantes le " +
-                    "WHERE le.curso.id = :idCurso AND le.estudiante.id = :idEstudiante AND le.estado = 'ACTIVO'", Long.class)
+                            "WHERE le.curso.id = :idCurso AND le.estudiante.id = :idEstudiante AND le.estado = 'ACTIVO'",
+                    Long.class)
                     .setParameter("idCurso", idCurso)
                     .setParameter("idEstudiante", idEstudiante)
                     .uniqueResult();
@@ -102,5 +126,5 @@ public class CursoDAOImpl implements CursoDAO {
             return false;
         }
     }
-}
 
+}
