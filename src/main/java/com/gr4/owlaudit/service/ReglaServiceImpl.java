@@ -1,6 +1,8 @@
 package com.gr4.owlaudit.service;
 
 import com.gr4.owlaudit.common.exception.ExcepcionNegocio;
+import com.gr4.owlaudit.dao.CursoDAO;
+import com.gr4.owlaudit.dao.CursoDAOImpl;
 import com.gr4.owlaudit.dao.ReglaDAO;
 import com.gr4.owlaudit.dao.ReglaDAOImpl;
 import com.gr4.owlaudit.dto.NuevaReglaDTO;
@@ -10,22 +12,28 @@ import com.gr4.owlaudit.model.Regla;
 public class ReglaServiceImpl implements ReglaService {
 
     private final ReglaDAO reglaDAO;
+    private final CursoDAO cursoDAO;
     private final ValidadorRegla validadorRegla;
 
     public ReglaServiceImpl() {
-        this(new ReglaDAOImpl(), new ValidadorRegla());
+        this(new ReglaDAOImpl(), new CursoDAOImpl(), new ValidadorRegla());
     }
 
     public ReglaServiceImpl(ReglaDAO reglaDAO) {
-        this(reglaDAO, new ValidadorRegla());
+        this(reglaDAO, new CursoDAOImpl(), new ValidadorRegla());
     }
 
     public ReglaServiceImpl(ValidadorRegla validadorRegla) {
-        this(new ReglaDAOImpl(), validadorRegla);
+        this(new ReglaDAOImpl(), new CursoDAOImpl(), validadorRegla);
     }
 
     public ReglaServiceImpl(ReglaDAO reglaDAO, ValidadorRegla validadorRegla) {
+        this(reglaDAO, new CursoDAOImpl(), validadorRegla);
+    }
+
+    public ReglaServiceImpl(ReglaDAO reglaDAO, CursoDAO cursoDAO, ValidadorRegla validadorRegla) {
         this.reglaDAO = reglaDAO;
+        this.cursoDAO = cursoDAO;
         this.validadorRegla = validadorRegla;
     }
 
