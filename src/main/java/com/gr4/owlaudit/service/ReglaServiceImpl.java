@@ -9,6 +9,7 @@ import com.gr4.owlaudit.dto.NuevaReglaDTO;
 import com.gr4.owlaudit.model.Curso;
 import com.gr4.owlaudit.model.EstadoVigencia;
 import com.gr4.owlaudit.model.Regla;
+import java.util.Collections;
 import java.util.List;
 
 public class ReglaServiceImpl implements ReglaService {
@@ -94,11 +95,17 @@ public class ReglaServiceImpl implements ReglaService {
 
     @Override
     public List<Regla> listarReglasPorCurso(Long idCurso) {
+        if (idCurso == null) {
+            return Collections.emptyList();
+        }
         return reglaDAO.listarPorCurso(idCurso);
     }
 
     @Override
     public List<Regla> listarReglasVigentesPorCurso(Long idCurso) {
+        if (idCurso == null) {
+            return Collections.emptyList();
+        }
         return reglaDAO.listarVigentesPorCurso(idCurso);
     }
 
