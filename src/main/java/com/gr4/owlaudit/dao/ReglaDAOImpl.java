@@ -147,7 +147,7 @@ public class ReglaDAOImpl implements ReglaDAO {
         }
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
             return session.createQuery(
-                    "SELECT r FROM Regla r WHERE r.curso.id = :idCurso ORDER BY r.id ASC",
+                    "SELECT r FROM Regla r JOIN FETCH r.curso WHERE r.curso.id = :idCurso ORDER BY r.id ASC",
                     Regla.class
             ).setParameter("idCurso", idCurso).list();
         }
@@ -160,7 +160,7 @@ public class ReglaDAOImpl implements ReglaDAO {
         }
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
             return session.createQuery(
-                    "SELECT r FROM Regla r WHERE r.curso.id = :idCurso AND r.vigencia = :vigencia ORDER BY r.id ASC",
+                    "SELECT r FROM Regla r JOIN FETCH r.curso WHERE r.curso.id = :idCurso AND r.vigencia = :vigencia ORDER BY r.id ASC",
                     Regla.class
             ).setParameter("idCurso", idCurso)
              .setParameter("vigencia", EstadoVigencia.VIGENTE).list();

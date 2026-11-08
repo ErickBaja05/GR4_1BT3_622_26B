@@ -22,8 +22,19 @@
     String fechaLimitePrevia = request.getParameter("fechaLimite") != null ? request.getParameter("fechaLimite") : "";
     String intentosPrevios = request.getParameter("intentosPermitidos") != null ? request.getParameter("intentosPermitidos") : (request.getParameter("numeroIntentos") != null ? request.getParameter("numeroIntentos") : "3");
     String idCursoParam = request.getParameter("idCurso") != null ? request.getParameter("idCurso") : "";
+    if (idCursoParam.isBlank()) {
+        Object idCursoAttr = request.getAttribute("idCurso");
+        if (idCursoAttr != null) {
+            idCursoParam = String.valueOf(idCursoAttr);
+        } else {
+            com.gr4.owlaudit.model.Curso cAct = (com.gr4.owlaudit.model.Curso) request.getAttribute("cursoActual");
+            if (cAct != null && cAct.getId() != null) {
+                idCursoParam = String.valueOf(cAct.getId());
+            }
+        }
+    }
 
-    // Obtención de reglas vigentes (provistas por doGet en AsignacionServlet o fallback resiliente)
+    // Obtención de reglas vigentes (provistas por doGet en AsignacionServlet o fallback resiliente específico del curso)
     @SuppressWarnings("unchecked")
     List<Regla> reglasVigentes = (List<Regla>) request.getAttribute("reglasVigentes");
     if (reglasVigentes == null) {
@@ -32,11 +43,29 @@
     if (reglasVigentes == null) {
         reglasVigentes = (List<Regla>) request.getAttribute("listaReglas");
     }
-    if (reglasVigentes == null) {
+    if (reglasVigentes == null && idCursoParam != null && !idCursoParam.isBlank()) {
         try {
-            reglasVigentes = new ReglaDAOImpl().consultarReglasDeEvaluacionVigentes();
+            reglasVigentes = new ReglaDAOImpl().listarVigentesPorCurso(Long.parseLong(idCursoParam.trim()));
         } catch (Exception ignored) {
             reglasVigentes = java.util.Collections.emptyList();
+        }
+    }
+    if (reglasVigentes == null) {
+        reglasVigentes = java.util.Collections.emptyList();
+    }
+
+    // Filtro estricto: asegurar que sólo aparezcan reglas pertenecientes al curso actual
+    if (idCursoParam != null && !idCursoParam.isBlank() && !reglasVigentes.isEmpty()) {
+        try {
+            Long idCursoActualLong = Long.parseLong(idCursoParam.trim());
+            java.util.List<Regla> reglasDelCurso = new java.util.ArrayList<>();
+            for (Regla r : reglasVigentes) {
+                if (r.getCurso() != null && idCursoActualLong.equals(r.getCurso().getId())) {
+                    reglasDelCurso.add(r);
+                }
+            }
+            reglasVigentes = reglasDelCurso;
+        } catch (Exception ignored) {
         }
     }
 

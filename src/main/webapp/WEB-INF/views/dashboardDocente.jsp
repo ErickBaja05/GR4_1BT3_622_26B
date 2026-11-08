@@ -39,9 +39,9 @@
                                         </div>
                                         <h3>Crear Asignación</h3>
                                         <p>Configure los parámetros de una nueva asignación, defina el umbral de
-                                            aprobación y vincule el conjunto de reglas técnicas vigentes.</p>
-                                        <a class="btn btn-primary btn-block" href="<%= ctx %>/asignaciones"
-                                            id="btnNavegarCrearAsignacion">Crear Asignación</a>
+                                            aprobación y vincule el conjunto de reglas técnicas vigentes dentro de su curso.</p>
+                                        <a class="btn btn-primary btn-block" href="<%= ctx %>/curso"
+                                            id="btnNavegarCrearAsignacion">Seleccionar Curso para Asignación</a>
                                     </div>
 
 
