@@ -56,6 +56,13 @@
             </div>
         <% } %>
 
+        <% 
+            Object idCursoReg = request.getAttribute("idCurso");
+            if (idCursoReg == null && dto != null) idCursoReg = dto.getIdCurso();
+            if (idCursoReg == null && request.getParameter("idCurso") != null && !request.getParameter("idCurso").isBlank()) {
+                idCursoReg = request.getParameter("idCurso");
+            }
+        %>
         <!-- Formulario de Registro de Regla -->
         <div class="card">
             <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem; margin-bottom: 1rem;">
@@ -63,8 +70,13 @@
                     <h1 class="card-title" style="margin-bottom: 0.25rem;">Configurar Regla de Evaluación Técnica</h1>
                     <p class="card-subtitle" style="margin-bottom: 0;">Cree políticas de calidad de código para ser evaluadas automáticamente en los repositorios.</p>
                 </div>
-                <div>
-                    <a href="${pageContext.request.contextPath}/regla<%= request.getAttribute("idCurso") != null ? "?idCurso=" + request.getAttribute("idCurso") : "" %>" class="btn btn-secondary" style="display: inline-flex; align-items: center; gap: 0.4rem;">
+                <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+                    <% if (idCursoReg != null) { %>
+                        <a href="${pageContext.request.contextPath}/asignaciones?idCurso=<%= idCursoReg %>" class="btn btn-secondary" style="display: inline-flex; align-items: center; gap: 0.4rem;">
+                            <span>📝</span> Volver a Asignaciones
+                        </a>
+                    <% } %>
+                    <a href="${pageContext.request.contextPath}/regla<%= idCursoReg != null ? "?idCurso=" + idCursoReg : "" %>" class="btn btn-secondary" style="display: inline-flex; align-items: center; gap: 0.4rem;">
                         <span>📋</span> Volver al Catálogo de Reglas
                     </a>
                 </div>
@@ -72,10 +84,8 @@
 
             <form action="${pageContext.request.contextPath}/regla" method="POST">
                 <input type="hidden" name="accion" value="registrar">
-                <% if (request.getAttribute("idCurso") != null) { %>
-                    <input type="hidden" name="idCurso" value="<%= request.getAttribute("idCurso") %>">
-                <% } else if (dto != null && dto.getIdCurso() != null) { %>
-                    <input type="hidden" name="idCurso" value="<%= dto.getIdCurso() %>">
+                <% if (idCursoReg != null) { %>
+                    <input type="hidden" name="idCurso" value="<%= idCursoReg %>">
                 <% } %>
                 <div class="form-group">
                     <label for="tipoMotor" class="form-label">Tipo de Motor de Evaluación</label>

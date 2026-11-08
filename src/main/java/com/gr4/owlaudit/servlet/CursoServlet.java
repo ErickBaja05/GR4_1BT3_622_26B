@@ -60,8 +60,9 @@ public class CursoServlet extends HttpServlet {
                     ? MENSAJE_PERMISOS_DOCENTE
                     : MENSAJE_PERMISOS_ESTUDIANTE);
         } else if ("sinCurso".equalsIgnoreCase(errorParam)) {
-            request.setAttribute("mensajeError",
-                    "Debe ingresar a las asignaciones a través de uno de sus cursos matriculados.");
+            request.setAttribute("mensajeError", esDocente(usuario)
+                    ? "Debe seleccionar uno de sus cursos para gestionar sus reglas o asignaciones."
+                    : "Debe ingresar a las asignaciones a través de uno de sus cursos matriculados.");
         }
 
         List<Curso> cursos;

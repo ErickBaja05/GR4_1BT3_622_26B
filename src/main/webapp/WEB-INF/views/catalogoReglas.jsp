@@ -34,13 +34,29 @@
 
     <main class="container">
         <!-- Encabezado con navegación principal -->
+        <% 
+            Object idCursoObj = request.getAttribute("idCurso");
+            String idCursoParam = (idCursoObj != null) ? String.valueOf(idCursoObj) : request.getParameter("idCurso");
+        %>
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
             <div>
-                <a href="${pageContext.request.contextPath}/curso" class="back-link">&larr; Volver a Mis Cursos</a>
-                <h1 class="page-title" style="margin-top: 0.5rem;">Catálogo de Reglas Técnicas</h1>
+                <div style="display: flex; gap: 1.25rem; align-items: center; margin-bottom: 0.5rem; flex-wrap: wrap;">
+                    <a href="${pageContext.request.contextPath}/curso" class="back-link">&larr; Volver a Mis Cursos</a>
+                    <% if (idCursoParam != null && !idCursoParam.isBlank()) { %>
+                        <a href="${pageContext.request.contextPath}/asignaciones?idCurso=<%= HtmlUtil.escape(idCursoParam) %>" class="back-link" style="color: var(--brand-blue, #2563eb); font-weight: 600;">
+                            📝 Volver a Asignaciones del Curso
+                        </a>
+                    <% } %>
+                </div>
+                <h1 class="page-title" style="margin-top: 0.25rem;">Catálogo de Reglas Técnicas</h1>
                 <p class="card-subtitle" style="margin-bottom: 0;">Políticas de evaluación técnica y gestión de su vigencia para las auditorías.</p>
             </div>
-            <div>
+            <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
+                <% if (idCursoParam != null && !idCursoParam.isBlank()) { %>
+                    <a href="${pageContext.request.contextPath}/asignaciones?idCurso=<%= HtmlUtil.escape(idCursoParam) %>" class="btn btn-secondary" style="display: inline-flex; align-items: center; gap: 0.4rem;">
+                        <span>📝</span> Asignaciones del Curso
+                    </a>
+                <% } %>
                 <button type="button" id="btnToggleFormulario" class="btn btn-primary" onclick="toggleFormularioRegistro()"
                         style="display: inline-flex; align-items: center; gap: 0.4rem;">
                     <span id="iconoToggle">➕</span> <span id="textoToggle">Crear nueva Regla</span>

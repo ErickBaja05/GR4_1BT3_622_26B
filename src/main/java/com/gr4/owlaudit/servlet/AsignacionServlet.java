@@ -183,6 +183,13 @@ public class AsignacionServlet extends HttpServlet {
         try {
             NuevaAsignacionDTO dto = obtenerNuevaAsignacionDTO(request);
 
+            if (dto.getReglasIds() == null || dto.getReglasIds().isEmpty()) {
+                request.setAttribute("mensajeError", "Se debe asociar al menos una regla de evaluación a la asignación.");
+                cargarDatosVista(request);
+                request.getRequestDispatcher(VISTA_CREAR).forward(request, response);
+                return;
+            }
+
             Asignacion asignacionCreada;
             if (dto.getIdCurso() != null || dto.getFechaLimite() != null || dto.getIntentosPermitidos() != null) {
                 asignacionCreada = (asignacionesService != null) ? asignacionesService.programarAsignacion(dto) : null;
@@ -449,22 +456,29 @@ public class AsignacionServlet extends HttpServlet {
     }
 
     private void cargarDatosVista(HttpServletRequest request) {
+        String idCursoStr = request.getParameter("idCurso");
+        Long idCurso = parsearLong(idCursoStr);
+
         try {
-            request.setAttribute("reglasVigentes", reglaDAO.consultarReglasDeEvaluacionVigentes());
+            if (idCurso != null) {
+                request.setAttribute("reglasVigentes", reglaDAO.listarVigentesPorCurso(idCurso));
+            } else {
+                request.setAttribute("reglasVigentes", reglaDAO.consultarReglasDeEvaluacionVigentes());
+            }
         } catch (Exception e) {
             System.err.println("[AsignacionServlet] Error al consultar reglas vigentes: " + e.getMessage());
         }
 
         try {
-            String idCursoStr = request.getParameter("idCurso");
-            if (idCursoStr != null && !idCursoStr.isBlank()) {
-                Long idCurso = Long.parseLong(idCursoStr.trim());
+            if (idCurso != null) {
                 if (cursoDAO != null) {
                     request.setAttribute("cursoActual", cursoDAO.buscarPorId(idCurso));
                 }
                 if (asignacionesService != null) {
-                    Long usuarioId = obtenerUsuarioIdEnSesion(request);
-                    request.setAttribute("asignaciones", asignacionesService.consultarAsignacionesDeCurso(idCurso, usuarioId));
+                    HttpSession session = request.getSession(false);
+                    UsuarioDTO usuario = (session != null) ? (UsuarioDTO) session.getAttribute(LoginServlet.ATRIBUTO_USUARIO) : null;
+                    Long idEstudiante = (usuario != null && usuario.getRol() == RolEnum.ESTUDIANTE) ? usuario.getId() : null;
+                    request.setAttribute("asignaciones", asignacionesService.consultarAsignacionesDeCurso(idCurso, idEstudiante));
                 }
             } else if (asignacionesService != null) {
                 request.setAttribute("asignaciones", asignacionesService.listarAsignaciones());

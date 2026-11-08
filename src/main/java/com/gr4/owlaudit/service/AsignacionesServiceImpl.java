@@ -284,7 +284,9 @@ public class AsignacionesServiceImpl implements AsignacionesService {
             return Collections.emptyList();
         }
         if (idEstudiante != null) {
-            validadorAccesoCurso.validarAccesoEstudianteACurso(idCurso, idEstudiante);
+            if (validadorAccesoCurso != null && !validadorAccesoCurso.esDocenteTitular(idCurso, idEstudiante)) {
+                validadorAccesoCurso.validarAccesoEstudianteACurso(idCurso, idEstudiante);
+            }
         }
         return asignacionesDAO.consultarAsignacionesDeCurso(idCurso);
     }

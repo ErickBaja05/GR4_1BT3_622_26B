@@ -72,11 +72,26 @@
 
     <main class="container">
         <!-- Tarjeta de Encabezado Principal -->
-        <div class="card">
-            <h1 class="card-title">Crear Asignación Académica</h1>
-            <p class="card-subtitle" style="margin-bottom: 0;">
-                Defina el nombre de la asignación, configure el umbral mínimo de aprobación y vincule las reglas técnicas vigentes para la evaluación automatizada.
-            </p>
+        <div class="card" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+            <div>
+                <a href="${pageContext.request.contextPath}/curso" class="back-link">&larr; Volver a Mis Cursos</a>
+                <h1 class="card-title" style="margin-top: 0.5rem;">
+                    Crear Asignación Académica<%= (request.getAttribute("cursoActual") != null) ? " - " + HtmlUtil.escape(((com.gr4.owlaudit.model.Curso) request.getAttribute("cursoActual")).getNombre()) : "" %>
+                </h1>
+                <p class="card-subtitle" style="margin-bottom: 0;">
+                    Defina el nombre de la asignación, configure el umbral mínimo de aprobación y vincule las reglas técnicas vigentes para la evaluación automatizada.
+                </p>
+            </div>
+            <% if (idCursoParam != null && !idCursoParam.isBlank()) { %>
+                <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                    <a href="<%= ctx %>/regla?idCurso=<%= HtmlUtil.escape(idCursoParam) %>" class="btn btn-secondary">
+                        📋 Catálogo de Reglas del Curso
+                    </a>
+                    <a href="<%= ctx %>/regla?vista=registro&idCurso=<%= HtmlUtil.escape(idCursoParam) %>" class="btn btn-primary">
+                        ➕ Crear Nueva Regla
+                    </a>
+                </div>
+            <% } %>
         </div>
 
         <!-- Contenedores de Notificación de Éxito o Validación de Error -->
@@ -175,6 +190,10 @@
                                 </span>
                             </div>
                             <div>
+                                <% if (idCursoParam != null && !idCursoParam.isBlank()) { %>
+                                    <a href="<%= ctx %>/regla?vista=registro&idCurso=<%= HtmlUtil.escape(idCursoParam) %>" class="btn-link-action" style="margin-right: 0.75rem; font-weight: 600; color: var(--brand-blue, #2563eb);">➕ Crear nueva regla</a>
+                                    &nbsp;|&nbsp;
+                                <% } %>
                                 <button type="button" class="btn-link-action" onclick="marcarTodasLasReglas(true)">Seleccionar todas</button>
                                 &nbsp;|&nbsp;
                                 <button type="button" class="btn-link-action" onclick="marcarTodasLasReglas(false)">Deseleccionar todas</button>
@@ -182,13 +201,27 @@
                         </div>
 
                         <% if (reglasVigentes.isEmpty()) { %>
-                            <div style="text-align: center; padding: 2rem 1rem; color: var(--text-muted);">
-                                <p style="margin-bottom: 0.5rem; font-size: 1.1rem;">⚠️ No existen reglas vigentes disponibles.</p>
-                                <p style="font-size: 0.875rem;">
-                                    Para crear una asignación debe existir al menos una regla activa. 
-                                    Puede activarlas o crearlas desde el 
-                                    <a href="<%= ctx %>/regla" style="color: var(--brand-blue); font-weight: 600;">Catálogo de Reglas</a>.
+                            <div style="text-align: center; padding: 2rem 1rem; color: var(--text-muted); background: var(--bg-surface, #f8fafc); border-radius: var(--radius-md, 6px); border: 1px dashed var(--border-color, #cbd5e1);">
+                                <p style="margin-bottom: 0.5rem; font-size: 1.1rem; font-weight: 600; color: var(--text-main, #1e293b);">⚠️ No existen reglas vigentes disponibles para este curso.</p>
+                                <p style="font-size: 0.875rem; margin-bottom: 1rem;">
+                                    Para crear una asignación debe existir al menos una regla activa asociada a este curso.
                                 </p>
+                                <div style="display: flex; gap: 0.75rem; justify-content: center; flex-wrap: wrap;">
+                                    <% if (idCursoParam != null && !idCursoParam.isBlank()) { %>
+                                        <a href="<%= ctx %>/regla?vista=registro&idCurso=<%= HtmlUtil.escape(idCursoParam) %>" 
+                                           class="btn btn-primary" style="display: inline-flex; align-items: center; gap: 0.4rem;">
+                                            ➕ Crear nueva regla para este curso
+                                        </a>
+                                        <a href="<%= ctx %>/regla?idCurso=<%= HtmlUtil.escape(idCursoParam) %>" 
+                                           class="btn btn-secondary" style="display: inline-flex; align-items: center; gap: 0.4rem;">
+                                            📋 Catálogo de Reglas del Curso
+                                        </a>
+                                    <% } else { %>
+                                        <a href="<%= ctx %>/regla" class="btn btn-secondary">
+                                            Catálogo de Reglas
+                                        </a>
+                                    <% } %>
+                                </div>
                             </div>
                         <% } else { %>
                             <div class="rules-list-container">
@@ -378,6 +411,9 @@
         <form id="formEliminarAsignacion" action="<%= ctx %>/asignaciones" method="POST" style="display:none;">
             <input type="hidden" name="accion" value="eliminar">
             <input type="hidden" id="deleteIdAsignacion" name="idAsignacion" value="">
+            <% if (idCursoParam != null && !idCursoParam.isBlank()) { %>
+                <input type="hidden" name="idCurso" value="<%= HtmlUtil.escape(idCursoParam) %>">
+            <% } %>
         </form>
 
         <!-- Modal para Editar Asignación Académica -->
@@ -390,6 +426,9 @@
                 <form action="<%= ctx %>/asignaciones" method="POST">
                     <input type="hidden" name="accion" value="actualizar">
                     <input type="hidden" id="editIdAsignacion" name="idAsignacion" value="">
+                    <% if (idCursoParam != null && !idCursoParam.isBlank()) { %>
+                        <input type="hidden" name="idCurso" value="<%= HtmlUtil.escape(idCursoParam) %>">
+                    <% } %>
 
                     <div class="form-group" style="margin-bottom: 1rem;">
                         <label for="editNombreAsignacion" class="form-label">Nombre de la Asignación *</label>
@@ -476,9 +515,36 @@
             }
         }
 
-        // Ejecución al cargar la página para reflejar el estado inicial de selección
+        // Ejecución al cargar la página para reflejar el estado inicial de selección y validación submit
         document.addEventListener('DOMContentLoaded', function() {
             actualizarContadorReglas();
+
+            const formCrear = document.getElementById('formCrearAsignacion');
+            if (formCrear) {
+                formCrear.addEventListener('submit', function(e) {
+                    const cbs = document.querySelectorAll('input[name="reglasIds"]:checked:not(.edit-modal-regla-cb)');
+                    if (cbs.length === 0) {
+                        e.preventDefault();
+                        alert('Se debe asociar al menos una regla de evaluación a la asignación.');
+                        const contenedorReglas = document.querySelector('.rules-selection-box');
+                        if (contenedorReglas) {
+                            contenedorReglas.scrollIntoView({ behavior: 'smooth' });
+                            contenedorReglas.style.border = '2px solid var(--danger-color, #dc2626)';
+                        }
+                    }
+                });
+            }
+
+            const modalEditForm = document.querySelector('#modalEditarAsignacion form');
+            if (modalEditForm) {
+                modalEditForm.addEventListener('submit', function(e) {
+                    const cbs = document.querySelectorAll('.edit-modal-regla-cb:checked');
+                    if (cbs.length === 0) {
+                        e.preventDefault();
+                        alert('Se debe asociar al menos una regla de evaluación a la asignación.');
+                    }
+                });
+            }
         });
     </script>
 </body>
