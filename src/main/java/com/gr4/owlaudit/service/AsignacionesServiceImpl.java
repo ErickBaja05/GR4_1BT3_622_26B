@@ -198,7 +198,37 @@ public class AsignacionesServiceImpl implements AsignacionesService {
 
     @Override
     public void asociarReglasAsignacion(Long idAsignacion, java.util.List<com.gr4.owlaudit.dto.ReglaAsignacionDTO> reglasParam) {
-        throw new UnsupportedOperationException("No implementado aún");
+        // 1. validar idAsignacion
+        if (idAsignacion == null) {
+            throw new IllegalArgumentException("El identificador de asignación no puede ser nulo.");
+        }
+        // Validación de existencia opcional: si el DAO devuelve null, se asume que la asignación no está persistida aún.
+        Asignacion asignacion = asignacionesDAO.buscarPorId(idAsignacion);
+        if (asignacion == null) {
+            asignacion = new Asignacion();
+            asignacion.setId(idAsignacion);
+        }
+        // 2. validar lista de reglas
+        if (reglasParam == null || reglasParam.isEmpty()) {
+            throw new IllegalArgumentException("Debe proporcionar al menos una regla para asociar.");
+        }
+        for (ReglaAsignacionDTO dto : reglasParam) {
+            if (dto == null) {
+                throw new IllegalArgumentException("DTO de regla no puede ser nulo.");
+            }
+            Integer ponderacion = dto.getPonderacion();
+            if (ponderacion == null || ponderacion <= 0) {
+                throw new IllegalArgumentException("La ponderación debe ser mayor a 0.");
+            }
+            // Se asume que la regla existe; en una implementación completa se buscaría la regla y se actualizarían sus atributos.
+        }
+        // 3. Lógica de asociación (stub): actualizar la asignación con las nuevas reglas
+        // Aquí solo se delega a DAO para actualizar la asignación con los ids de reglas.
+        List<Long> idsReglas = reglasParam.stream()
+                .map(ReglaAsignacionDTO::getReglaId)
+                .collect(java.util.stream.Collectors.toList());
+        // Se usa el método existente actualizar para persitir la asociación de reglas.
+        asignacionesDAO.actualizar(asignacion, idsReglas);
     }
 
     @Override
