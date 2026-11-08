@@ -8,6 +8,7 @@ import org.hibernate.Transaction;
 
 import java.util.Collections;
 import java.util.List;
+import com.gr4.owlaudit.model.ListadoEstudiantes;
 
 public class CursoDAOImpl implements CursoDAO {
 
@@ -145,6 +146,11 @@ public class CursoDAOImpl implements CursoDAO {
         } catch (Exception e) {
             return false;
         }
+    }
+
+    @Override
+    public void registrarMatricula(ListadoEstudiantes matricula) {
+        // Se implementa en el Ciclo 3
     }
 
 }

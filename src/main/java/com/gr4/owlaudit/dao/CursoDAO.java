@@ -2,6 +2,7 @@ package com.gr4.owlaudit.dao;
 
 import com.gr4.owlaudit.model.Curso;
 import java.util.List;
+import com.gr4.owlaudit.model.ListadoEstudiantes;
 
 public interface CursoDAO {
     Curso buscarPorId(Long id);
@@ -15,4 +16,6 @@ public interface CursoDAO {
     boolean estaEstudianteMatriculado(Long idCurso, Long idEstudiante);
 
     void guardar(Curso curso);
+
+    void registrarMatricula(ListadoEstudiantes matricula);
 }
