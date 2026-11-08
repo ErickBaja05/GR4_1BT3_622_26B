@@ -96,5 +96,9 @@ public class ListadoEstudiantes {
     public void setEstado(String estado) {
         this.estado = estado;
     }
-}
 
+    public static ListadoEstudiantes crearNuevaMatricula(Curso curso, Estudiante estudiante) {
+
+        return new ListadoEstudiantes(curso, estudiante, LocalDateTime.now(), "ACTIVO");
+    }
+}

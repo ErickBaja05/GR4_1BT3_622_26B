@@ -18,5 +18,9 @@ public interface CursoService {
 
     Curso crearCurso(NuevoCursoDTO dto, String correoDocente) throws ExcepcionNegocio;
 
-    public List<Curso> listarCursosPorCorreoDocente(String correoDocente);
+    List<Curso> listarCursosPorCorreoDocente(String correoDocente);
+
+    List<Curso> listarCursosPorCorreoEstudiante(String correoEstudiante);
+
+    Curso matricularEstudiantePorCodigo(Long idEstudiante, String codigoCurso) throws ExcepcionNegocio;
 }

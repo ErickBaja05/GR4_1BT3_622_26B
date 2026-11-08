@@ -11,6 +11,10 @@ import com.gr4.owlaudit.model.Docente;
 import com.gr4.owlaudit.model.RolEnum;
 import com.gr4.owlaudit.model.Usuario;
 
+import com.gr4.owlaudit.model.Estudiante;
+import com.gr4.owlaudit.model.ListadoEstudiantes;
+import java.time.LocalDateTime;
+
 import java.util.Collections;
 import java.util.List;
 import java.util.regex.Pattern;
@@ -97,7 +101,22 @@ public class CursoServiceImpl implements CursoService {
 
     @Override
     public List<Curso> listarCursosPorEstudiante(Long idEstudiante) {
+        if (idEstudiante == null) {
+            return Collections.emptyList();
+        }
         return cursoDAO.listarCursosPorEstudiante(idEstudiante);
+    }
+
+    @Override
+    public List<Curso> listarCursosPorCorreoEstudiante(String correoEstudiante) {
+        if (correoEstudiante == null || correoEstudiante.isBlank()) {
+            return Collections.emptyList();
+        }
+        Usuario usuario = usuarioDAO.buscarPorCorreo(correoEstudiante);
+        if (usuario == null || usuario.getId() == null) {
+            return Collections.emptyList();
+        }
+        return cursoDAO.listarCursosPorEstudiante(usuario.getId());
     }
 
     private void validarCamposObligatorios(NuevoCursoDTO dto) throws ExcepcionNegocio {
@@ -128,5 +147,35 @@ public class CursoServiceImpl implements CursoService {
         if (cursoDAO.buscarPorCodigo(codigo) != null) {
             throw new ExcepcionNegocio("El código de curso ingresado ya se encuentra en uso; ingrese un código único");
         }
+    }
+
+    @Override
+    public Curso matricularEstudiantePorCodigo(Long idEstudiante, String codigoCurso) throws ExcepcionNegocio {
+        Curso curso = obtenerCursoPorCodigoValido(codigoCurso);
+        validarEstudianteNoMatriculado(curso, idEstudiante);
+
+        Estudiante estudiante = new Estudiante();
+        estudiante.setId(idEstudiante);
+
+        ListadoEstudiantes nuevaMatricula = ListadoEstudiantes.crearNuevaMatricula(curso, estudiante);
+        cursoDAO.registrarMatricula(nuevaMatricula);
+        return curso;
+    }
+
+    private void validarEstudianteNoMatriculado(Curso curso, Long idEstudiante) throws ExcepcionNegocio {
+        if (cursoDAO.estaEstudianteMatriculado(curso.getId(), idEstudiante)
+                || curso.estaMatriculado(idEstudiante)) {
+            throw new ExcepcionNegocio("Ya te encuentras matriculado en el curso " + curso.getNombre());
+        }
+    }
+
+    private Curso obtenerCursoPorCodigoValido(String codigoCurso) throws ExcepcionNegocio {
+        Curso curso = esTextoVacio(codigoCurso)
+                ? null
+                : cursoDAO.buscarPorCodigo(normalizarCodigo(codigoCurso));
+        if (curso == null) {
+            throw new ExcepcionNegocio("No existe ningún curso registrado con el código ingresado");
+        }
+        return curso;
     }
 }

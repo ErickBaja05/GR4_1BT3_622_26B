@@ -22,10 +22,8 @@ import java.util.List;
 public class CursoServlet extends HttpServlet {
 
     private static final String VISTA_MIS_CURSOS = "/WEB-INF/views/misCursos.jsp";
-    static final String MENSAJE_PERMISOS_DOCENTE =
-            "No tiene permisos para gestionar un curso del que no es docente titular.";
-    static final String MENSAJE_PERMISOS_ESTUDIANTE =
-            "No tienes permisos para acceder a las asignaciones de un curso en el que no estás matriculado.";
+    static final String MENSAJE_PERMISOS_DOCENTE = "No tiene permisos para gestionar un curso del que no es docente titular.";
+    static final String MENSAJE_PERMISOS_ESTUDIANTE = "No tienes permisos para acceder a las asignaciones de un curso en el que no estás matriculado.";
 
     private final CursoService cursoService;
 
@@ -67,9 +65,19 @@ public class CursoServlet extends HttpServlet {
 
         List<Curso> cursos;
         if (usuario.getRol() == RolEnum.ESTUDIANTE) {
-            cursos = cursoService.listarCursosPorEstudiante(usuario.getId());
+            cursos = (usuario.getId() != null)
+                    ? cursoService.listarCursosPorEstudiante(usuario.getId())
+                    : Collections.emptyList();
+            if ((cursos == null || cursos.isEmpty()) && usuario.getCorreo() != null) {
+                List<Curso> cursosPorCorreo = cursoService.listarCursosPorCorreoEstudiante(usuario.getCorreo());
+                if (cursosPorCorreo != null && !cursosPorCorreo.isEmpty()) {
+                    cursos = cursosPorCorreo;
+                }
+            }
         } else if (usuario.getRol() == RolEnum.DOCENTE) {
-            cursos = cursoService.listarCursosPorDocente(usuario.getId());
+            cursos = (usuario.getId() != null)
+                    ? cursoService.listarCursosPorDocente(usuario.getId())
+                    : cursoService.listarCursosPorCorreoDocente(usuario.getCorreo());
         } else {
             cursos = Collections.emptyList();
         }
@@ -84,6 +92,10 @@ public class CursoServlet extends HttpServlet {
         UsuarioDTO usuario = obtenerUsuarioAutenticado(request);
         if (usuario == null) {
             response.sendRedirect(request.getContextPath() + "/login");
+            return;
+        }
+        if (esEstudiante(usuario)) {
+            procesarMatriculaEstudiante(request, response, usuario);
             return;
         }
         if (!esDocente(usuario)) {
@@ -102,6 +114,33 @@ public class CursoServlet extends HttpServlet {
         }
 
         cargarVistaCursosDocente(request, response, usuario.getCorreo());
+    }
+
+    private boolean esEstudiante(UsuarioDTO usuario) {
+        return usuario != null && usuario.getRol() == RolEnum.ESTUDIANTE;
+    }
+
+    private void procesarMatriculaEstudiante(HttpServletRequest request, HttpServletResponse response,
+            UsuarioDTO estudiante) throws ServletException, IOException {
+        String codigo = request.getParameter("codigo");
+        try {
+            Curso cursoMatriculado = cursoService.matricularEstudiantePorCodigo(estudiante.getId(), codigo);
+            request.setAttribute("mensajeExito",
+                    "Matriculación exitosa en el curso: " + cursoMatriculado.getNombre());
+        } catch (ExcepcionNegocio e) {
+            request.setAttribute("error", e.getMessage());
+        }
+        List<Curso> cursos = (estudiante.getId() != null)
+                ? cursoService.listarCursosPorEstudiante(estudiante.getId())
+                : Collections.emptyList();
+        if ((cursos == null || cursos.isEmpty()) && estudiante.getCorreo() != null) {
+            List<Curso> cursosPorCorreo = cursoService.listarCursosPorCorreoEstudiante(estudiante.getCorreo());
+            if (cursosPorCorreo != null && !cursosPorCorreo.isEmpty()) {
+                cursos = cursosPorCorreo;
+            }
+        }
+        request.setAttribute("cursos", cursos);
+        request.getRequestDispatcher(VISTA_MIS_CURSOS).forward(request, response);
     }
 
     private UsuarioDTO obtenerUsuarioAutenticado(HttpServletRequest request) {
@@ -134,6 +173,6 @@ public class CursoServlet extends HttpServlet {
             String correoDocente)
             throws ServletException, IOException {
         request.setAttribute("cursos", cursoService.listarCursosPorCorreoDocente(correoDocente));
-        request.getRequestDispatcher("/WEB-INF/views/misCursos.jsp").forward(request, response);
+        request.getRequestDispatcher(VISTA_MIS_CURSOS).forward(request, response);
     }
 }

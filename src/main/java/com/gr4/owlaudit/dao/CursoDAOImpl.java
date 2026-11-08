@@ -5,9 +5,12 @@ import com.gr4.owlaudit.model.Curso;
 import com.gr4.owlaudit.model.Docente;
 import org.hibernate.Session;
 import org.hibernate.Transaction;
+import com.gr4.owlaudit.model.Estudiante;
+import com.gr4.owlaudit.model.ListadoEstudiantes;
 
 import java.util.Collections;
 import java.util.List;
+import com.gr4.owlaudit.model.ListadoEstudiantes;
 
 public class CursoDAOImpl implements CursoDAO {
 
@@ -57,16 +60,33 @@ public class CursoDAOImpl implements CursoDAO {
             return Collections.emptyList();
         }
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
-            return session.createQuery(
+            List<Curso> cursos = session.createQuery(
                     "SELECT DISTINCT c FROM Curso c " +
                             "JOIN c.listadoEstudiantes le " +
                             "LEFT JOIN FETCH c.docente " +
-                            "WHERE le.estudiante.id = :idEstudiante AND le.estado = 'ACTIVO' " +
+                            "WHERE (le.id.idEstudiante = :idEstudiante OR le.estudiante.id = :idEstudiante) " +
+                            "AND (le.estado IS NULL OR UPPER(le.estado) = 'ACTIVO') " +
                             "ORDER BY c.nombre ASC",
                     Curso.class)
                     .setParameter("idEstudiante", idEstudiante)
                     .list();
+
+            if (cursos != null && !cursos.isEmpty()) {
+                return cursos;
+            }
+
+            return session.createQuery(
+                    "SELECT DISTINCT le.curso FROM ListadoEstudiantes le " +
+                            "LEFT JOIN FETCH le.curso.docente " +
+                            "WHERE (le.id.idEstudiante = :idEstudiante OR le.estudiante.id = :idEstudiante) " +
+                            "AND (le.estado IS NULL OR UPPER(le.estado) = 'ACTIVO') " +
+                            "ORDER BY le.curso.nombre ASC",
+                    Curso.class)
+                    .setParameter("idEstudiante", idEstudiante)
+                    .list();
         } catch (Exception e) {
+            System.err.println("[CursoDAOImpl] Error al listar cursos por estudiante: " + e.getMessage());
+            e.printStackTrace();
             return Collections.emptyList();
         }
     }
@@ -136,14 +156,53 @@ public class CursoDAOImpl implements CursoDAO {
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
             Long count = session.createQuery(
                     "SELECT COUNT(le) FROM ListadoEstudiantes le " +
-                            "WHERE le.curso.id = :idCurso AND le.estudiante.id = :idEstudiante AND le.estado = 'ACTIVO'",
+                            "WHERE le.curso.id = :idCurso " +
+                            "AND (le.id.idEstudiante = :idEstudiante OR le.estudiante.id = :idEstudiante) " +
+                            "AND (le.estado IS NULL OR UPPER(le.estado) = 'ACTIVO')",
                     Long.class)
                     .setParameter("idCurso", idCurso)
                     .setParameter("idEstudiante", idEstudiante)
                     .uniqueResult();
             return count != null && count > 0;
         } catch (Exception e) {
+            System.err.println("[CursoDAOImpl] Error en estaEstudianteMatriculado: " + e.getMessage());
             return false;
+        }
+    }
+
+    @Override
+    public void registrarMatricula(ListadoEstudiantes matricula) {
+        if (matricula == null || matricula.getId() == null) {
+            return;
+        }
+        Session session = null;
+        Transaction tx = null;
+        try {
+            session = HibernateUtil.getSessionFactory().openSession();
+            tx = session.beginTransaction();
+
+            Curso cursoGestionado = session.find(Curso.class, matricula.getId().getIdCurso());
+            Estudiante estudianteGestionado = session.find(Estudiante.class, matricula.getId().getIdEstudiante());
+
+            if (cursoGestionado != null && estudianteGestionado != null) {
+                matricula.setCurso(cursoGestionado);
+                matricula.setEstudiante(estudianteGestionado);
+                session.persist(matricula);
+            }
+            tx.commit();
+        } catch (Exception e) {
+            if (tx != null && tx.isActive()) {
+                try {
+                    tx.rollback();
+                } catch (Exception rollbackEx) {
+                    e.addSuppressed(rollbackEx);
+                }
+            }
+            throw new RuntimeException("Error al registrar la matrícula: " + e.getMessage(), e);
+        } finally {
+            if (session != null && session.isOpen()) {
+                session.close();
+            }
         }
     }
 
