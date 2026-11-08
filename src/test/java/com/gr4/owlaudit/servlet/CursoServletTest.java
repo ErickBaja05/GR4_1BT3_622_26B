@@ -111,17 +111,22 @@ class CursoServletTest {
     }
 
     @Test
-    @DisplayName("Seguridad: Estudiante que intenta hacer POST a /curso es rechazado")
-    void doPost_cuandoUsuarioEnSesionEsEstudiante_redirigeConErrorPermisos() throws Exception {
+    @DisplayName("Seguridad: POST a /curso de un estudiante procesa su matrícula y nunca crea un curso")
+    void doPost_cuandoUsuarioEnSesionEsEstudiante_procesaMatriculaYNoCreaCurso() throws Exception {
         UsuarioDTO estudianteDto = new UsuarioDTO(1L, "Juan Estudiante", "estudiante@epn.edu.ec", RolEnum.ESTUDIANTE);
+        Curso cursoMatriculado = new Curso();
+        cursoMatriculado.setNombre("Construcción de Software");
 
         when(request.getSession(false)).thenReturn(session);
         when(session.getAttribute(ATRIBUTO_USUARIO_SESION)).thenReturn(estudianteDto);
-        when(request.getContextPath()).thenReturn("/owlaudit");
+        when(request.getParameter("codigo")).thenReturn("CSW-2026B");
+        when(request.getRequestDispatcher("/WEB-INF/views/misCursos.jsp")).thenReturn(dispatcher);
+        when(cursoService.matricularEstudiantePorCodigo(1L, "CSW-2026B")).thenReturn(cursoMatriculado);
 
         cursoServlet.doPost(request, response);
 
         verify(cursoService, never()).crearCurso(any(), any());
-        verify(response).sendRedirect("/owlaudit/curso?error=permisos");
+        verify(cursoService).matricularEstudiantePorCodigo(1L, "CSW-2026B");
+        verify(dispatcher).forward(request, response);
     }
 }
