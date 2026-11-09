@@ -12,6 +12,7 @@ import com.gr4.owlaudit.dao.ProyectoDAOImpl;
 import com.gr4.owlaudit.dao.ReglaDAO;
 import com.gr4.owlaudit.dao.ReglaDAOImpl;
 import com.gr4.owlaudit.dto.AuditoriaDTO;
+import com.gr4.owlaudit.dto.AuditoriaResumenDTO;
 import com.gr4.owlaudit.dto.ResultadoDTO;
 import com.gr4.owlaudit.dto.ResumenDTO;
 import com.gr4.owlaudit.model.Asignacion;
@@ -62,6 +63,19 @@ public class AuditoriaServiceImpl implements AuditoriaService {
             ProyectoDAO proyectoDAO, AsignacionesService asignacionesService) {
         this(reglaDAO, auditoriaDAO, gitHubClient, evaluadorFactory, proyectoDAO);
         this.asignacionesService = asignacionesService;
+    }
+
+    public AuditoriaServiceImpl(ReglaDAO reglaDAO, AuditoriaDAO auditoriaDAO,
+            GitHubClient gitHubClient, EvaluadorReglaFactory evaluadorFactory,
+            ProyectoDAO proyectoDAO, AsignacionesService asignacionesService,
+            ValidadorAccesoCurso validadorAccesoCurso) {
+        this.reglaDAO = reglaDAO;
+        this.auditoriaDAO = auditoriaDAO;
+        this.gitHubClient = gitHubClient;
+        this.evaluadorFactory = evaluadorFactory;
+        this.proyectoDAO = proyectoDAO;
+        this.asignacionesService = asignacionesService;
+        this.validadorAccesoCurso = (validadorAccesoCurso != null) ? validadorAccesoCurso : new ValidadorAccesoCurso(null);
     }
 
     public void setAsignacionesService(AsignacionesService asignacionesService) {
@@ -408,5 +422,10 @@ public class AuditoriaServiceImpl implements AuditoriaService {
 
             auditoriaDAO.actualizarAuditoria(aud);
         }
+    }
+
+    @Override
+    public List<AuditoriaResumenDTO> consultarEntregasDeAsignacionParaDocente(Long idAsignacion, Long docenteId) {
+        return java.util.Collections.emptyList();
     }
 }
