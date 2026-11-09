@@ -41,4 +41,22 @@ class AsignacionTest {
         assertEquals(1, asignacion.getReglas().size());
         assertEquals("Regla Test", asignacion.getReglas().get(0).getNombreRepresentativo());
     }
+
+    @Test
+    @DisplayName("getFechaLimiteFormateada debe retornar 'Sin fecha límite' cuando fechaLimite es null")
+    void debeRetornarMensajePorDefectoCuandoFechaLimiteEsNula() {
+        Asignacion asignacion = new Asignacion();
+        asignacion.setFechaLimite(null);
+
+        assertEquals("Sin fecha límite", asignacion.getFechaLimiteFormateada());
+    }
+
+    @Test
+    @DisplayName("getFechaLimiteFormateada debe formatear correctamente fecha límite no nula")
+    void debeFormatearFechaLimiteCorrectamente() {
+        Asignacion asignacion = new Asignacion();
+        asignacion.setFechaLimite(java.time.LocalDateTime.of(2026, 11, 15, 23, 59));
+
+        assertEquals("15/11/2026 23:59", asignacion.getFechaLimiteFormateada());
+    }
 }

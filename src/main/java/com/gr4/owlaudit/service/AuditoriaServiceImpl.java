@@ -56,7 +56,7 @@ public class AuditoriaServiceImpl implements AuditoriaService {
         this.evaluadorFactory = evaluadorFactory;
         this.proyectoDAO = proyectoDAO;
         this.validadorAccesoCurso = new ValidadorAccesoCurso(null);
-        this.asignacionesService = null;
+        this.asignacionesService = new AsignacionesServiceImpl();
     }
 
     public AuditoriaServiceImpl(ReglaDAO reglaDAO, AuditoriaDAO auditoriaDAO,
@@ -77,6 +77,13 @@ public class AuditoriaServiceImpl implements AuditoriaService {
         this.proyectoDAO = proyectoDAO;
         this.asignacionesService = asignacionesService;
         this.validadorAccesoCurso = (validadorAccesoCurso != null) ? validadorAccesoCurso : new ValidadorAccesoCurso(null);
+    }
+
+    public AsignacionesService getAsignacionesService() {
+        if (this.asignacionesService == null) {
+            this.asignacionesService = new AsignacionesServiceImpl();
+        }
+        return this.asignacionesService;
     }
 
     public void setAsignacionesService(AsignacionesService asignacionesService) {
@@ -268,8 +275,8 @@ public class AuditoriaServiceImpl implements AuditoriaService {
         verificarPertenenciaProyecto(auditoriaDTO, proyecto);
         validarAccesoEstudianteACursoDeAsignacion(auditoriaDTO);
 
-        Asignacion asignacion = (asignacionesService != null)
-                ? asignacionesService.buscarPorId(auditoriaDTO.getIdAsignacion())
+        Asignacion asignacion = (getAsignacionesService() != null)
+                ? getAsignacionesService().buscarPorId(auditoriaDTO.getIdAsignacion())
                 : null;
 
         if (asignacion != null) {
@@ -296,8 +303,8 @@ public class AuditoriaServiceImpl implements AuditoriaService {
 
         List<String> rutas = gitHubClient.obtenerEstructuraDelRepositorio(urlRepositorio);
 
-        List<Regla> reglasAsignacion = asignacionesService.consultarReglasDeAsignacion(auditoriaDTO.getIdAsignacion());
-        double umbral = asignacionesService.consultarUmbralAprobacion(auditoriaDTO.getIdAsignacion());
+        List<Regla> reglasAsignacion = getAsignacionesService().consultarReglasDeAsignacion(auditoriaDTO.getIdAsignacion());
+        double umbral = getAsignacionesService().consultarUmbralAprobacion(auditoriaDTO.getIdAsignacion());
 
         Auditoria auditoria = crearAuditoria(auditoriaDTO);
         auditoria.setTipoAuditoria("ASIGNACION");
@@ -351,8 +358,8 @@ public class AuditoriaServiceImpl implements AuditoriaService {
      * Valida mediante el ValidadorAccesoCurso que el estudiante esté matriculado en el curso de la asignación.
      */
     private void validarAccesoEstudianteACursoDeAsignacion(AuditoriaDTO auditoriaDTO) {
-        Asignacion asignacion = (asignacionesService != null)
-                ? asignacionesService.buscarPorId(auditoriaDTO.getIdAsignacion())
+        Asignacion asignacion = (getAsignacionesService() != null)
+                ? getAsignacionesService().buscarPorId(auditoriaDTO.getIdAsignacion())
                 : null;
         if (asignacion != null && asignacion.getCurso() != null && auditoriaDTO.getUsuarioId() != null) {
             validadorAccesoCurso.validarAccesoEstudianteACurso(asignacion.getCurso(), auditoriaDTO.getUsuarioId());
@@ -383,15 +390,15 @@ public class AuditoriaServiceImpl implements AuditoriaService {
         List<Auditoria> auditorias = auditoriaDAO.buscarPorAsignacionId(asignacionId);
         if (auditorias == null || auditorias.isEmpty()) return;
 
-        List<Regla> nuevasReglas = (asignacionesService != null)
-                ? asignacionesService.consultarReglasDeAsignacion(asignacionId)
+        List<Regla> nuevasReglas = (getAsignacionesService() != null)
+                ? getAsignacionesService().consultarReglasDeAsignacion(asignacionId)
                 : java.util.Collections.emptyList();
         if ((nuevasReglas == null || nuevasReglas.isEmpty()) && auditorias.get(0).getAsignacion() != null) {
             nuevasReglas = auditorias.get(0).getAsignacion().getReglas();
         }
 
-        double nuevoUmbral = (asignacionesService != null)
-                ? asignacionesService.consultarUmbralAprobacion(asignacionId)
+        double nuevoUmbral = (getAsignacionesService() != null)
+                ? getAsignacionesService().consultarUmbralAprobacion(asignacionId)
                 : 70.0;
         if (nuevoUmbral <= 0.0 && auditorias.get(0).getAsignacion() != null && auditorias.get(0).getAsignacion().getUmbralAprobacion() != null) {
             nuevoUmbral = auditorias.get(0).getAsignacion().getUmbralAprobacion();
@@ -430,10 +437,7 @@ public class AuditoriaServiceImpl implements AuditoriaService {
         if (idAsignacion == null) {
             throw new ExcepcionNegocio("El identificador de la asignación no puede ser nulo.");
         }
-        AsignacionesService asigSvc = this.asignacionesService;
-        if (asigSvc == null) {
-            asigSvc = new AsignacionesServiceImpl();
-        }
+        AsignacionesService asigSvc = getAsignacionesService();
         Asignacion asignacion = asigSvc.buscarPorId(idAsignacion);
         if (asignacion == null) {
             throw new ExcepcionNegocio("La asignación no existe.");

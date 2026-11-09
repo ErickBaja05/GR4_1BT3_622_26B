@@ -19,7 +19,7 @@
     String nombreCurso = (curso != null && curso.getNombre() != null) ? curso.getNombre() : "Curso";
     String codigoCurso = (curso != null && curso.getCodigo() != null) ? curso.getCodigo() : "";
     Double umbral = (asignacion != null && asignacion.getUmbralAprobacion() != null) ? asignacion.getUmbralAprobacion() : 70.0;
-    String fechaLimite = (asignacion != null && asignacion.getFechaLimiteFormateada() != null) ? asignacion.getFechaLimiteFormateada() : "Sin fecha límite";
+    String fechaLimite = (asignacion != null && asignacion.getFechaLimite() != null) ? asignacion.getFechaLimiteFormateada() : "Sin fecha límite";
     Long idCurso = (curso != null) ? curso.getId() : null;
     Long idAsignacion = (asignacion != null) ? asignacion.getId() : null;
 %>

@@ -47,10 +47,10 @@ public class Regla {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "nivel_severidad", nullable = true, length = 20)
-    private NivelSeveridadEnum nivelSeveridad;
+    private NivelSeveridadEnum nivelSeveridad = NivelSeveridadEnum.MEDIA;
 
     @Column(name = "ponderacion", nullable = true)
-    private Integer ponderacion;
+    private Integer ponderacion = 0;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "vigencia", nullable = false, length = 20)
@@ -64,9 +64,13 @@ public class Regla {
 
     public Regla() {
         this.vigencia = EstadoVigencia.VIGENTE;
+        this.nivelSeveridad = NivelSeveridadEnum.MEDIA;
+        this.ponderacion = 0;
+        this.activa = true;
     }
 
     public Regla(NuevaReglaDTO dto) {
+        this();
         if (dto != null) {
             if (dto.getTipoMotor() != null && !dto.getTipoMotor().trim().isEmpty()) {
                 this.tipoMotor = TipoMotorEnum.valueOf(dto.getTipoMotor().trim().toUpperCase());
@@ -74,6 +78,14 @@ public class Regla {
             this.nombreRepresentativo = dto.getNombreRepresentativo();
             this.descripcionDetallada = dto.getDescripcionDetallada();
             this.parametroExacto = dto.getParametroExacto();
+            if (dto.getNivelSeveridad() != null && !dto.getNivelSeveridad().trim().isEmpty()) {
+                try {
+                    this.nivelSeveridad = NivelSeveridadEnum.valueOf(dto.getNivelSeveridad().trim().toUpperCase());
+                } catch (IllegalArgumentException ignored) {}
+            }
+            if (dto.getPonderacion() > 0) {
+                this.ponderacion = dto.getPonderacion();
+            }
             this.vigencia = EstadoVigencia.VIGENTE;
         }
     }
@@ -119,11 +131,11 @@ public class Regla {
     }
 
     public NivelSeveridadEnum getNivelSeveridad() {
-        return nivelSeveridad;
+        return nivelSeveridad != null ? nivelSeveridad : NivelSeveridadEnum.MEDIA;
     }
 
     public void setNivelSeveridad(NivelSeveridadEnum nivelSeveridad) {
-        this.nivelSeveridad = nivelSeveridad;
+        this.nivelSeveridad = (nivelSeveridad != null) ? nivelSeveridad : NivelSeveridadEnum.MEDIA;
     }
 
     public int getPonderacion() {
@@ -131,7 +143,7 @@ public class Regla {
     }
 
     public void setPonderacion(Integer ponderacion) {
-        this.ponderacion = ponderacion;
+        this.ponderacion = (ponderacion != null) ? ponderacion : 0;
     }
 
     /**

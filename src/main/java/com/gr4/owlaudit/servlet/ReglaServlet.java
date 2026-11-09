@@ -155,8 +155,10 @@ public class ReglaServlet extends HttpServlet {
         } catch (ExcepcionNegocio e) {
             request.setAttribute(ATTR_MENSAJE_ERROR, e.getMessage());
         } catch (RuntimeException e) {
+            e.printStackTrace();
             System.err.println("[ReglaServlet] Error técnico: " + e.getMessage());
-            request.setAttribute(ATTR_MENSAJE_ERROR, "Ocurrió un error inesperado al registrar la regla. Intente nuevamente.");
+            String detalle = e.getMessage() != null ? ": " + e.getMessage() : "";
+            request.setAttribute(ATTR_MENSAJE_ERROR, "Ocurrió un error inesperado al registrar la regla" + detalle + ". Intente nuevamente.");
         }
 
         cargarReglasEnRequest(request, idCurso);

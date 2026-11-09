@@ -96,10 +96,17 @@
                 </button>
             </div>
 
+            <% 
+                Object idCursoReg = request.getAttribute("idCurso");
+                if (idCursoReg == null && dto != null) idCursoReg = dto.getIdCurso();
+                if (idCursoReg == null && request.getParameter("idCurso") != null && !request.getParameter("idCurso").isBlank()) {
+                    idCursoReg = request.getParameter("idCurso");
+                }
+            %>
             <form action="${pageContext.request.contextPath}/regla" method="POST">
                 <input type="hidden" name="accion" value="registrar">
-                <% if (request.getAttribute("idCurso") != null) { %>
-                    <input type="hidden" name="idCurso" value="<%= request.getAttribute("idCurso") %>">
+                <% if (idCursoReg != null) { %>
+                    <input type="hidden" name="idCurso" value="<%= idCursoReg %>">
                 <% } %>
 
                 <div class="form-group">

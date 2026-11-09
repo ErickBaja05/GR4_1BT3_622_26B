@@ -215,6 +215,14 @@ public class Asignacion {
         this.fechaLimite = fechaLimite;
     }
 
+    @Transient
+    public String getFechaLimiteFormateada() {
+        if (this.fechaLimite == null) {
+            return "Sin fecha límite";
+        }
+        return this.fechaLimite.format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"));
+    }
+
     public List<Auditoria> getAuditorias() {
         return auditorias;
     }

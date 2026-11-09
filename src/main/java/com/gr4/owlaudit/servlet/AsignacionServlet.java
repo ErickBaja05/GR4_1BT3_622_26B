@@ -96,6 +96,9 @@ public class AsignacionServlet extends HttpServlet {
         this.auditoriaDAO = auditoriaDAO;
         this.cursoDAO = cursoDAO;
         this.validadorAccesoCurso = new ValidadorAccesoCurso(cursoDAO);
+        if (this.auditoriaService instanceof AuditoriaServiceImpl && this.asignacionesService != null) {
+            ((AuditoriaServiceImpl) this.auditoriaService).setAsignacionesService(this.asignacionesService);
+        }
     }
 
     @Override
@@ -518,6 +521,10 @@ public class AsignacionServlet extends HttpServlet {
             request.setAttribute("mensajeError", "Los identificadores de asignación o proyecto no son válidos.");
         } catch (ExcepcionNegocio | IllegalArgumentException e) {
             request.setAttribute("mensajeError", e.getMessage());
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.err.println("[AsignacionServlet] Error inesperado en auditoría: " + e.getMessage());
+            request.setAttribute("mensajeError", "Ocurrió un error inesperado al procesar la auditoría: " + e.getMessage());
         }
 
         request.getRequestDispatcher(VISTA_DETALLE_ESTUDIANTE).forward(request, response);
