@@ -18,6 +18,7 @@ import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
 import java.util.regex.Pattern;
+import java.util.Optional;
 
 public class CursoServiceImpl implements CursoService {
 
@@ -70,11 +71,13 @@ public class CursoServiceImpl implements CursoService {
 
     @Override
     public List<Curso> listarCursosPorCorreoDocente(String correoDocente) {
-        Usuario usuario = usuarioDAO.buscarPorCorreo(correoDocente);
-        if (usuario == null || usuario.getId() == null) {
+        Long docenteId = Optional.ofNullable(usuarioDAO.buscarPorCorreo(correoDocente))
+                .map(Usuario::getId)
+                .orElse(null);
+        if (docenteId == null) {
             return Collections.emptyList();
         }
-        return cursoDAO.listarCursosPorDocente(usuario.getId());
+        return cursoDAO.listarCursosPorDocente(docenteId);
     }
 
     @Override
