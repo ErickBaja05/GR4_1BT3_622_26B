@@ -315,6 +315,7 @@ public class AuditoriaDAOImpl implements AuditoriaDAO {
             return session.createQuery(
                 "SELECT DISTINCT a FROM Auditoria a " +
                 "LEFT JOIN FETCH a.proyecto " +
+                "LEFT JOIN FETCH a.estudiante " +
                 "LEFT JOIN FETCH a.resultados r " +
                 "LEFT JOIN FETCH r.regla " +
                 "LEFT JOIN FETCH r.hallazgo " +

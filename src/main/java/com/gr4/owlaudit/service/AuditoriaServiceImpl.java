@@ -426,6 +426,55 @@ public class AuditoriaServiceImpl implements AuditoriaService {
 
     @Override
     public List<AuditoriaResumenDTO> consultarEntregasDeAsignacionParaDocente(Long idAsignacion, Long docenteId) {
-        return java.util.Collections.emptyList();
+        if (idAsignacion == null) {
+            throw new ExcepcionNegocio("El identificador de la asignación no puede ser nulo.");
+        }
+        AsignacionesService asigSvc = this.asignacionesService;
+        if (asigSvc == null) {
+            asigSvc = new AsignacionesServiceImpl();
+        }
+        Asignacion asignacion = asigSvc.buscarPorId(idAsignacion);
+        if (asignacion == null) {
+            throw new ExcepcionNegocio("La asignación no existe.");
+        }
+
+        validadorAccesoCurso.validarTitularidadDocenteCurso(asignacion.getCurso(), docenteId);
+
+        List<Auditoria> auditorias = auditoriaDAO.buscarPorAsignacionId(idAsignacion);
+        if (auditorias == null || auditorias.isEmpty()) {
+            return java.util.Collections.emptyList();
+        }
+
+        List<AuditoriaResumenDTO> resultado = new ArrayList<>();
+        for (Auditoria aud : auditorias) {
+            AuditoriaResumenDTO dto = new AuditoriaResumenDTO();
+            dto.setId(aud.getId());
+            dto.setNumeroEnAsignacion(aud.getNumeroEnAsignacion());
+            dto.setNumeroEnProyecto(aud.getNumeroEnProyecto());
+            dto.setTipoAuditoria(aud.getTipoAuditoria());
+            dto.setFechaHora(aud.getFechaHora());
+            dto.setPuntajeObtenido(aud.getPuntajeObtenido());
+            dto.setPuntajeMaximo(aud.getPuntajeMaximo());
+            dto.setPorcentaje(aud.getPorcentaje());
+            dto.setDictamen(aud.getDictamen());
+
+            if (aud.getEstudiante() != null) {
+                dto.setNombreEstudiante(aud.getEstudiante().getNombre());
+                dto.setCorreoEstudiante(aud.getEstudiante().getCorreo());
+            }
+
+            if (aud.getProyecto() != null) {
+                dto.setNombreProyecto(aud.getProyecto().getNombre());
+                dto.setUrlRepositorio(aud.getProyecto().getUrlGithub());
+            }
+
+            if (aud.getAsignacion() != null) {
+                dto.setNombreAsignacion(aud.getAsignacion().getNombre());
+                dto.setUmbral(aud.getAsignacion().getUmbralAprobacion());
+            }
+
+            resultado.add(dto);
+        }
+        return resultado;
     }
 }
