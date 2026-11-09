@@ -20,6 +20,10 @@ public class AuditoriaResumenDTO {
     private int puntajeObtenido;
     private int puntajeMaximo;
     private double porcentaje;
+    private String nombreEstudiante;
+    private String correoEstudiante;
+    private String nombreProyecto;
+    private String urlRepositorio;
 
     public AuditoriaResumenDTO() {
     }
@@ -148,6 +152,38 @@ public class AuditoriaResumenDTO {
 
     public void setPorcentaje(double porcentaje) {
         this.porcentaje = porcentaje;
+    }
+
+    public String getNombreEstudiante() {
+        return nombreEstudiante;
+    }
+
+    public void setNombreEstudiante(String nombreEstudiante) {
+        this.nombreEstudiante = nombreEstudiante;
+    }
+
+    public String getCorreoEstudiante() {
+        return correoEstudiante;
+    }
+
+    public void setCorreoEstudiante(String correoEstudiante) {
+        this.correoEstudiante = correoEstudiante;
+    }
+
+    public String getNombreProyecto() {
+        return nombreProyecto;
+    }
+
+    public void setNombreProyecto(String nombreProyecto) {
+        this.nombreProyecto = nombreProyecto;
+    }
+
+    public String getUrlRepositorio() {
+        return urlRepositorio;
+    }
+
+    public void setUrlRepositorio(String urlRepositorio) {
+        this.urlRepositorio = urlRepositorio;
     }
 
     public String getFechaFormateada() {

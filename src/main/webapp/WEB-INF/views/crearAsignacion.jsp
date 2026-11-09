@@ -415,6 +415,11 @@
                                     </td>
                                     <td style="text-align: center;">
                                         <div style="display: inline-flex; align-items: center; gap: 0.4rem; justify-content: center; flex-wrap: wrap;">
+                                            <a href="<%= ctx %>/docente/asignacion/entregas?idAsignacion=<%= idAsig %>"
+                                               class="btn-primary"
+                                               style="padding: 0.35rem 0.65rem; font-size: 0.85rem; text-decoration: none; border-radius: 4px; display: inline-flex; align-items: center; gap: 0.3rem;">
+                                                📊 Ver Entregas
+                                            </a>
                                             <button type="button" class="btn-delete"
                                                     onclick="confirmarEliminarAsignacion('<%= idAsig %>', '<%= HtmlUtil.escape(nomAsig) %>')">
                                                 🗑️ Eliminar

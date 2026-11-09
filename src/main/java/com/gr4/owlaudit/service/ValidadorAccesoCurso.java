@@ -55,6 +55,15 @@ public class ValidadorAccesoCurso {
         return esDocenteTitular(curso, docenteId);
     }
 
+    public static final String MENSAJE_PERMISO_DOCENTE_TITULAR =
+            "No tienes permisos para acceder a las entregas de un curso del que no eres titular";
+
+    public void validarTitularidadDocenteCurso(Curso curso, Long docenteId) {
+        if (!esDocenteTitular(curso, docenteId)) {
+            throw new ExcepcionNegocio(MENSAJE_PERMISO_DOCENTE_TITULAR);
+        }
+    }
+
     /**
      * Valida si un usuario tiene autorización para acceder al catálogo de reglas de un curso.
      * Solo los docentes titulares del curso pueden acceder; estudiantes y docentes ajenos están bloqueados.

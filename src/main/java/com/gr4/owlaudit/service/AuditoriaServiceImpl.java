@@ -2,6 +2,7 @@ package com.gr4.owlaudit.service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import com.gr4.owlaudit.client.GitHubClient;
 import com.gr4.owlaudit.common.exception.ExcepcionNegocio;
@@ -12,6 +13,7 @@ import com.gr4.owlaudit.dao.ProyectoDAOImpl;
 import com.gr4.owlaudit.dao.ReglaDAO;
 import com.gr4.owlaudit.dao.ReglaDAOImpl;
 import com.gr4.owlaudit.dto.AuditoriaDTO;
+import com.gr4.owlaudit.dto.AuditoriaResumenDTO;
 import com.gr4.owlaudit.dto.ResultadoDTO;
 import com.gr4.owlaudit.dto.ResumenDTO;
 import com.gr4.owlaudit.model.Asignacion;
@@ -62,6 +64,19 @@ public class AuditoriaServiceImpl implements AuditoriaService {
             ProyectoDAO proyectoDAO, AsignacionesService asignacionesService) {
         this(reglaDAO, auditoriaDAO, gitHubClient, evaluadorFactory, proyectoDAO);
         this.asignacionesService = asignacionesService;
+    }
+
+    public AuditoriaServiceImpl(ReglaDAO reglaDAO, AuditoriaDAO auditoriaDAO,
+            GitHubClient gitHubClient, EvaluadorReglaFactory evaluadorFactory,
+            ProyectoDAO proyectoDAO, AsignacionesService asignacionesService,
+            ValidadorAccesoCurso validadorAccesoCurso) {
+        this.reglaDAO = reglaDAO;
+        this.auditoriaDAO = auditoriaDAO;
+        this.gitHubClient = gitHubClient;
+        this.evaluadorFactory = evaluadorFactory;
+        this.proyectoDAO = proyectoDAO;
+        this.asignacionesService = asignacionesService;
+        this.validadorAccesoCurso = (validadorAccesoCurso != null) ? validadorAccesoCurso : new ValidadorAccesoCurso(null);
     }
 
     public void setAsignacionesService(AsignacionesService asignacionesService) {
@@ -408,5 +423,61 @@ public class AuditoriaServiceImpl implements AuditoriaService {
 
             auditoriaDAO.actualizarAuditoria(aud);
         }
+    }
+
+    @Override
+    public List<AuditoriaResumenDTO> consultarEntregasDeAsignacionParaDocente(Long idAsignacion, Long docenteId) {
+        if (idAsignacion == null) {
+            throw new ExcepcionNegocio("El identificador de la asignación no puede ser nulo.");
+        }
+        AsignacionesService asigSvc = this.asignacionesService;
+        if (asigSvc == null) {
+            asigSvc = new AsignacionesServiceImpl();
+        }
+        Asignacion asignacion = asigSvc.buscarPorId(idAsignacion);
+        if (asignacion == null) {
+            throw new ExcepcionNegocio("La asignación no existe.");
+        }
+
+        validadorAccesoCurso.validarTitularidadDocenteCurso(asignacion.getCurso(), docenteId);
+
+        List<Auditoria> auditorias = auditoriaDAO.buscarPorAsignacionId(idAsignacion);
+        if (auditorias == null || auditorias.isEmpty()) {
+            return java.util.Collections.emptyList();
+        }
+
+        return auditorias.stream()
+                .map(this::mapearAuditoriaAResumenDTO)
+                .collect(Collectors.toList());
+    }
+
+    private AuditoriaResumenDTO mapearAuditoriaAResumenDTO(Auditoria aud) {
+        AuditoriaResumenDTO dto = new AuditoriaResumenDTO();
+        dto.setId(aud.getId());
+        dto.setNumeroEnAsignacion(aud.getNumeroEnAsignacion());
+        dto.setNumeroEnProyecto(aud.getNumeroEnProyecto());
+        dto.setTipoAuditoria(aud.getTipoAuditoria());
+        dto.setFechaHora(aud.getFechaHora());
+        dto.setPuntajeObtenido(aud.getPuntajeObtenido());
+        dto.setPuntajeMaximo(aud.getPuntajeMaximo());
+        dto.setPorcentaje(aud.getPorcentaje());
+        dto.setDictamen(aud.getDictamen());
+
+        if (aud.getEstudiante() != null) {
+            dto.setNombreEstudiante(aud.getEstudiante().getNombre());
+            dto.setCorreoEstudiante(aud.getEstudiante().getCorreo());
+        }
+
+        if (aud.getProyecto() != null) {
+            dto.setNombreProyecto(aud.getProyecto().getNombre());
+            dto.setUrlRepositorio(aud.getProyecto().getUrlGithub());
+        }
+
+        if (aud.getAsignacion() != null) {
+            dto.setNombreAsignacion(aud.getAsignacion().getNombre());
+            dto.setUmbral(aud.getAsignacion().getUmbralAprobacion());
+        }
+
+        return dto;
     }
 }
