@@ -117,11 +117,7 @@ public class AsignacionesServiceImpl implements AsignacionesService {
         validarNombreAsignacion(dto);
         double valorUmbral = validarUmbralAprobacion(dto.getUmbralAprobacion());
 
-        if (dto.getReglasIds() == null || dto.getReglasIds().isEmpty()) {
-            throw new IllegalArgumentException("Se debe asociar al menos una regla de evaluación a la asignación.");
-        }
-
-        List<Regla> reglasParaAsociar = obtenerReglasVigentes(dto.getReglasIds());
+        List<Regla> reglasParaAsociar = validarYObtenerReglas(dto);
 
         Asignacion asigCreada = asignacionesDAO.crearAsignacion(new Asignacion(dto.getNombre().trim(), valorUmbral, reglasParaAsociar));
         guardarConfiguracionReglasAsignacion(asigCreada, dto, reglasParaAsociar);
@@ -234,11 +230,7 @@ public class AsignacionesServiceImpl implements AsignacionesService {
         validarNombreAsignacion(dto);
         double valorUmbral = validarUmbralAprobacion(dto.getUmbralAprobacion());
 
-        if (dto.getReglasIds() == null || dto.getReglasIds().isEmpty()) {
-            throw new IllegalArgumentException("Se debe asociar al menos una regla de evaluación a la asignación.");
-        }
-
-        List<Regla> reglasParaAsociar = obtenerReglasVigentes(dto.getReglasIds());
+        List<Regla> reglasParaAsociar = validarYObtenerReglas(dto);
 
         Asignacion asig = new Asignacion(dto.getNombre().trim(), valorUmbral, reglasParaAsociar);
         asig.setId(idAsignacion);
@@ -332,6 +324,17 @@ public class AsignacionesServiceImpl implements AsignacionesService {
         }
 
         return umbralAprobacion;
+    }
+
+    /**
+     * Refactoring: Extract Method (Martin Fowler)
+     * Exige al menos una regla y devuelve las reglas vigentes seleccionadas.
+     */
+    private List<Regla> validarYObtenerReglas(NuevaAsignacionDTO dto) {
+        if (dto.getReglasIds() == null || dto.getReglasIds().isEmpty()) {
+            throw new IllegalArgumentException("Se debe asociar al menos una regla de evaluación a la asignación.");
+        }
+        return obtenerReglasVigentes(dto.getReglasIds());
     }
 
     private List<Regla> obtenerReglasVigentes(List<Long> reglasIds) {
