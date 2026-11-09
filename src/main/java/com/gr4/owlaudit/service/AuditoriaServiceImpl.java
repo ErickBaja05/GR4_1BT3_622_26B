@@ -253,6 +253,33 @@ public class AuditoriaServiceImpl implements AuditoriaService {
         verificarPertenenciaProyecto(auditoriaDTO, proyecto);
         validarAccesoEstudianteACursoDeAsignacion(auditoriaDTO);
 
+        Asignacion asignacion = (asignacionesService != null)
+                ? asignacionesService.buscarPorId(auditoriaDTO.getIdAsignacion())
+                : null;
+
+        if (asignacion != null) {
+            // CA-2: Rechazo de entregas con fecha límite vencida
+            if (asignacion.getFechaLimite() != null && asignacion.getFechaLimite().isBefore(java.time.LocalDateTime.now())) {
+                throw new ExcepcionNegocio("La fecha límite para entregar esta asignación ha expirado");
+            }
+
+            // CA-1.2: Bloqueo por agotar intentos permitidos
+            if (asignacion.getIntentosPermitidos() != null && asignacion.getIntentosPermitidos() > 0 && auditoriaDAO != null) {
+                Long usuarioId = (auditoriaDTO.getUsuarioId() != null)
+                        ? auditoriaDTO.getUsuarioId()
+                        : (proyecto.getUsuario() != null ? proyecto.getUsuario().getId() : null);
+
+                if (usuarioId != null) {
+                    List<Auditoria> previas = auditoriaDAO.consultarAuditoriasDeAsignacionPorUsuario(
+                            auditoriaDTO.getIdAsignacion(), usuarioId);
+                    int intentosConsumidos = (previas != null) ? previas.size() : 0;
+                    if (intentosConsumidos >= asignacion.getIntentosPermitidos()) {
+                        throw new ExcepcionNegocio("Ha alcanzado el límite máximo de intentos permitidos para esta asignación");
+                    }
+                }
+            }
+        }
+
         String urlRepositorio = (proyecto.getUrlGithub() != null && !proyecto.getUrlGithub().isBlank())
                 ? proyecto.getUrlGithub()
                 : auditoriaDTO.getUrl();
