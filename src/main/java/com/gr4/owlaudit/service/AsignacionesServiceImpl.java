@@ -416,11 +416,10 @@ public class AsignacionesServiceImpl implements AsignacionesService {
     }
 
     private String obtenerNombreAsignacion(Long idAsignacion) {
-        List<Asignacion> asignaciones = consultarAsignacionesDisponibles();
-        if (asignaciones == null || idAsignacion == null) {
+        if (idAsignacion == null) {
             return null;
         }
-        return asignaciones.stream()
+        return consultarAsignacionesDisponibles().stream()
                 .filter(a -> a != null && idAsignacion.equals(a.getId()))
                 .map(Asignacion::getNombre)
                 .findFirst()
