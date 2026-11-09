@@ -1,6 +1,5 @@
 package com.gr4.owlaudit.service;
 
-import com.gr4.owlaudit.common.exception.ExcepcionNegocio;
 import com.gr4.owlaudit.dao.AsignacionReglaDAO;
 import com.gr4.owlaudit.dao.AsignacionesDAO;
 import com.gr4.owlaudit.dao.CursoDAO;
@@ -88,43 +87,6 @@ class ReglaAsignacionNuevaLogicaTest {
         assertEquals(EstadoVigencia.VIGENTE, guardada.getVigencia());
         assertNull(guardada.getNivelSeveridad(), "La regla no debe almacenar nivel de severidad");
         assertEquals(0, guardada.getPonderacion(), "La regla no debe almacenar ponderación");
-    }
-
-    @Test
-    @DisplayName("Defecto 2 y 3: No permite cambiar vigencia si la regla no pertenece al curso especificado")
-    void cambiarVigencia_reglaNoPerteneceAlCurso_lanzaExcepcionNegocio() {
-        Long idRegla = 5L;
-        Long idCursoDocente = 10L;
-
-        // La regla 5 pertenece al curso 20, no al 10
-        when(reglaDAO.obtenerPorIdYCurso(idRegla, idCursoDocente)).thenReturn(null);
-
-        assertThrows(ExcepcionNegocio.class, () -> {
-            reglaService.cambiarEstadoVigenciaDeUnaRegla(idRegla, idCursoDocente, EstadoVigencia.NO_VIGENTE);
-        });
-
-        verify(reglaDAO, never()).actualizarEstadoVigenciaPorIdYCurso(anyLong(), anyLong(), any(EstadoVigencia.class));
-    }
-
-    @Test
-    @DisplayName("Defecto 2 y 3: Permite cambiar vigencia verificando idRegla e idCurso correctamente")
-    void cambiarVigencia_reglaPerteneceAlCurso_actualizaExitosamente() {
-        Long idRegla = 5L;
-        Long idCurso = 10L;
-
-        Regla regla = new Regla();
-        regla.setId(idRegla);
-        regla.setCurso(curso1);
-        regla.setVigencia(EstadoVigencia.VIGENTE);
-
-        when(reglaDAO.obtenerPorIdYCurso(idRegla, idCurso)).thenReturn(regla);
-        when(reglaDAO.actualizarEstadoVigenciaPorIdYCurso(idRegla, idCurso, EstadoVigencia.NO_VIGENTE)).thenReturn(true);
-
-        boolean res = reglaService.cambiarEstadoVigenciaDeUnaRegla(idRegla, idCurso, EstadoVigencia.NO_VIGENTE);
-
-        assertTrue(res);
-        assertEquals(EstadoVigencia.NO_VIGENTE, regla.getVigencia());
-        verify(reglaDAO).actualizarEstadoVigenciaPorIdYCurso(idRegla, idCurso, EstadoVigencia.NO_VIGENTE);
     }
 
     @Test

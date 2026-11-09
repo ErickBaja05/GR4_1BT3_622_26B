@@ -8,6 +8,7 @@ import com.gr4.owlaudit.dao.CursoDAO;
 import com.gr4.owlaudit.dao.CursoDAOImpl;
 import com.gr4.owlaudit.dao.ReglaDAO;
 import com.gr4.owlaudit.dao.ReglaDAOImpl;
+import com.gr4.owlaudit.dto.ModificacionReglaDTO;
 import com.gr4.owlaudit.dto.NuevaReglaDTO;
 import com.gr4.owlaudit.dto.UsuarioDTO;
 import com.gr4.owlaudit.model.Curso;
@@ -33,7 +34,9 @@ public class ReglaServlet extends HttpServlet {
     private static final Set<String> VISTAS_REGISTRO = Set.of("registro", "registrar", "nueva");
     private static final String VISTA = "/WEB-INF/views/registrarRegla.jsp";
     private static final String VISTA_CATALOGO = "/WEB-INF/views/catalogoReglas.jsp";
-    private static final String ACCION_CAMBIAR_VIGENCIA = "cambiarVigencia";
+    private static final String ACCION_MODIFICAR_REGLA = "modificarRegla";
+    private static final String MENSAJE_MODIFICACION_EXITOSA = "Descripción actualizada exitosamente";
+    private static final String MENSAJE_VIGENCIA_INVALIDA = "El estado de vigencia seleccionado no es válido.";
     private static final String ATTR_MENSAJE_EXITO = "mensajeExito";
     private static final String ATTR_MENSAJE_ERROR = "mensajeError";
 
@@ -73,7 +76,7 @@ public class ReglaServlet extends HttpServlet {
             return;
         }
 
-        Long idCurso = parsearIdCurso(request.getParameter("idCurso"));
+        Long idCurso = parsearId(request.getParameter("idCurso"));
         if (idCurso == null) {
             response.sendRedirect(request.getContextPath() + "/curso?error=sinCurso");
             return;
@@ -111,7 +114,7 @@ public class ReglaServlet extends HttpServlet {
             return;
         }
 
-        Long idCurso = parsearIdCurso(request.getParameter("idCurso"));
+        Long idCurso = parsearId(request.getParameter("idCurso"));
         if (idCurso == null) {
             response.sendRedirect(request.getContextPath() + "/curso?error=sinCurso");
             return;
@@ -121,12 +124,7 @@ public class ReglaServlet extends HttpServlet {
             return;
         }
 
-        if (ACCION_CAMBIAR_VIGENCIA.equals(request.getParameter("accion"))) {
-            procesarCambioVigencia(request, response, idCurso);
-            return;
-        }
-
-        if ("modificarRegla".equals(request.getParameter("accion"))) {
+        if (ACCION_MODIFICAR_REGLA.equals(request.getParameter("accion"))) {
             procesarModificacionRegla(request, response, idCurso, usuario);
             return;
         }
@@ -197,59 +195,21 @@ public class ReglaServlet extends HttpServlet {
     }
 
     /**
-     * HU-01: Procesa la solicitud de cambio de vigencia de una regla técnica dentro de un curso.
-     */
-    private void procesarCambioVigencia(HttpServletRequest request, HttpServletResponse response, Long idCurso)
-            throws ServletException, IOException {
-        String idReglaParam = request.getParameter("idRegla");
-        String nombreRegla = request.getParameter("nombreRegla");
-        String nuevoEstadoParam = request.getParameter("nuevoEstado");
-        EstadoVigencia nuevoEstado = (nuevoEstadoParam != null && !nuevoEstadoParam.isBlank()) 
-                ? EstadoVigencia.valueOf(nuevoEstadoParam.trim()) 
-                : null;
-
-        try {
-            boolean actualizado = false;
-            Long idRegla = parsearIdCurso(idReglaParam); // parsearIdCurso reutiliza parseo numérico seguro
-            if (idRegla != null && idCurso != null) {
-                // Validación estricta de pertenencia de la regla al curso
-                actualizado = reglaService.cambiarEstadoVigenciaDeUnaRegla(idRegla, idCurso, nuevoEstado);
-            } else if (nombreRegla != null && !nombreRegla.isBlank()) {
-                actualizado = reglaService.cambiarEstadoVigenciaDeUnaRegla(nombreRegla, nuevoEstado);
-            }
-
-            if (!actualizado) {
-                request.setAttribute(ATTR_MENSAJE_ERROR, "La regla ya se encuentra en estado " + obtenerDescripcionEstado(nuevoEstado) + ".");
-            } else {
-                request.setAttribute(ATTR_MENSAJE_EXITO, (nuevoEstado != null) ? nuevoEstado.construirMensajeExito() : "Estado actualizado");
-            }
-        } catch (ExcepcionNegocio e) {
-            request.setAttribute(ATTR_MENSAJE_ERROR, e.getMessage());
-        } catch (Exception e) {
-            request.setAttribute(ATTR_MENSAJE_ERROR, "Error al actualizar estado de la regla: " + e.getMessage());
-        }
-
-        cargarReglasEnRequest(request, idCurso);
-        request.getRequestDispatcher(VISTA_CATALOGO).forward(request, response);
-    }
-
-    /**
      * HU-02: actualiza únicamente la descripción y la vigencia de una regla del curso.
      * Nombre y motor no se leen de la petición, por lo que no pueden alterarse.
      */
     private void procesarModificacionRegla(HttpServletRequest request, HttpServletResponse response, Long idCurso,
             UsuarioDTO usuario) throws ServletException, IOException {
         try {
-            EstadoVigencia vigencia = EstadoVigencia.valueOf(String.valueOf(request.getParameter("vigencia")).trim());
-            reglaService.modificarDescripcionYVigencia(
-                    parsearIdCurso(request.getParameter("idRegla")),
+            reglaService.modificarDescripcionYVigencia(new ModificacionReglaDTO(
+                    parsearId(request.getParameter("idRegla")),
                     idCurso,
                     (usuario != null) ? usuario.getId() : null,
                     request.getParameter("descripcionDetallada"),
-                    vigencia);
-            request.setAttribute(ATTR_MENSAJE_EXITO, "Descripción actualizada exitosamente");
+                    EstadoVigencia.valueOf(String.valueOf(request.getParameter("vigencia")).trim())));
+            request.setAttribute(ATTR_MENSAJE_EXITO, MENSAJE_MODIFICACION_EXITOSA);
         } catch (IllegalArgumentException e) {
-            request.setAttribute(ATTR_MENSAJE_ERROR, "El estado de vigencia seleccionado no es válido.");
+            request.setAttribute(ATTR_MENSAJE_ERROR, MENSAJE_VIGENCIA_INVALIDA);
         } catch (ExcepcionNegocio e) {
             request.setAttribute(ATTR_MENSAJE_ERROR, e.getMessage());
         }
@@ -258,12 +218,12 @@ public class ReglaServlet extends HttpServlet {
         request.getRequestDispatcher(VISTA_CATALOGO).forward(request, response);
     }
 
-    private Long parsearIdCurso(String idCursoStr) {
-        if (idCursoStr == null || idCursoStr.trim().isEmpty()) {
+    private Long parsearId(String id) {
+        if (id == null || id.trim().isEmpty()) {
             return null;
         }
         try {
-            return Long.parseLong(idCursoStr.trim());
+            return Long.parseLong(id.trim());
         } catch (NumberFormatException e) {
             return null;
         }
@@ -280,12 +240,5 @@ public class ReglaServlet extends HttpServlet {
         } catch (Exception e) {
             System.err.println("[ReglaServlet] Error al consultar reglas por curso: " + e.getMessage());
         }
-    }
-
-    /**
-     * Refactorización Martin Fowler: Replace Temp with Query.
-     */
-    private String obtenerDescripcionEstado(EstadoVigencia estado) {
-        return (estado == EstadoVigencia.NO_VIGENTE) ? "no vigente" : "vigente";
     }
 }

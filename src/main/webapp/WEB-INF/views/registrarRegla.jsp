@@ -137,7 +137,7 @@
             </div>
         <% } %>
 
-        <!-- Catálogo de Reglas Técnicas con Badges de Estado y Botón de Cambio de Estado (HU-01) -->
+        <!-- Catálogo de Reglas Técnicas de solo consulta con Badges de Estado -->
         <% if (reglasVigentes != null && !reglasVigentes.isEmpty()) { %>
             <div class="card" style="margin-top: 1.5rem;">
                 <h2 class="card-title" style="font-size: 1.25rem;">Catálogo de Reglas Técnicas</h2>

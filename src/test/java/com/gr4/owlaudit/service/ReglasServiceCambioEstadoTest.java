@@ -3,6 +3,7 @@ package com.gr4.owlaudit.service;
 import com.gr4.owlaudit.common.exception.ExcepcionNegocio;
 import com.gr4.owlaudit.dao.CursoDAO;
 import com.gr4.owlaudit.dao.ReglaDAO;
+import com.gr4.owlaudit.dto.ModificacionReglaDTO;
 import com.gr4.owlaudit.model.Curso;
 import com.gr4.owlaudit.model.Docente;
 import com.gr4.owlaudit.model.Regla;
@@ -37,60 +38,9 @@ public class ReglasServiceCambioEstadoTest {
 
     private ReglaServiceImpl reglaService;
 
-    private ReglaServiceImpl reglaServiceConCurso;
-
-    private Regla reglaExistente;
-
     @BeforeEach
     void setUp() {
-        // Inyectamos explícitamente el mock usando el constructor de 1 parámetro
-        reglaService = new ReglaServiceImpl(reglaDAO);
-        reglaServiceConCurso = new ReglaServiceImpl(reglaDAO, cursoDAO, new ValidadorRegla());
-
-        // Preparamos una regla base en estado VIGENTE antes de cada test
-        reglaExistente = new Regla();
-        reglaExistente.setNombreRepresentativo("Complejidad Ciclomática");
-        reglaExistente.setVigencia(EstadoVigencia.VIGENTE);
-    }
-
-    @Test
-    @DisplayName("Debe cambiar el estado de vigencia cuando el nuevo estado es distinto al actual")
-    void given_reglaVigente_when_cambiarEstadoANoVigente_then_actualizaYRetornaTrue() {
-        // Arrange (Preparación)
-        String nombreRegla = "Complejidad Ciclomática";
-        EstadoVigencia nuevoEstado = EstadoVigencia.NO_VIGENTE;
-
-        when(reglaDAO.obtenerPorNombre(nombreRegla)).thenReturn(reglaExistente);
-        when(reglaDAO.actualizarEstadoVigencia(nombreRegla, nuevoEstado)).thenReturn(true);
-
-        // Act (Acción)
-        boolean resultado = reglaService.cambiarEstadoVigenciaDeUnaRegla(nombreRegla, nuevoEstado);
-
-        // Assert (Verificación)
-        assertTrue(resultado, "El cambio de estado debería retornar true al ser válido");
-        assertEquals(EstadoVigencia.NO_VIGENTE, reglaExistente.getVigencia());
-
-        verify(reglaDAO, times(1)).obtenerPorNombre(nombreRegla);
-        verify(reglaDAO, times(1)).actualizarEstadoVigencia(nombreRegla, nuevoEstado);
-    }
-
-    @Test
-    @DisplayName("Escenario 1.3: No debe actualizar el estado cuando el estado solicitado es igual al actual")
-    void given_reglaVigente_when_cambiarAlMismoEstadoVigente_then_noActualizaYRetornaFalse() {
-        // Arrange (Preparación)
-        String nombreRegla = "Complejidad Ciclomática";
-        EstadoVigencia mismoEstado = EstadoVigencia.VIGENTE;
-
-        when(reglaDAO.obtenerPorNombre(nombreRegla)).thenReturn(reglaExistente);
-
-        // Act (Acción)
-        boolean resultado = reglaService.cambiarEstadoVigenciaDeUnaRegla(nombreRegla, mismoEstado);
-
-        // Assert (Verificación)
-        assertFalse(resultado, "No debe permitir el cambio si el estado solicitado es igual al actual");
-
-        verify(reglaDAO, times(1)).obtenerPorNombre(nombreRegla);
-        verify(reglaDAO, never()).actualizarEstadoVigencia(anyString(), any(EstadoVigencia.class));
+        reglaService = new ReglaServiceImpl(reglaDAO, cursoDAO, new ValidadorRegla());
     }
 
     /** Regla VIGENTE del curso cuyo titular es ID_DOCENTE_TITULAR. Lenient: no todos los rechazos llegan a consultarla. */
@@ -110,6 +60,10 @@ public class ReglasServiceCambioEstadoTest {
         lenient().when(reglaDAO.actualizarDescripcionYVigencia(any(), any(), any(), any())).thenReturn(true);
     }
 
+    private ModificacionReglaDTO modificacionDelTitular(String descripcion, EstadoVigencia vigencia) {
+        return new ModificacionReglaDTO(ID_REGLA, ID_CURSO, ID_DOCENTE_TITULAR, descripcion, vigencia);
+    }
+
     private void verificarQueNoSeActualizo() {
         verify(reglaDAO, never()).actualizarDescripcionYVigencia(any(), any(), any(), any());
     }
@@ -119,11 +73,9 @@ public class ReglasServiceCambioEstadoTest {
     void modificarDescripcionYVigencia_guardaPorIdYCurso() {
         prepararReglaDelCursoConDocenteTitular();
 
-        reglaServiceConCurso.modificarDescripcionYVigencia(
-                ID_REGLA, ID_CURSO, ID_DOCENTE_TITULAR, "Nueva descripción", EstadoVigencia.NO_VIGENTE);
+        reglaService.modificarDescripcionYVigencia(modificacionDelTitular("Nueva descripción", EstadoVigencia.NO_VIGENTE));
 
         verify(reglaDAO).actualizarDescripcionYVigencia(ID_REGLA, ID_CURSO, "Nueva descripción", EstadoVigencia.NO_VIGENTE);
-        verify(reglaDAO, never()).actualizarEstadoVigencia(anyString(), any(EstadoVigencia.class));
     }
 
     @Test
@@ -131,8 +83,7 @@ public class ReglasServiceCambioEstadoTest {
     void modificarDescripcionYVigencia_guardaAunqueLaVigenciaNoCambie() {
         prepararReglaDelCursoConDocenteTitular();
 
-        reglaServiceConCurso.modificarDescripcionYVigencia(
-                ID_REGLA, ID_CURSO, ID_DOCENTE_TITULAR, "Solo cambia el texto", EstadoVigencia.VIGENTE);
+        reglaService.modificarDescripcionYVigencia(modificacionDelTitular("Solo cambia el texto", EstadoVigencia.VIGENTE));
 
         verify(reglaDAO).actualizarDescripcionYVigencia(ID_REGLA, ID_CURSO, "Solo cambia el texto", EstadoVigencia.VIGENTE);
     }
@@ -145,8 +96,7 @@ public class ReglasServiceCambioEstadoTest {
         prepararReglaDelCursoConDocenteTitular();
 
         ExcepcionNegocio error = assertThrows(ExcepcionNegocio.class, () ->
-                reglaServiceConCurso.modificarDescripcionYVigencia(
-                        ID_REGLA, ID_CURSO, ID_DOCENTE_TITULAR, descripcionInvalida, EstadoVigencia.VIGENTE));
+                reglaService.modificarDescripcionYVigencia(modificacionDelTitular(descripcionInvalida, EstadoVigencia.VIGENTE)));
 
         assertEquals("La descripción detallada de la regla no puede quedar vacía", error.getMessage());
         verificarQueNoSeActualizo();
@@ -159,8 +109,7 @@ public class ReglasServiceCambioEstadoTest {
         String descripcionLarga = "x".repeat(201);
 
         ExcepcionNegocio error = assertThrows(ExcepcionNegocio.class, () ->
-                reglaServiceConCurso.modificarDescripcionYVigencia(
-                        ID_REGLA, ID_CURSO, ID_DOCENTE_TITULAR, descripcionLarga, EstadoVigencia.VIGENTE));
+                reglaService.modificarDescripcionYVigencia(modificacionDelTitular(descripcionLarga, EstadoVigencia.VIGENTE)));
 
         assertEquals("La descripción detallada debe tener entre 1 y 200 caracteres.", error.getMessage());
         verificarQueNoSeActualizo();
@@ -173,8 +122,7 @@ public class ReglasServiceCambioEstadoTest {
         when(reglaDAO.obtenerPorIdYCurso(ID_REGLA, ID_CURSO)).thenReturn(null);
 
         ExcepcionNegocio error = assertThrows(ExcepcionNegocio.class, () ->
-                reglaServiceConCurso.modificarDescripcionYVigencia(
-                        ID_REGLA, ID_CURSO, ID_DOCENTE_TITULAR, "Descripción válida", EstadoVigencia.VIGENTE));
+                reglaService.modificarDescripcionYVigencia(modificacionDelTitular("Descripción válida", EstadoVigencia.VIGENTE)));
 
         assertEquals("La regla no pertenece al curso especificado o no existe.", error.getMessage());
         verificarQueNoSeActualizo();
@@ -184,10 +132,11 @@ public class ReglasServiceCambioEstadoTest {
     @DisplayName("HU-02 Task 5.1: rechaza que un docente no titular modifique reglas del curso")
     void modificarDescripcionYVigencia_rechazaDocenteNoTitular() {
         prepararReglaDelCursoConDocenteTitular();
+        ModificacionReglaDTO modificacionAjena = new ModificacionReglaDTO(
+                ID_REGLA, ID_CURSO, ID_DOCENTE_AJENO, "Descripción válida", EstadoVigencia.VIGENTE);
 
         ExcepcionNegocio error = assertThrows(ExcepcionNegocio.class, () ->
-                reglaServiceConCurso.modificarDescripcionYVigencia(
-                        ID_REGLA, ID_CURSO, ID_DOCENTE_AJENO, "Descripción válida", EstadoVigencia.VIGENTE));
+                reglaService.modificarDescripcionYVigencia(modificacionAjena));
 
         assertEquals("No tiene permisos para gestionar un curso del que no es docente titular.", error.getMessage());
         verificarQueNoSeActualizo();

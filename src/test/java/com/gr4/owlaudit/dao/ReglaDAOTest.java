@@ -111,21 +111,6 @@ class ReglaDAOTest {
     }
 
     @Test
-    @DisplayName("Debe actualizar el estado de vigencia de una regla existente a NO_VIGENTE y recuperarla por nombre")
-    void actualizarEstadoVigencia_debeCambiarEstadoANoVigente_cuandoReglaExiste() {
-        String nombreRegla = "Regla TDD Vigencia " + System.nanoTime();
-        Regla regla = crearYGuardarRegla(nombreRegla, cursoPrueba, EstadoVigencia.VIGENTE);
-
-        boolean actualizado = reglaDAO.actualizarEstadoVigencia(nombreRegla, EstadoVigencia.NO_VIGENTE);
-
-        assertTrue(actualizado, "El DAO debe retornar true cuando la regla existe y fue actualizada");
-        Regla reglaConsultada = reglaDAO.obtenerPorNombre(nombreRegla);
-        assertNotNull(reglaConsultada);
-        assertEquals(EstadoVigencia.NO_VIGENTE, reglaConsultada.getVigencia());
-        assertFalse(reglaConsultada.esVigente());
-    }
-
-    @Test
     @DisplayName("Debe consultar únicamente las reglas con estado VIGENTE")
     void consultarReglasDeEvaluacionVigentes_debeRetornarSoloReglasVigentes() {
         String nombreRegla = "Regla No Vigente " + System.nanoTime();

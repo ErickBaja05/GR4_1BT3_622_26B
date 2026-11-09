@@ -15,14 +15,6 @@ public interface ReglaDAO {
         return consultarReglasDeEvaluacionVigentes();
     }
 
-    default Regla obtenerPorNombre(String nombre) {
-        return null;
-    };
-
-    default boolean actualizarEstadoVigencia(String nombre, EstadoVigencia nuevoEstado) {
-        return false;
-    };
-
     default List<Regla> consultarTodasLasReglas() {
         return consultarReglasDeEvaluacionVigentes();
     };
@@ -49,10 +41,6 @@ public interface ReglaDAO {
 
     default Regla obtenerPorNombreYCurso(String nombre, Long idCurso) {
         return null;
-    }
-
-    default boolean actualizarEstadoVigenciaPorIdYCurso(Long idRegla, Long idCurso, EstadoVigencia nuevoEstado) {
-        return false;
     }
 
     default boolean actualizarDescripcionYVigencia(Long idRegla, Long idCurso, String descripcion, EstadoVigencia vigencia) {
