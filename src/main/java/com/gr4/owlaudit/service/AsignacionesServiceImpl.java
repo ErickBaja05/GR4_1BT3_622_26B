@@ -172,31 +172,36 @@ public class AsignacionesServiceImpl implements AsignacionesService {
         if (dao == null) {
             return;
         }
-        List<AsignacionRegla> listaAR = new ArrayList<>();
-        if (dto != null && dto.getReglasConfiguradas() != null && !dto.getReglasConfiguradas().isEmpty()) {
-            for (ReglaAsignacionDTO rc : dto.getReglasConfiguradas()) {
-                if (rc != null && rc.getReglaId() != null) {
+        // Build listaAR using functional streams (Substitute Algorithm)
+        List<AsignacionRegla> listaAR = java.util.stream.Stream.of(
+                java.util.Optional.ofNullable(dto)
+                        .map(NuevaAsignacionDTO::getReglasConfiguradas)
+                        .filter(rcs -> rcs != null && !rcs.isEmpty())
+                        .orElse(null),
+                java.util.Optional.ofNullable(reglasAsociadas)
+                        .filter(rgs -> rgs != null && !rgs.isEmpty())
+                        .orElse(null))
+            .filter(java.util.Objects::nonNull)
+            .flatMap(java.util.Collection::stream)
+            .map(item -> {
+                if (item instanceof ReglaAsignacionDTO) {
+                    ReglaAsignacionDTO rc = (ReglaAsignacionDTO) item;
+                    // Validate rule configuration
                     validadorReglaAsignacion.validarRegla(rc);
-                    listaAR.add(new AsignacionRegla(
-                        asignacion.getId(),
-                        rc.getReglaId(),
-                        rc.getSeveridad() != null ? rc.getSeveridad() : NivelSeveridadEnum.MEDIA,
-                        rc.getPonderacion() != null && rc.getPonderacion() > 0 ? rc.getPonderacion() : 20
-                    ));
+                    return new AsignacionRegla(
+                            asignacion.getId(),
+                            rc.getReglaId(),
+                            rc.getSeveridad() != null ? rc.getSeveridad() : NivelSeveridadEnum.MEDIA,
+                            rc.getPonderacion() != null && rc.getPonderacion() > 0 ? rc.getPonderacion() : 20);
+                } else {
+                    Regla r = (Regla) item;
+                    NivelSeveridadEnum sev = r.getNivelSeveridad() != null ? r.getNivelSeveridad() : NivelSeveridadEnum.MEDIA;
+                    int pond = r.getPonderacion() > 0 ? r.getPonderacion() : 20;
+                    return new AsignacionRegla(asignacion.getId(), r.getId(), sev, pond);
                 }
-            }
-        } else if (reglasAsociadas != null && !reglasAsociadas.isEmpty()) {
-            for (Regla r : reglasAsociadas) {
-                NivelSeveridadEnum sev = (r.getNivelSeveridad() != null) ? r.getNivelSeveridad() : NivelSeveridadEnum.MEDIA;
-                int pond = (r.getPonderacion() > 0) ? r.getPonderacion() : 20;
-                listaAR.add(new AsignacionRegla(
-                    asignacion.getId(),
-                    r.getId(),
-                    sev,
-                    pond
-                ));
-            }
-        }
+            })
+            .collect(java.util.stream.Collectors.toList());
+
         if (!listaAR.isEmpty()) {
             dao.guardar(listaAR);
         }
