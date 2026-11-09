@@ -4,7 +4,9 @@ import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import com.gr4.owlaudit.common.exception.ExcepcionNegocio;
 import com.gr4.owlaudit.dao.AuditoriaDAO;
@@ -49,6 +51,7 @@ public class AsignacionServlet extends HttpServlet {
 
     private static final String VISTA_CREAR = "/WEB-INF/views/crearAsignacion.jsp";
     private static final String VISTA_DETALLE_ESTUDIANTE = "/WEB-INF/views/DetalleAsignacionJSP.jsp";
+    private static final String VISTA_ASIGNACIONES_CURSO = "/WEB-INF/views/asignacionesCurso.jsp";
 
     private final AsignacionesService asignacionesService;
     private final ReglaDAO reglaDAO;
@@ -137,6 +140,12 @@ public class AsignacionServlet extends HttpServlet {
                 }
             }
 
+            // Si el estudiante consulta asignaciones por curso (sin idAsignacion específica)
+            if ((idAsignacionParam == null || idAsignacionParam.isBlank()) && (idCursoParam != null && !idCursoParam.isBlank())) {
+                procesarGetAsignacionesCursoEstudiante(request, response, idCursoParam);
+                return;
+            }
+
             procesarGetEstudiante(request, response, idAsignacionParam);
             return;
         }
@@ -169,7 +178,7 @@ public class AsignacionServlet extends HttpServlet {
         }
 
         String idAsignacionParam = request.getParameter("idAsignacion");
-        if (idAsignacionParam != null && request.getParameter("idProyecto") != null) {
+        if (idAsignacionParam != null && (request.getParameter("idProyecto") != null || request.getParameter("urlGithub") != null)) {
             HttpSession session = request.getSession(false);
             UsuarioDTO usuario = (session != null) ? (UsuarioDTO) session.getAttribute(LoginServlet.ATRIBUTO_USUARIO) : null;
             if (usuario != null && usuario.getRol() == RolEnum.ESTUDIANTE && validadorAccesoCurso != null) {
@@ -365,6 +374,32 @@ public class AsignacionServlet extends HttpServlet {
 
     // --- MÉTODOS DE SOPORTE ---
 
+    private void procesarGetAsignacionesCursoEstudiante(HttpServletRequest request, HttpServletResponse response,
+            String idCursoParam)
+            throws ServletException, IOException {
+        Long idCurso = parsearLong(idCursoParam);
+        Long usuarioId = obtenerUsuarioIdEnSesion(request);
+        Curso curso = (cursoDAO != null && idCurso != null) ? cursoDAO.buscarPorId(idCurso) : null;
+        List<Asignacion> asignaciones = (asignacionesService != null && idCurso != null)
+                ? asignacionesService.consultarAsignacionesDeCurso(idCurso, usuarioId)
+                : Collections.emptyList();
+
+        Map<Long, Integer> intentosConsumidosMap = new HashMap<>();
+        if (auditoriaDAO != null && asignaciones != null && usuarioId != null) {
+            for (Asignacion a : asignaciones) {
+                if (a != null && a.getId() != null) {
+                    List<Auditoria> previas = auditoriaDAO.consultarAuditoriasDeAsignacionPorUsuario(a.getId(), usuarioId);
+                    intentosConsumidosMap.put(a.getId(), (previas != null) ? previas.size() : 0);
+                }
+            }
+        }
+
+        request.setAttribute("curso", curso);
+        request.setAttribute("asignaciones", asignaciones);
+        request.setAttribute("intentosConsumidosMap", intentosConsumidosMap);
+        request.getRequestDispatcher(VISTA_ASIGNACIONES_CURSO).forward(request, response);
+    }
+
     private void procesarGetEstudiante(HttpServletRequest request, HttpServletResponse response,
             String idAsignacionParam)
             throws ServletException, IOException {
@@ -420,17 +455,42 @@ public class AsignacionServlet extends HttpServlet {
             }
 
             String idProyectoParam = request.getParameter("idProyecto");
+            String urlGithubParam = request.getParameter("urlGithub");
             Long idProyecto = (idProyectoParam != null && !idProyectoParam.trim().isEmpty())
                     ? Long.parseLong(idProyectoParam.trim())
                     : null;
 
+            // Si no seleccionó idProyecto pero ingresó urlGithub, se resuelve o registra el proyecto
+            if (idProyecto == null && urlGithubParam != null && !urlGithubParam.trim().isEmpty() && usuarioId != null && proyectoDAO != null) {
+                String urlLimpia = urlGithubParam.trim();
+                List<Proyecto> misProyectos = proyectoDAO.listarPorUsuarioId(usuarioId);
+                Proyecto coincidente = (misProyectos != null)
+                        ? misProyectos.stream().filter(p -> urlLimpia.equalsIgnoreCase(p.getUrlGithub())).findFirst().orElse(null)
+                        : null;
+                if (coincidente != null) {
+                    idProyecto = coincidente.getId();
+                } else {
+                    Proyecto nuevoP = new Proyecto();
+                    nuevoP.setNombre("Entrega Asignación #" + idAsignacion);
+                    nuevoP.setUrlGithub(urlLimpia);
+                    nuevoP.setFechaRegistro(LocalDateTime.now());
+                    nuevoP.setIdEstudiante(usuarioId);
+                    com.gr4.owlaudit.model.Estudiante est = new com.gr4.owlaudit.model.Estudiante();
+                    est.setId(usuarioId);
+                    nuevoP.setEstudiante(est);
+                    proyectoDAO.guardarProyectoAcademico(nuevoP);
+                    idProyecto = nuevoP.getId();
+                }
+            }
+
             // Validación estricta de pertenencia para estudiante
+            final Long finalIdProyecto = idProyecto;
             HttpSession session = request.getSession(false);
             UsuarioDTO usuarioSesion = (session != null) ? (UsuarioDTO) session.getAttribute(LoginServlet.ATRIBUTO_USUARIO) : null;
-            if (usuarioSesion != null && usuarioSesion.getRol() == RolEnum.ESTUDIANTE && idProyecto != null) {
+            if (usuarioSesion != null && usuarioSesion.getRol() == RolEnum.ESTUDIANTE && finalIdProyecto != null) {
                 List<Proyecto> misProyectos = (proyectoDAO != null) ? proyectoDAO.listarPorUsuarioId(usuarioSesion.getId()) : null;
                 boolean pertenece = misProyectos != null && misProyectos.stream()
-                        .anyMatch(p -> p.getId().equals(idProyecto) || (p.getIdEstudiante() != null && p.getIdEstudiante().equals(idProyecto)));
+                        .anyMatch(p -> p.getId().equals(finalIdProyecto) || (p.getIdEstudiante() != null && p.getIdEstudiante().equals(finalIdProyecto)));
                 if (!pertenece) {
                     request.setAttribute("mensajeError", "No tiene permisos para auditar un proyecto que no le pertenece.");
                     request.getRequestDispatcher(VISTA_DETALLE_ESTUDIANTE).forward(request, response);
@@ -466,6 +526,10 @@ public class AsignacionServlet extends HttpServlet {
         AuditoriaDTO dto = new AuditoriaDTO();
         dto.setIdAsignacion(idAsignacion);
         dto.setProyectoId(idProyecto);
+        String urlGithubParam = request.getParameter("urlGithub");
+        if (urlGithubParam != null && !urlGithubParam.isBlank()) {
+            dto.setUrl(urlGithubParam.trim());
+        }
         dto.setUsuarioId(obtenerUsuarioIdEnSesion(request));
         return dto;
     }

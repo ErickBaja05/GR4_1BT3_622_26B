@@ -11,11 +11,6 @@
 <%@ page import="com.gr4.owlaudit.common.util.HtmlUtil" %>
 <%
     String ctx = request.getContextPath();
-    @SuppressWarnings("unchecked")
-    List<Asignacion> asignacionesDisponibles = (List<Asignacion>) request.getAttribute("asignacionesDisponibles");
-    if (asignacionesDisponibles == null) {
-        asignacionesDisponibles = (List<Asignacion>) request.getAttribute("asignaciones");
-    }
     ResumenAsignacionDTO resumen = (ResumenAsignacionDTO) request.getAttribute("resumenAsignacion");
     ResultadoDTO resultado = (ResultadoDTO) request.getAttribute("resultadoAuditoria");
     @SuppressWarnings("unchecked")
@@ -29,7 +24,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OwlAudit - Evaluar Asignación</title>
+    <title>OwlAudit - Entregar Asignación</title>
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/styles.css">
 </head>
 
@@ -39,39 +34,25 @@
 
     <main class="container">
         <div class="card">
-            <h1 class="card-title">Auditoría por Asignación Académica</h1>
-            <p class="card-subtitle">
-                Seleccione una asignación para revisar sus reglas técnicas, umbral de aprobación y evaluar uno de sus proyectos registrados.
-            </p>
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+                <div>
+                    <div style="margin-bottom: 0.5rem;">
+                        <a href="<%= ctx %>/curso" class="btn btn-secondary btn-sm" style="text-decoration: none;">&larr; Volver a Mis Cursos</a>
+                    </div>
+                    <h1 class="card-title">
+                        Entrega de Asignación: <%= (resumen != null && resumen.getNombreAsignacion() != null) ? HtmlUtil.escape(resumen.getNombreAsignacion()) : "Asignación Académica" %>
+                    </h1>
+                    <p class="card-subtitle">
+                        Revise las reglas técnicas requeridas, proporcione la URL de su repositorio GitHub y confirme el envío para obtener su calificación y dictamen de calidad.
+                    </p>
+                </div>
+            </div>
 
-            <% if (mensajeError != null) { %>
+            <% if (mensajeError != null && !mensajeError.isBlank()) { %>
                 <div class="alert alert-error" style="margin-top: 1rem;">
                     <%= HtmlUtil.escape(mensajeError) %>
                 </div>
             <% } %>
-
-            <form method="get" action="<%= ctx %>/asignaciones" style="margin-top: 1rem;">
-                <label for="selectAsignacion"><strong>Asignaciones Disponibles:</strong></label>
-                <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
-                    <select name="idAsignacion" id="selectAsignacion" class="form-control" required>
-                        <option value="">-- Seleccione una asignación --</option>
-                        <%
-                            if (asignacionesDisponibles != null) {
-                                for (Asignacion asig : asignacionesDisponibles) {
-                                    boolean selected = (resumen != null && resumen.getIdAsignacion() != null
-                                            && resumen.getIdAsignacion().equals(asig.getId()));
-                        %>
-                            <option value="<%= asig.getId() %>" <%= selected ? "selected" : "" %>>
-                                <%= HtmlUtil.escape(asig.getNombre()) %> (Umbral: <%= asig.getUmbralAprobacion() %>%)
-                            </option>
-                        <%
-                                }
-                            }
-                        %>
-                    </select>
-                    <button type="submit" class="btn btn-secondary">Ver Detalle</button>
-                </div>
-            </form>
         </div>
 
         <% if (resumen != null) { %>
@@ -118,27 +99,45 @@
                     </table>
                 </div>
 
-                <form method="post" action="<%= ctx %>/asignaciones">
+                <form method="post" action="<%= ctx %>/asignaciones" id="formEntregaAsignacion">
                     <input type="hidden" name="idAsignacion" value="<%= resumen.getIdAsignacion() %>">
-                    <div style="margin-bottom: 1rem;">
-                        <label for="selectProyecto"><strong>Seleccione su Proyecto Registrado:</strong></label>
-                        <select name="idProyecto" id="selectProyecto" class="form-control" style="margin-top: 0.5rem;">
-                            <option value="">-- Seleccione un proyecto --</option>
-                            <%
-                                if (resumen.getProyectosEstudiante() != null) {
-                                    for (Proyecto proy : resumen.getProyectosEstudiante()) {
-                            %>
-                                <option value="<%= proy.getId() %>">
-                                    <%= HtmlUtil.escape(proy.getNombre()) %> (<%= HtmlUtil.escape(proy.getUrlGithub()) %>)
-                                </option>
-                            <%
-                                    }
-                                }
-                            %>
-                        </select>
+
+                    <div style="margin-bottom: 1.25rem;">
+                        <label for="inputUrlGithub" class="form-label" style="font-weight: 600;">
+                            <strong>URL del Repositorio GitHub de la Entrega *:</strong>
+                        </label>
+                        <input type="url" name="urlGithub" id="inputUrlGithub" class="form-control" 
+                               placeholder="https://github.com/usuario/mi-repositorio-academico" 
+                               style="margin-top: 0.5rem;" required>
+                        <small class="text-muted" style="display: block; margin-top: 0.35rem;">
+                            Ingrese la URL pública del repositorio de GitHub que contiene el código a evaluar.
+                        </small>
                     </div>
+
+                    <% if (resumen.getProyectosEstudiante() != null && !resumen.getProyectosEstudiante().isEmpty()) { %>
+                        <div style="margin-bottom: 1.25rem;">
+                            <label for="selectProyecto"><strong>O seleccione un proyecto previamente registrado:</strong></label>
+                            <select name="idProyecto" id="selectProyecto" class="form-control" style="margin-top: 0.5rem;" 
+                                    onchange="if(this.value && this.options[this.selectedIndex].getAttribute('data-url')) { document.getElementById('inputUrlGithub').value = this.options[this.selectedIndex].getAttribute('data-url'); }">
+                                <option value="">-- Seleccionar proyecto para auto-completar URL --</option>
+                                <% for (Proyecto proy : resumen.getProyectosEstudiante()) { %>
+                                    <option value="<%= proy.getId() %>" data-url="<%= HtmlUtil.escape(proy.getUrlGithub()) %>">
+                                        <%= HtmlUtil.escape(proy.getNombre()) %> (<%= HtmlUtil.escape(proy.getUrlGithub()) %>)
+                                    </option>
+                                <% } %>
+                            </select>
+                        </div>
+                    <% } %>
+
+                    <div style="margin-bottom: 1.25rem;">
+                        <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; font-size: 0.95rem;">
+                            <input type="checkbox" id="checkConfirmacion" name="confirmacionEnvio" required>
+                            <span>Confirmo que esta entrega corresponde al trabajo académico a evaluar bajo las reglas de calidad configuradas.</span>
+                        </label>
+                    </div>
+
                     <button type="submit" class="btn btn-primary" id="btnEjecutarAuditoriaAsignacion">
-                        Ejecutar Auditoría de Asignación
+                        🚀 Enviar Entrega y Ejecutar Auditoría
                     </button>
                 </form>
 
@@ -195,7 +194,7 @@
                     </div>
                 <% } else { %>
                     <p style="color: var(--text-muted); font-style: italic;">
-                        Aún no registra auditorías ejecutadas en esta asignación. Seleccione su proyecto arriba y presione "Ejecutar Auditoría de Asignación".
+                        Aún no registra auditorías ejecutadas en esta asignación. Ingrese su repositorio arriba y presione "Enviar Entrega y Ejecutar Auditoría".
                     </p>
                 <% } %>
             </div>
@@ -203,10 +202,10 @@
 
         <% 
             if (resultado != null) { 
-                String idLabel = resultado.getCodigoVisible() != null ? resultado.getCodigoVisible() : (resultado.getIdVisible() != null ? "Auditor�a #" + resultado.getIdVisible() : "");
+                String idLabel = resultado.getCodigoVisible() != null ? resultado.getCodigoVisible() : (resultado.getIdVisible() != null ? "Auditoría #" + resultado.getIdVisible() : "");
         %>
             <div class="card" style="margin-top: 1.5rem;">
-                <h2 class="section-title" style="margin-top: 0;">Resultado de la Evaluaci�n <%= !idLabel.isEmpty() ? "(" + HtmlUtil.escape(idLabel) + ")" : "" %></h2>
+                <h2 class="section-title" style="margin-top: 0;">Resultado de la Evaluación <%= !idLabel.isEmpty() ? "(" + HtmlUtil.escape(idLabel) + ")" : "" %></h2>
                 <%@ include file="/WEB-INF/views/fragments/resultadoAuditoria.jspf" %>
             </div>
         <% } %>

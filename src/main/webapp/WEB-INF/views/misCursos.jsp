@@ -244,9 +244,10 @@
                                                                 </p>
                                                                 <div style="margin-top: 1rem;">
                                                                     <% if (!esDocente) { %>
-                                                                        <button type="button" class="btn btn-primary btn-block" style="cursor: default;" onclick="return false;">
+                                                                        <a class="btn btn-primary btn-block"
+                                                                            href="<%= ctx %>/asignaciones?idCurso=<%= c.getId() %>">
                                                                             Ver asignaciones del curso
-                                                                        </button>
+                                                                        </a>
                                                                     <% } else { %>
                                                                         <a class="btn btn-primary btn-block"
                                                                             href="<%= ctx %>/asignaciones?idCurso=<%= c.getId() %>">
