@@ -152,13 +152,11 @@
                                 <th style="padding: 0.65rem 0.5rem;">Motor</th>
                                 <th style="padding: 0.65rem 0.5rem;">Parámetro Exacto</th>
                                 <th style="padding: 0.65rem 0.5rem; text-align: center; min-width: 110px;">Estado Actual</th>
-                                <th style="padding: 0.65rem 0.5rem; text-align: center; min-width: 120px;">Acción</th>
                             </tr>
                         </thead>
                         <tbody>
                             <% for (Regla r : reglasVigentes) {
                                 boolean esVigente = r.esVigente();
-                                String nuevoEstado = esVigente ? "NO_VIGENTE" : "VIGENTE";
                             %>
                                 <tr style="border-bottom: 1px solid var(--border-color);">
                                     <td style="padding: 0.65rem 0.5rem; text-align: center;"><strong>#<%= r.getId() %></strong></td>
@@ -181,33 +179,6 @@
                                             </span>
                                         <% } %>
                                     </td>
-                                    <td style="padding: 0.65rem 0.5rem; text-align: center;">
-                                        <form action="${pageContext.request.contextPath}/regla" method="POST" style="margin: 0; display: inline-block;">
-                                            <input type="hidden" name="accion" value="cambiarVigencia">
-                                            <% if (request.getAttribute("idCurso") != null) { %>
-                                                <input type="hidden" name="idCurso" value="<%= request.getAttribute("idCurso") %>">
-                                            <% } else if (dto != null && dto.getIdCurso() != null) { %>
-                                                <input type="hidden" name="idCurso" value="<%= dto.getIdCurso() %>">
-                                            <% } %>
-                                            <input type="hidden" name="nombreRegla" value="<%= HtmlUtil.escape(r.getNombreRepresentativo()) %>">
-                                            <input type="hidden" name="idRegla" value="<%= r.getId() %>">
-                                            <input type="hidden" name="nuevoEstado" value="<%= nuevoEstado %>">
-
-                                            <% if (esVigente) { %>
-                                                <button type="submit" class="btn-action-status btn-deactivate"
-                                                        title="Haga clic para cambiar a NO_VIGENTE"
-                                                        onclick="return confirmarCambioEstado('<%= HtmlUtil.escape(r.getNombreRepresentativo()) %>', 'desactivar');">
-                                                    <span>🚫</span> Desactivar
-                                                </button>
-                                            <% } else { %>
-                                                <button type="submit" class="btn-action-status btn-activate"
-                                                        title="Haga clic para cambiar a VIGENTE"
-                                                        onclick="return confirmarCambioEstado('<%= HtmlUtil.escape(r.getNombreRepresentativo()) %>', 'activar');">
-                                                    <span>✅</span> Activar
-                                                </button>
-                                            <% } %>
-                                        </form>
-                                    </td>
                                 </tr>
                             <% } %>
                         </tbody>
@@ -221,11 +192,6 @@
         function cerrarAlerta(elementId) {
             var alerta = document.getElementById(elementId);
             if (alerta) { alerta.style.display = 'none'; }
-        }
-
-        function confirmarCambioEstado(nombreRegla, accion) {
-            var accionTexto = (accion === 'activar') ? 'activar (marcar como VIGENTE)' : 'desactivar (marcar como NO_VIGENTE)';
-            return confirm("¿Está seguro de que desea " + accionTexto + " la regla técnica:\n\n\"" + nombreRegla + "\"?");
         }
     </script>
 </body>

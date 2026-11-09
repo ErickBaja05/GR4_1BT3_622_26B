@@ -114,7 +114,23 @@ public class ReglaServiceImpl implements ReglaService {
 
     @Override
     public void modificarDescripcionYVigencia(Long idRegla, Long idCurso, Long idDocente, String descripcion, EstadoVigencia vigencia) {
-        // Fase TEST: sin implementar todavía
+        if (descripcion == null || descripcion.trim().isEmpty()) {
+            throw new ExcepcionNegocio("La descripción detallada de la regla no puede quedar vacía");
+        }
+        String descripcionNormalizada = descripcion.trim();
+        if (descripcionNormalizada.length() > 200) {
+            throw new ExcepcionNegocio("La descripción detallada debe tener entre 1 y 200 caracteres.");
+        }
+        if (reglaDAO.obtenerPorIdYCurso(idRegla, idCurso) == null) {
+            throw new ExcepcionNegocio("La regla no pertenece al curso especificado o no existe.");
+        }
+        Curso curso = cursoDAO.buscarPorId(idCurso);
+        if (curso == null || !curso.esDocenteTitular(idDocente)) {
+            throw new ExcepcionNegocio("No tiene permisos para gestionar un curso del que no es docente titular.");
+        }
+        if (!reglaDAO.actualizarDescripcionYVigencia(idRegla, idCurso, descripcionNormalizada, vigencia)) {
+            throw new ExcepcionNegocio("No se pudo actualizar la regla. Intente nuevamente.");
+        }
     }
 
     @Override

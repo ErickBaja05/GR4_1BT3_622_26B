@@ -184,6 +184,32 @@ public class ReglaDAOImpl implements ReglaDAO {
     }
 
     @Override
+    public boolean actualizarDescripcionYVigencia(Long idRegla, Long idCurso, String descripcion, EstadoVigencia vigencia) {
+        Transaction tx = null;
+        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
+            tx = session.beginTransaction();
+            int filasActualizadas = session.createMutationQuery(
+                "UPDATE Regla r SET r.descripcionDetallada = :descripcion, r.vigencia = :vigencia "
+                    + "WHERE r.id = :idRegla AND r.curso.id = :idCurso"
+            ).setParameter("descripcion", descripcion)
+             .setParameter("vigencia", vigencia)
+             .setParameter("idRegla", idRegla)
+             .setParameter("idCurso", idCurso)
+             .executeUpdate();
+            tx.commit();
+            return filasActualizadas > 0;
+        } catch (Exception e) {
+            if (tx != null && tx.isActive()) {
+                try {
+                    tx.rollback();
+                } catch (Exception ignored) {
+                }
+            }
+            return false;
+        }
+    }
+
+    @Override
     public List<Regla> consultarTodasLasReglas() {
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
             return session.createQuery(

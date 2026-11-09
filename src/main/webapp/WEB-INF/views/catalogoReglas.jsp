@@ -161,7 +161,6 @@
                         <tbody>
                             <% for (Regla r : reglas) {
                                 boolean esVigente = r.esVigente();
-                                String nuevoEstado = esVigente ? "NO_VIGENTE" : "VIGENTE";
                             %>
                                 <tr style="border-bottom: 1px solid var(--border-color);">
                                     <td style="padding: 0.65rem 0.5rem; text-align: center;"><strong>#<%= r.getId() %></strong></td>
@@ -185,29 +184,15 @@
                                         <% } %>
                                     </td>
                                     <td style="padding: 0.65rem 0.5rem; text-align: center;">
-                                        <form action="${pageContext.request.contextPath}/regla" method="POST" style="margin: 0; display: inline-block;">
-                                            <input type="hidden" name="accion" value="cambiarVigencia">
-                                            <% if (request.getAttribute("idCurso") != null) { %>
-                                                <input type="hidden" name="idCurso" value="<%= request.getAttribute("idCurso") %>">
-                                            <% } %>
-                                            <input type="hidden" name="nombreRegla" value="<%= HtmlUtil.escape(r.getNombreRepresentativo()) %>">
-                                            <input type="hidden" name="idRegla" value="<%= r.getId() %>">
-                                            <input type="hidden" name="nuevoEstado" value="<%= nuevoEstado %>">
-
-                                            <% if (esVigente) { %>
-                                                <button type="submit" class="btn-action-status btn-deactivate"
-                                                        title="Haga clic para cambiar a NO_VIGENTE"
-                                                        onclick="return confirmarCambioEstado('<%= HtmlUtil.escape(r.getNombreRepresentativo()) %>', 'desactivar');">
-                                                    <span>🚫</span> Desactivar
-                                                </button>
-                                            <% } else { %>
-                                                <button type="submit" class="btn-action-status btn-activate"
-                                                        title="Haga clic para cambiar a VIGENTE"
-                                                        onclick="return confirmarCambioEstado('<%= HtmlUtil.escape(r.getNombreRepresentativo()) %>', 'activar');">
-                                                    <span>✅</span> Activar
-                                                </button>
-                                            <% } %>
-                                        </form>
+                                        <button type="button" class="btn-edit"
+                                                data-id="<%= r.getId() %>"
+                                                data-nombre="<%= HtmlUtil.escape(r.getNombreRepresentativo()) %>"
+                                                data-motor="<%= (r.getTipoMotor() != null) ? r.getTipoMotor().name() : "" %>"
+                                                data-descripcion="<%= HtmlUtil.escape(r.getDescripcionDetallada()) %>"
+                                                data-vigencia="<%= r.getVigencia() %>"
+                                                onclick="abrirModalModificarRegla(this)">
+                                            ✏️ Modificar Regla
+                                        </button>
                                     </td>
                                 </tr>
                             <% } %>
@@ -221,6 +206,49 @@
                 </div>
             <% } %>
         </div>
+
+        <!-- Modal para Modificar Regla (HU-02): solo descripción y vigencia son editables -->
+        <div id="modalModificarRegla" class="modal-overlay">
+            <div class="modal-content">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.75rem;">
+                    <h3 style="margin: 0; font-size: 1.2rem; color: var(--bg-primary);">Modificar Regla</h3>
+                    <button type="button" onclick="cerrarModalModificarRegla()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer;">&times;</button>
+                </div>
+                <form action="${pageContext.request.contextPath}/regla" method="POST">
+                    <input type="hidden" name="accion" value="modificarRegla">
+                    <input type="hidden" name="idCurso" value="<%= HtmlUtil.escape(request.getAttribute("idCurso")) %>">
+                    <input type="hidden" id="modIdRegla" name="idRegla" value="">
+
+                    <div class="form-group">
+                        <label for="modNombre" class="form-label">Nombre Representativo</label>
+                        <input type="text" id="modNombre" class="form-control" disabled>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="modMotor" class="form-label">Tipo de Motor de Evaluación</label>
+                        <input type="text" id="modMotor" class="form-control" disabled>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="modDescripcion" class="form-label">Descripción Detallada</label>
+                        <textarea id="modDescripcion" name="descripcionDetallada" class="form-control" rows="3" maxlength="200"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="modVigencia" class="form-label">Estado de Vigencia</label>
+                        <select id="modVigencia" name="vigencia" class="form-control">
+                            <option value="VIGENTE">VIGENTE</option>
+                            <option value="NO_VIGENTE">NO_VIGENTE</option>
+                        </select>
+                    </div>
+
+                    <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1.25rem;">
+                        <button type="button" class="btn btn-secondary" onclick="cerrarModalModificarRegla()">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">Guardar cambios</button>
+                    </div>
+                </form>
+            </div>
+        </div>
     </main>
 
     <script>
@@ -229,9 +257,17 @@
             if (alerta) { alerta.style.display = 'none'; }
         }
 
-        function confirmarCambioEstado(nombreRegla, accion) {
-            var accionTexto = (accion === 'activar') ? 'activar (marcar como VIGENTE)' : 'desactivar (marcar como NO_VIGENTE)';
-            return confirm("¿Está seguro de que desea " + accionTexto + " la regla técnica:\n\n\"" + nombreRegla + "\"?");
+        function abrirModalModificarRegla(boton) {
+            document.getElementById('modIdRegla').value = boton.dataset.id;
+            document.getElementById('modNombre').value = boton.dataset.nombre;
+            document.getElementById('modMotor').value = boton.dataset.motor;
+            document.getElementById('modDescripcion').value = boton.dataset.descripcion;
+            document.getElementById('modVigencia').value = boton.dataset.vigencia;
+            document.getElementById('modalModificarRegla').style.display = 'flex';
+        }
+
+        function cerrarModalModificarRegla() {
+            document.getElementById('modalModificarRegla').style.display = 'none';
         }
 
         function toggleFormularioRegistro() {

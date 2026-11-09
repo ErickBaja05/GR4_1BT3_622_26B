@@ -126,6 +126,11 @@ public class ReglaServlet extends HttpServlet {
             return;
         }
 
+        if ("modificarRegla".equals(request.getParameter("accion"))) {
+            procesarModificacionRegla(request, response, idCurso, usuario);
+            return;
+        }
+
         // 1. Lectura de parámetros desde el formulario (exclusivamente hasta parámetro exacto)
         String tipoMotor = request.getParameter("tipoMotor");
         String nombreRepresentativo = request.getParameter("nombreRepresentativo");
@@ -222,6 +227,31 @@ public class ReglaServlet extends HttpServlet {
             request.setAttribute(ATTR_MENSAJE_ERROR, e.getMessage());
         } catch (Exception e) {
             request.setAttribute(ATTR_MENSAJE_ERROR, "Error al actualizar estado de la regla: " + e.getMessage());
+        }
+
+        cargarReglasEnRequest(request, idCurso);
+        request.getRequestDispatcher(VISTA_CATALOGO).forward(request, response);
+    }
+
+    /**
+     * HU-02: actualiza únicamente la descripción y la vigencia de una regla del curso.
+     * Nombre y motor no se leen de la petición, por lo que no pueden alterarse.
+     */
+    private void procesarModificacionRegla(HttpServletRequest request, HttpServletResponse response, Long idCurso,
+            UsuarioDTO usuario) throws ServletException, IOException {
+        try {
+            EstadoVigencia vigencia = EstadoVigencia.valueOf(String.valueOf(request.getParameter("vigencia")).trim());
+            reglaService.modificarDescripcionYVigencia(
+                    parsearIdCurso(request.getParameter("idRegla")),
+                    idCurso,
+                    (usuario != null) ? usuario.getId() : null,
+                    request.getParameter("descripcionDetallada"),
+                    vigencia);
+            request.setAttribute(ATTR_MENSAJE_EXITO, "Descripción actualizada exitosamente");
+        } catch (IllegalArgumentException e) {
+            request.setAttribute(ATTR_MENSAJE_ERROR, "El estado de vigencia seleccionado no es válido.");
+        } catch (ExcepcionNegocio e) {
+            request.setAttribute(ATTR_MENSAJE_ERROR, e.getMessage());
         }
 
         cargarReglasEnRequest(request, idCurso);
