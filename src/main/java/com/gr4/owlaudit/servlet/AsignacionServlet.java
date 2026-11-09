@@ -25,6 +25,7 @@ import com.gr4.owlaudit.dao.CursoDAO;
 import com.gr4.owlaudit.dao.CursoDAOImpl;
 import com.gr4.owlaudit.model.Asignacion;
 import com.gr4.owlaudit.model.Auditoria;
+import com.gr4.owlaudit.model.Curso;
 import com.gr4.owlaudit.model.NivelSeveridadEnum;
 import com.gr4.owlaudit.model.Proyecto;
 import com.gr4.owlaudit.model.RolEnum;
