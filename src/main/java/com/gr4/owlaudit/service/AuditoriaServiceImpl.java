@@ -2,6 +2,7 @@ package com.gr4.owlaudit.service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import com.gr4.owlaudit.client.GitHubClient;
 import com.gr4.owlaudit.common.exception.ExcepcionNegocio;
@@ -445,36 +446,38 @@ public class AuditoriaServiceImpl implements AuditoriaService {
             return java.util.Collections.emptyList();
         }
 
-        List<AuditoriaResumenDTO> resultado = new ArrayList<>();
-        for (Auditoria aud : auditorias) {
-            AuditoriaResumenDTO dto = new AuditoriaResumenDTO();
-            dto.setId(aud.getId());
-            dto.setNumeroEnAsignacion(aud.getNumeroEnAsignacion());
-            dto.setNumeroEnProyecto(aud.getNumeroEnProyecto());
-            dto.setTipoAuditoria(aud.getTipoAuditoria());
-            dto.setFechaHora(aud.getFechaHora());
-            dto.setPuntajeObtenido(aud.getPuntajeObtenido());
-            dto.setPuntajeMaximo(aud.getPuntajeMaximo());
-            dto.setPorcentaje(aud.getPorcentaje());
-            dto.setDictamen(aud.getDictamen());
+        return auditorias.stream()
+                .map(this::mapearAuditoriaAResumenDTO)
+                .collect(Collectors.toList());
+    }
 
-            if (aud.getEstudiante() != null) {
-                dto.setNombreEstudiante(aud.getEstudiante().getNombre());
-                dto.setCorreoEstudiante(aud.getEstudiante().getCorreo());
-            }
+    private AuditoriaResumenDTO mapearAuditoriaAResumenDTO(Auditoria aud) {
+        AuditoriaResumenDTO dto = new AuditoriaResumenDTO();
+        dto.setId(aud.getId());
+        dto.setNumeroEnAsignacion(aud.getNumeroEnAsignacion());
+        dto.setNumeroEnProyecto(aud.getNumeroEnProyecto());
+        dto.setTipoAuditoria(aud.getTipoAuditoria());
+        dto.setFechaHora(aud.getFechaHora());
+        dto.setPuntajeObtenido(aud.getPuntajeObtenido());
+        dto.setPuntajeMaximo(aud.getPuntajeMaximo());
+        dto.setPorcentaje(aud.getPorcentaje());
+        dto.setDictamen(aud.getDictamen());
 
-            if (aud.getProyecto() != null) {
-                dto.setNombreProyecto(aud.getProyecto().getNombre());
-                dto.setUrlRepositorio(aud.getProyecto().getUrlGithub());
-            }
-
-            if (aud.getAsignacion() != null) {
-                dto.setNombreAsignacion(aud.getAsignacion().getNombre());
-                dto.setUmbral(aud.getAsignacion().getUmbralAprobacion());
-            }
-
-            resultado.add(dto);
+        if (aud.getEstudiante() != null) {
+            dto.setNombreEstudiante(aud.getEstudiante().getNombre());
+            dto.setCorreoEstudiante(aud.getEstudiante().getCorreo());
         }
-        return resultado;
+
+        if (aud.getProyecto() != null) {
+            dto.setNombreProyecto(aud.getProyecto().getNombre());
+            dto.setUrlRepositorio(aud.getProyecto().getUrlGithub());
+        }
+
+        if (aud.getAsignacion() != null) {
+            dto.setNombreAsignacion(aud.getAsignacion().getNombre());
+            dto.setUmbral(aud.getAsignacion().getUmbralAprobacion());
+        }
+
+        return dto;
     }
 }
