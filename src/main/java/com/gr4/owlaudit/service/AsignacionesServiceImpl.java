@@ -168,35 +168,31 @@ public class AsignacionesServiceImpl implements AsignacionesService {
         if (dao == null) {
             return;
         }
-        // Build listaAR using functional streams (Substitute Algorithm)
-        List<AsignacionRegla> listaAR = java.util.stream.Stream.of(
-                java.util.Optional.ofNullable(dto)
-                        .map(NuevaAsignacionDTO::getReglasConfiguradas)
-                        .filter(rcs -> rcs != null && !rcs.isEmpty())
-                        .orElse(null),
-                java.util.Optional.ofNullable(reglasAsociadas)
-                        .filter(rgs -> rgs != null && !rgs.isEmpty())
-                        .orElse(null))
-            .filter(java.util.Objects::nonNull)
-            .flatMap(java.util.Collection::stream)
-            .map(item -> {
-                if (item instanceof ReglaAsignacionDTO) {
-                    ReglaAsignacionDTO rc = (ReglaAsignacionDTO) item;
-                    // Validate rule configuration
-                    validadorReglaAsignacion.validarRegla(rc);
-                    return new AsignacionRegla(
-                            asignacion.getId(),
-                            rc.getReglaId(),
-                            rc.getSeveridad() != null ? rc.getSeveridad() : NivelSeveridadEnum.MEDIA,
-                            rc.getPonderacion() != null && rc.getPonderacion() > 0 ? rc.getPonderacion() : 20);
-                } else {
-                    Regla r = (Regla) item;
-                    NivelSeveridadEnum sev = r.getNivelSeveridad() != null ? r.getNivelSeveridad() : NivelSeveridadEnum.MEDIA;
-                    int pond = r.getPonderacion() > 0 ? r.getPonderacion() : 20;
-                    return new AsignacionRegla(asignacion.getId(), r.getId(), sev, pond);
-                }
-            })
-            .collect(java.util.stream.Collectors.toList());
+        // Substitute Algorithm: priorizar reglas personalizadas de dto; si no existen, usar las reglas asociadas por defecto
+        List<AsignacionRegla> listaAR = java.util.Optional.ofNullable(dto)
+                .map(NuevaAsignacionDTO::getReglasConfiguradas)
+                .filter(rcs -> !rcs.isEmpty())
+                .map(rcs -> rcs.stream()
+                        .filter(rc -> rc != null && rc.getReglaId() != null)
+                        .map(rc -> {
+                            validadorReglaAsignacion.validarRegla(rc);
+                            return new AsignacionRegla(
+                                    asignacion.getId(),
+                                    rc.getReglaId(),
+                                    rc.getSeveridad() != null ? rc.getSeveridad() : NivelSeveridadEnum.MEDIA,
+                                    rc.getPonderacion() != null && rc.getPonderacion() > 0 ? rc.getPonderacion() : 20);
+                        })
+                        .collect(Collectors.toList()))
+                .orElseGet(() -> java.util.Optional.ofNullable(reglasAsociadas)
+                        .orElseGet(Collections::emptyList)
+                        .stream()
+                        .filter(r -> r != null && r.getId() != null)
+                        .map(r -> {
+                            NivelSeveridadEnum sev = r.getNivelSeveridad() != null ? r.getNivelSeveridad() : NivelSeveridadEnum.MEDIA;
+                            int pond = r.getPonderacion() > 0 ? r.getPonderacion() : 20;
+                            return new AsignacionRegla(asignacion.getId(), r.getId(), sev, pond);
+                        })
+                        .collect(Collectors.toList()));
 
         if (!listaAR.isEmpty()) {
             dao.guardar(listaAR);
