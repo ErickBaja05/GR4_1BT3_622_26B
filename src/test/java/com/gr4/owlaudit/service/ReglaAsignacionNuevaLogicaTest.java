@@ -127,4 +127,41 @@ class ReglaAsignacionNuevaLogicaTest {
         assertEquals(NivelSeveridadEnum.ALTA, ar.getNivelSeveridad());
         assertEquals(35, ar.getPonderacion());
     }
+
+    @Test
+    @DisplayName("Crear asignación: guarda la configuración por defecto en AsignacionRegla cuando no hay reglas personalizadas")
+    void crearAsignacion_sinReglasPersonalizadas_persisteAsignacionReglaConValoresPorDefecto() {
+        NuevaAsignacionDTO dto = new NuevaAsignacionDTO();
+        dto.setNombre("Taller 2");
+        dto.setUmbralAprobacion(80.0);
+        dto.setIdCurso(10L);
+        dto.setReglasIds(List.of(201L));
+
+        Regla r2 = new Regla();
+        r2.setId(201L);
+        r2.setVigencia(EstadoVigencia.VIGENTE);
+
+        when(reglaDAO.consultarReglasDeEvaluacionVigentes()).thenReturn(List.of(r2));
+
+        Asignacion asigCreada = new Asignacion("Taller 2", 80.0, List.of(r2));
+        asigCreada.setId(2L);
+        when(asignacionesDAO.crearAsignacion(any(Asignacion.class))).thenReturn(asigCreada);
+
+        Asignacion resultado = asignacionesService.crearAsignacion(dto);
+
+        assertNotNull(resultado);
+        assertEquals(2L, resultado.getId());
+
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<List<AsignacionRegla>> arCaptor = ArgumentCaptor.forClass(List.class);
+        verify(asignacionReglaDAO).guardar(arCaptor.capture());
+
+        List<AsignacionRegla> listaGuardada = arCaptor.getValue();
+        assertEquals(1, listaGuardada.size());
+        AsignacionRegla ar = listaGuardada.get(0);
+        assertEquals(2L, ar.getAsignacionId());
+        assertEquals(201L, ar.getReglaId());
+        assertEquals(NivelSeveridadEnum.MEDIA, ar.getNivelSeveridad());
+        assertEquals(20, ar.getPonderacion());
+    }
 }
