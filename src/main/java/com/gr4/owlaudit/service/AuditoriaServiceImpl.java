@@ -258,24 +258,19 @@ public class AuditoriaServiceImpl implements AuditoriaService {
                 : null;
 
         if (asignacion != null) {
-            // CA-2: Rechazo de entregas con fecha límite vencida
-            if (asignacion.getFechaLimite() != null && asignacion.getFechaLimite().isBefore(java.time.LocalDateTime.now())) {
+            // CA-2: Rechazo de entregas con fecha límite vencida (Move Method en Asignacion)
+            if (asignacion.estaVencida()) {
                 throw new ExcepcionNegocio("La fecha límite para entregar esta asignación ha expirado");
             }
 
-            // CA-1.2: Bloqueo por agotar intentos permitidos
-            if (asignacion.getIntentosPermitidos() != null && asignacion.getIntentosPermitidos() > 0 && auditoriaDAO != null) {
-                Long usuarioId = (auditoriaDTO.getUsuarioId() != null)
-                        ? auditoriaDTO.getUsuarioId()
-                        : (proyecto.getUsuario() != null ? proyecto.getUsuario().getId() : null);
-
-                if (usuarioId != null) {
-                    List<Auditoria> previas = auditoriaDAO.consultarAuditoriasDeAsignacionPorUsuario(
-                            auditoriaDTO.getIdAsignacion(), usuarioId);
-                    int intentosConsumidos = (previas != null) ? previas.size() : 0;
-                    if (intentosConsumidos >= asignacion.getIntentosPermitidos()) {
-                        throw new ExcepcionNegocio("Ha alcanzado el límite máximo de intentos permitidos para esta asignación");
-                    }
+            // CA-1.2: Bloqueo por agotar intentos permitidos (Move Method en Asignacion y Replace Temp with Query)
+            Long usuarioId = resolverUsuarioIdDeEntrega(auditoriaDTO, proyecto);
+            if (usuarioId != null && auditoriaDAO != null) {
+                List<Auditoria> previas = auditoriaDAO.consultarAuditoriasDeAsignacionPorUsuario(
+                        auditoriaDTO.getIdAsignacion(), usuarioId);
+                int intentosConsumidos = (previas != null) ? previas.size() : 0;
+                if (asignacion.haAlcanzadoLimiteIntentos(intentosConsumidos)) {
+                    throw new ExcepcionNegocio("Ha alcanzado el límite máximo de intentos permitidos para esta asignación");
                 }
             }
         }
@@ -323,6 +318,17 @@ public class AuditoriaServiceImpl implements AuditoriaService {
                 throw new ExcepcionNegocio("No tiene permisos para auditar un proyecto que no le pertenece");
             }
         }
+    }
+
+    /**
+     * Refactorización Martin Fowler: Replace Temp with Query (Composing Methods).
+     * Resuelve el identificador del usuario que realiza la entrega a partir del DTO o del proyecto asociado.
+     */
+    private Long resolverUsuarioIdDeEntrega(AuditoriaDTO dto, Proyecto proyecto) {
+        if (dto != null && dto.getUsuarioId() != null) {
+            return dto.getUsuarioId();
+        }
+        return (proyecto != null && proyecto.getUsuario() != null) ? proyecto.getUsuario().getId() : null;
     }
 
     /**

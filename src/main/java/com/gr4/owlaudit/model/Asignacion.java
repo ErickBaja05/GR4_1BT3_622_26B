@@ -222,4 +222,21 @@ public class Asignacion {
     public void setAuditorias(List<Auditoria> auditorias) {
         this.auditorias = (auditorias != null) ? new ArrayList<>(auditorias) : new ArrayList<>();
     }
+
+    /**
+     * Refactorización Martin Fowler: Move Method (Moving Features Between Objects).
+     * Determina si la asignación ha sobrepasado su fecha límite de entrega.
+     */
+    public boolean estaVencida() {
+        return this.fechaLimite != null && this.fechaLimite.isBefore(LocalDateTime.now());
+    }
+
+    /**
+     * Refactorización Martin Fowler: Move Method (Moving Features Between Objects).
+     * Determina si se ha alcanzado o superado el número de intentos permitidos.
+     */
+    public boolean haAlcanzadoLimiteIntentos(int intentosConsumidos) {
+        return getIntentosPermitidos() != null && getIntentosPermitidos() > 0
+                && intentosConsumidos >= getIntentosPermitidos();
+    }
 }
