@@ -5,7 +5,6 @@ import com.gr4.owlaudit.model.EstadoVigencia;
 import com.gr4.owlaudit.model.Regla;
 import org.hibernate.Session;
 import org.hibernate.Transaction;
-import org.hibernate.query.MutationQuery;
 import org.hibernate.query.Query;
 
 import java.util.List;
@@ -80,20 +79,6 @@ public class ReglaDAOImpl implements ReglaDAO {
     }
 
     @Override
-    public Regla obtenerPorNombre(String nombre) {
-        if (nombre == null || nombre.trim().isEmpty()) {
-            return null;
-        }
-        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
-            List<Regla> list = session.createQuery(
-                "SELECT r FROM Regla r WHERE r.nombreRepresentativo = :nombre",
-                Regla.class
-            ).setParameter("nombre", nombre).list();
-            return list.isEmpty() ? null : list.get(0);
-        }
-    }
-
-    @Override
     public Regla buscarPorId(Long id) {
         if (id == null) {
             return null;
@@ -132,44 +117,18 @@ public class ReglaDAOImpl implements ReglaDAO {
     }
 
     @Override
-    public boolean actualizarEstadoVigenciaPorIdYCurso(Long idRegla, Long idCurso, EstadoVigencia nuevoEstado) {
-        if (idRegla == null || idCurso == null || nuevoEstado == null) {
-            return false;
-        }
+    public boolean actualizarDescripcionYVigencia(Long idRegla, Long idCurso, String descripcion, EstadoVigencia vigencia) {
         Transaction tx = null;
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
             tx = session.beginTransaction();
-            MutationQuery query = session.createMutationQuery(
-                "UPDATE Regla r SET r.vigencia = :vigencia WHERE r.id = :idRegla AND r.curso.id = :idCurso"
-            );
-            query.setParameter("vigencia", nuevoEstado);
-            query.setParameter("idRegla", idRegla);
-            query.setParameter("idCurso", idCurso);
-            int filasActualizadas = query.executeUpdate();
-            tx.commit();
-            return filasActualizadas > 0;
-        } catch (Exception e) {
-            if (tx != null && tx.isActive()) {
-                try {
-                    tx.rollback();
-                } catch (Exception ignored) {
-                }
-            }
-            return false;
-        }
-    }
-
-    @Override
-    public boolean actualizarEstadoVigencia(String nombre, EstadoVigencia nuevoEstado) {
-        Transaction tx = null;
-        try (Session session = HibernateUtil.getSessionFactory().openSession()) {
-            tx = session.beginTransaction();
-            MutationQuery query = session.createMutationQuery(
-                "UPDATE Regla r SET r.vigencia = :vigencia WHERE r.nombreRepresentativo = :nombre"
-            );
-            query.setParameter("vigencia", nuevoEstado);
-            query.setParameter("nombre", nombre);
-            int filasActualizadas = query.executeUpdate();
+            int filasActualizadas = session.createMutationQuery(
+                "UPDATE Regla r SET r.descripcionDetallada = :descripcion, r.vigencia = :vigencia "
+                    + "WHERE r.id = :idRegla AND r.curso.id = :idCurso"
+            ).setParameter("descripcion", descripcion)
+             .setParameter("vigencia", vigencia)
+             .setParameter("idRegla", idRegla)
+             .setParameter("idCurso", idCurso)
+             .executeUpdate();
             tx.commit();
             return filasActualizadas > 0;
         } catch (Exception e) {

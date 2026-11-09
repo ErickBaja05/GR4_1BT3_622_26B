@@ -92,8 +92,13 @@ class ReglaDAOTest {
     }
 
     private Regla crearYGuardarRegla(String nombre, Curso curso, EstadoVigencia vigencia) {
+        return crearYGuardarRegla(nombre, curso, vigencia, null);
+    }
+
+    private Regla crearYGuardarRegla(String nombre, Curso curso, EstadoVigencia vigencia, String descripcion) {
         Regla regla = new Regla();
         regla.setNombreRepresentativo(nombre);
+        regla.setDescripcionDetallada(descripcion);
         regla.setTipoMotor(TipoMotorEnum.PRESENCIA_ARCHIVO);
         regla.setParametroExacto("README.md");
         regla.setNivelSeveridad(NivelSeveridadEnum.MEDIA);
@@ -103,21 +108,6 @@ class ReglaDAOTest {
         reglaDAO.guardar(regla);
         reglasCreadas.add(regla);
         return regla;
-    }
-
-    @Test
-    @DisplayName("Debe actualizar el estado de vigencia de una regla existente a NO_VIGENTE y recuperarla por nombre")
-    void actualizarEstadoVigencia_debeCambiarEstadoANoVigente_cuandoReglaExiste() {
-        String nombreRegla = "Regla TDD Vigencia " + System.nanoTime();
-        Regla regla = crearYGuardarRegla(nombreRegla, cursoPrueba, EstadoVigencia.VIGENTE);
-
-        boolean actualizado = reglaDAO.actualizarEstadoVigencia(nombreRegla, EstadoVigencia.NO_VIGENTE);
-
-        assertTrue(actualizado, "El DAO debe retornar true cuando la regla existe y fue actualizada");
-        Regla reglaConsultada = reglaDAO.obtenerPorNombre(nombreRegla);
-        assertNotNull(reglaConsultada);
-        assertEquals(EstadoVigencia.NO_VIGENTE, reglaConsultada.getVigencia());
-        assertFalse(reglaConsultada.esVigente());
     }
 
     @Test
@@ -155,5 +145,29 @@ class ReglaDAOTest {
         assertTrue(reglaDAO.existeNombreEnCurso(nombre, cursoPrueba.getId()));
         assertFalse(reglaDAO.existeNombreEnCurso(nombre, cursoOtro.getId()));
         assertFalse(reglaDAO.existeNombreEnCurso("Otro Nombre", cursoPrueba.getId()));
+    }
+
+    @Test
+    @DisplayName("HU-02: modificar una regla solo afecta a la del curso indicado, aunque otro curso tenga una regla con el mismo nombre")
+    void actualizarDescripcionYVigencia_soloModificaLaReglaDelCursoIndicado() {
+        String nombreCompartido = "HOLA " + System.nanoTime();
+        Regla reglaDelCurso = crearYGuardarRegla(nombreCompartido, cursoPrueba, EstadoVigencia.VIGENTE, "Descripción original");
+        Regla reglaDeOtroCurso = crearYGuardarRegla(nombreCompartido, cursoOtro, EstadoVigencia.VIGENTE, "Descripción de otro curso");
+
+        boolean actualizada = reglaDAO.actualizarDescripcionYVigencia(
+                reglaDelCurso.getId(), cursoPrueba.getId(), "Descripción nueva", EstadoVigencia.NO_VIGENTE);
+        boolean actualizadaConCursoAjeno = reglaDAO.actualizarDescripcionYVigencia(
+                reglaDeOtroCurso.getId(), cursoPrueba.getId(), "Intento ajeno", EstadoVigencia.NO_VIGENTE);
+
+        assertTrue(actualizada, "Debe actualizar la regla que pertenece al curso indicado");
+        assertFalse(actualizadaConCursoAjeno, "No debe actualizar una regla que pertenece a otro curso");
+
+        Regla consultada = reglaDAO.obtenerPorIdYCurso(reglaDelCurso.getId(), cursoPrueba.getId());
+        assertEquals("Descripción nueva", consultada.getDescripcionDetallada());
+        assertEquals(EstadoVigencia.NO_VIGENTE, consultada.getVigencia());
+
+        Regla otraIntacta = reglaDAO.obtenerPorIdYCurso(reglaDeOtroCurso.getId(), cursoOtro.getId());
+        assertEquals("Descripción de otro curso", otraIntacta.getDescripcionDetallada());
+        assertEquals(EstadoVigencia.VIGENTE, otraIntacta.getVigencia());
     }
 }

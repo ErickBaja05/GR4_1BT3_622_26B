@@ -12,6 +12,7 @@ import java.util.regex.PatternSyntaxException;
 public class ValidadorRegla {
 
     public static final String MENSAJE_CAMPOS_OBLIGATORIOS = "Todos los campos de la regla son obligatorios.";
+    public static final String MENSAJE_DESCRIPCION_VACIA = "La descripción detallada de la regla no puede quedar vacía";
     private static final int PONDERACION_MINIMA = 1;
     private static final int PONDERACION_MAXIMA = 100;
     private static final char[] CARACTERES_PROHIBIDOS_RUTA = { ':', '\\', '"', '<', '>', '|', '?' };
@@ -39,6 +40,14 @@ public class ValidadorRegla {
 
     public void validar(NuevaReglaDTO dto) {
         validarSintaxisYFormato(dto);
+    }
+
+    /** HU-02: reutiliza la regla de longitud del registro y exige que la descripción no quede vacía. */
+    public void validarDescripcionAlModificar(String descripcion) {
+        if (descripcion == null || descripcion.isBlank()) {
+            throw new ExcepcionNegocio(MENSAJE_DESCRIPCION_VACIA);
+        }
+        validarDescripcionDetallada(descripcion);
     }
 
     private void validarCamposObligatorios(NuevaReglaDTO dto) {

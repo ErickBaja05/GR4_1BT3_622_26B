@@ -5,6 +5,7 @@ import com.gr4.owlaudit.dao.CursoDAO;
 import com.gr4.owlaudit.dao.CursoDAOImpl;
 import com.gr4.owlaudit.dao.ReglaDAO;
 import com.gr4.owlaudit.dao.ReglaDAOImpl;
+import com.gr4.owlaudit.dto.ModificacionReglaDTO;
 import com.gr4.owlaudit.dto.NuevaReglaDTO;
 import com.gr4.owlaudit.model.Curso;
 import com.gr4.owlaudit.model.EstadoVigencia;
@@ -15,6 +16,9 @@ import java.util.List;
 public class ReglaServiceImpl implements ReglaService {
 
     public static final String MENSAJE_DUPLICADO_CURSO = "Ya existe una regla con ese nombre representativo en este curso";
+    public static final String MENSAJE_REGLA_AJENA_AL_CURSO = "La regla no pertenece al curso especificado o no existe.";
+    public static final String MENSAJE_DOCENTE_NO_TITULAR = "No tiene permisos para gestionar un curso del que no es docente titular.";
+    public static final String MENSAJE_ACTUALIZACION_FALLIDA = "No se pudo actualizar la regla. Intente nuevamente.";
 
     private final ReglaDAO reglaDAO;
     private final CursoDAO cursoDAO;
@@ -74,42 +78,34 @@ public class ReglaServiceImpl implements ReglaService {
     }
 
     @Override
-    public boolean cambiarEstadoVigenciaDeUnaRegla(String nombreRegla, EstadoVigencia nuevoEstado) {
-        // 1. Obtener la regla actual desde el DAO
-        Regla reglaActual = reglaDAO.obtenerPorNombre(nombreRegla);
+    public void modificarDescripcionYVigencia(ModificacionReglaDTO modificacion) {
+        validadorRegla.validarDescripcionAlModificar(modificacion.descripcion());
+        verificarReglaDelCurso(modificacion);
+        verificarDocenteTitular(modificacion);
 
-        // Validación defensiva: si la regla no existe o el estado enviado es nulo
-        if (reglaActual == null || nuevoEstado == null) {
-            return false;
+        boolean actualizada = reglaDAO.actualizarDescripcionYVigencia(
+                modificacion.idRegla(),
+                modificacion.idCurso(),
+                modificacion.descripcion().trim(),
+                modificacion.vigencia());
+        if (!actualizada) {
+            throw new ExcepcionNegocio(MENSAJE_ACTUALIZACION_FALLIDA);
         }
-
-        // 2. Validar que el estado solicitado sea distinto al actual (Escenario 1.3)
-        if (reglaActual.getVigencia() == nuevoEstado) {
-            return false;
-        }
-
-        // 3. Actualizar el estado en el objeto de dominio y persistir invocando al DAO
-        reglaActual.setVigencia(nuevoEstado);
-        return reglaDAO.actualizarEstadoVigencia(nombreRegla, nuevoEstado);
     }
 
-    @Override
-    public boolean cambiarEstadoVigenciaDeUnaRegla(Long idRegla, Long idCurso, EstadoVigencia nuevoEstado) {
-        if (idRegla == null || idCurso == null || nuevoEstado == null) {
-            return false;
+    /** Refactorización Martin Fowler: Extract Method. */
+    private void verificarReglaDelCurso(ModificacionReglaDTO modificacion) {
+        if (reglaDAO.obtenerPorIdYCurso(modificacion.idRegla(), modificacion.idCurso()) == null) {
+            throw new ExcepcionNegocio(MENSAJE_REGLA_AJENA_AL_CURSO);
         }
+    }
 
-        Regla reglaActual = reglaDAO.obtenerPorIdYCurso(idRegla, idCurso);
-        if (reglaActual == null) {
-            throw new ExcepcionNegocio("La regla no pertenece al curso especificado o no existe.");
+    /** Refactorización Martin Fowler: Extract Method. */
+    private void verificarDocenteTitular(ModificacionReglaDTO modificacion) {
+        Curso curso = cursoDAO.buscarPorId(modificacion.idCurso());
+        if (curso == null || !curso.esDocenteTitular(modificacion.idDocente())) {
+            throw new ExcepcionNegocio(MENSAJE_DOCENTE_NO_TITULAR);
         }
-
-        if (reglaActual.getVigencia() == nuevoEstado) {
-            return false;
-        }
-
-        reglaActual.setVigencia(nuevoEstado);
-        return reglaDAO.actualizarEstadoVigenciaPorIdYCurso(idRegla, idCurso, nuevoEstado);
     }
 
     @Override
